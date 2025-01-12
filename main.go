@@ -42,7 +42,6 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 type model struct {
-	messages []string
 	list     list.Model
 	textarea textarea.Model
 	err      error
@@ -74,7 +73,6 @@ func initialModel() model {
 
 	return model{
 		textarea: ta,
-		messages: []string{},
 		list:     l,
 		err:      nil,
 	}
