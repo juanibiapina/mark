@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/cursor"
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -19,13 +18,22 @@ func main() {
 	}
 }
 
+type item struct {
+	title, desc string
+}
+
+func (i item) Title() string       { return i.title }
+func (i item) Description() string { return i.desc }
+func (i item) FilterValue() string { return i.title }
+
 type model struct {
 	messages    []string
-	viewport    viewport.Model
+	list        list.Model
 	textarea    textarea.Model
-	senderStyle lipgloss.Style
 	err         error
 }
+
+var docStyle = lipgloss.NewStyle()
 
 func initialModel() model {
 	ta := textarea.New()
@@ -33,9 +41,7 @@ func initialModel() model {
 	ta.Focus()
 
 	ta.Prompt = "┃ "
-	ta.CharLimit = 280
 
-	ta.SetWidth(30)
 	ta.SetHeight(3)
 
 	// Remove cursor line styling
@@ -43,17 +49,18 @@ func initialModel() model {
 
 	ta.ShowLineNumbers = false
 
-	vp := viewport.New(30, 5)
-	vp.SetContent(`Welcome to the chat room!
-Type a message and press Enter to send.`)
-
 	ta.KeyMap.InsertNewline.SetEnabled(false)
+
+	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+	l.Title = "Messages"
+	l.SetShowStatusBar(false)
+	l.SetShowHelp(false)
+	l.SetFilteringEnabled(false)
 
 	return model{
 		textarea:    ta,
 		messages:    []string{},
-		viewport:    vp,
-		senderStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("5")),
+		list:        l,
 		err:         nil,
 	}
 }
@@ -65,15 +72,19 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.viewport.Width = msg.Width
+		textAreaHeight := m.textarea.Height()
+
+		m.list.SetSize(msg.Width, msg.Height - textAreaHeight)
+
 		m.textarea.SetWidth(msg.Width)
+
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
+
 		case "esc", "ctrl+c":
-			// Quit.
-			fmt.Println(m.textarea.Value())
 			return m, tea.Quit
+
 		case "enter":
 			v := m.textarea.Value()
 
@@ -82,14 +93,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			// Simulate sending a message. In your application you'll want to
-			// also return a custom command to send the message off to
-			// a server.
-			m.messages = append(m.messages, m.senderStyle.Render("You: ")+v)
-			m.viewport.SetContent(strings.Join(m.messages, "\n"))
 			m.textarea.Reset()
-			m.viewport.GotoBottom()
-			return m, nil
+
+			return m, m.list.InsertItem(len(m.list.Items()), item{"You: ", v})
+
 		default:
 			// Send all other keypresses to the textarea.
 			var cmd tea.Cmd
@@ -109,9 +116,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf(
-		"%s\n\n%s",
-		m.viewport.View(),
+	return docStyle.Render(fmt.Sprintf(
+		"%s\n%s",
+		m.list.View(),
 		m.textarea.View(),
-	) + "\n\n"
+	))
 }
