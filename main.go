@@ -21,6 +21,10 @@ func main() {
 	}
 }
 
+type errMsg struct{ err error }
+
+func (e errMsg) Error() string { return e.err.Error() }
+
 func userMessage(text string) tea.Cmd {
 	return func() tea.Msg {
 		client := openai.NewClient()
@@ -34,8 +38,9 @@ func userMessage(text string) tea.Cmd {
 			Seed:  openai.Int(1),
 			Model: openai.F(openai.ChatModelGPT4o),
 		})
+
 		if err != nil {
-			panic(err)
+			return errMsg{err}
 		}
 
 		return replyMessage(completion.Choices[0].Message.Content)
@@ -109,6 +114,10 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+
+	case errMsg:
+		m.err = msg.err
+		return m, tea.Quit
 
 	case replyMessage:
 		m.list.InsertItem(len(m.list.Items()), ChatMessage{title: "AI", desc: string(msg)})
