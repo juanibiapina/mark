@@ -52,7 +52,7 @@ var docStyle = lipgloss.NewStyle()
 
 func initialModel() model {
 	ta := textarea.New()
-	ta.Placeholder = "Send a message..."
+	ta.Placeholder = "Message Assistant"
 	ta.Focus()
 
 	ta.Prompt = "┃ "
