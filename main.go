@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/charmbracelet/bubbles/cursor"
@@ -22,15 +23,29 @@ type item struct {
 	title, desc string
 }
 
-func (i item) Title() string       { return i.title }
-func (i item) Description() string { return i.desc }
-func (i item) FilterValue() string { return i.title }
+func (i item) FilterValue() string { return "" }
+
+type itemDelegate struct{}
+
+func (d itemDelegate) Height() int { return 1 }
+func (d itemDelegate) Spacing() int { return 0 }
+func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	i, ok := listItem.(item)
+	if !ok {
+		return
+	}
+
+	str := fmt.Sprintf("%s: %s", i.title, i.desc)
+
+	fmt.Fprint(w, str)
+}
 
 type model struct {
-	messages    []string
-	list        list.Model
-	textarea    textarea.Model
-	err         error
+	messages []string
+	list     list.Model
+	textarea textarea.Model
+	err      error
 }
 
 var docStyle = lipgloss.NewStyle()
@@ -51,17 +66,17 @@ func initialModel() model {
 
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
-	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+	l := list.New([]list.Item{}, itemDelegate{}, 0, 0)
 	l.Title = "Messages"
 	l.SetShowStatusBar(false)
 	l.SetShowHelp(false)
 	l.SetFilteringEnabled(false)
 
 	return model{
-		textarea:    ta,
-		messages:    []string{},
-		list:        l,
-		err:         nil,
+		textarea: ta,
+		messages: []string{},
+		list:     l,
+		err:      nil,
 	}
 }
 
@@ -74,7 +89,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		textAreaHeight := m.textarea.Height()
 
-		m.list.SetSize(msg.Width, msg.Height - textAreaHeight)
+		m.list.SetSize(msg.Width, msg.Height-textAreaHeight)
 
 		m.textarea.SetWidth(msg.Width)
 
@@ -95,7 +110,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.textarea.Reset()
 
-			return m, m.list.InsertItem(len(m.list.Items()), item{"You: ", v})
+			return m, m.list.InsertItem(len(m.list.Items()), item{title: "You", desc: v})
 
 		default:
 			// Send all other keypresses to the textarea.
