@@ -1,8 +1,5 @@
 package main
 
-// A simple program demonstrating the text area component from the Bubbles
-// component library.
-
 import (
 	"fmt"
 	"os"
@@ -23,8 +20,8 @@ func main() {
 }
 
 type model struct {
-	viewport    viewport.Model
 	messages    []string
+	viewport    viewport.Model
 	textarea    textarea.Model
 	senderStyle lipgloss.Style
 	err         error
