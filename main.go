@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -65,7 +66,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 
 type model struct {
 	// layout
-	ready  bool
+	ready bool
 
 	// view models
 	viewport viewport.Model
@@ -115,14 +116,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case replyMessage:
-		m.viewport.SetContent(string(msg))
+		renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
+		if err != nil {
+			m.err = err
+			return m, tea.Quit
+		}
+
+		str, err := renderer.Render(string(msg))
+		if err != nil {
+			m.err = err
+			return m, tea.Quit
+		}
+
+		m.viewport.SetContent(str)
 		return m, nil
 
 	case tea.WindowSizeMsg:
 		textAreaHeight := lipgloss.Height(borderStyle.Render(m.textarea.View()))
 
 		if !m.ready {
-			m.viewport = viewport.New(msg.Width - borderStyle.GetVerticalFrameSize(), msg.Height - borderStyle.GetHorizontalFrameSize() - textAreaHeight)
+			m.viewport = viewport.New(msg.Width-borderStyle.GetVerticalFrameSize(), msg.Height-borderStyle.GetHorizontalFrameSize()-textAreaHeight)
 			m.ready = true
 		} else {
 			m.viewport.Width = msg.Width - borderStyle.GetVerticalFrameSize()
