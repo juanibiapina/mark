@@ -6,8 +6,15 @@ import (
 	"github.com/openai/openai-go"
 )
 
+type Role int
+
+const (
+    User Role = iota
+    Assistant
+)
+
 type Message struct {
-	Role    string
+	Role    Role
 	Content string
 }
 
@@ -26,12 +33,12 @@ func NewClient() *Client {
 // SendMessage sends a message to the AI model and returns the response.
 func (c *Client) SendMessage(ctx context.Context, text string) (string, error) {
 	// Add user message to history
-	c.messages = append(c.messages, Message{Role: "user", Content: text})
+	c.messages = append(c.messages, Message{Role: User, Content: text})
 
 	// Convert messages to OpenAI format
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 	for _, msg := range c.messages {
-		if msg.Role == "user" {
+		if msg.Role == User {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 		} else {
 			chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))
@@ -50,7 +57,7 @@ func (c *Client) SendMessage(ctx context.Context, text string) (string, error) {
 
 	// Add assistant response to history
 	response := completion.Choices[0].Message.Content
-	c.messages = append(c.messages, Message{Role: "assistant", Content: response})
+	c.messages = append(c.messages, Message{Role: Assistant, Content: response})
 
 	return response, nil
 }
