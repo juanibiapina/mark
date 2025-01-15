@@ -130,12 +130,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch msg.Type {
 
-		case "esc", "ctrl+c":
+		case tea.KeyEsc, tea.KeyCtrlC:
 			return m, tea.Quit
 
-		case "enter":
+		case tea.KeyEnter:
 			v := m.textarea.Value()
 
 			if v == "" {
