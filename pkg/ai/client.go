@@ -28,8 +28,8 @@ func NewClient() *Client {
 	}
 }
 
-// SendMessage sends a message to the AI model and returns the response.
-func (c *Client) SendMessage(ctx context.Context, messages []Message) (string, error) {
+// Complete sends a message to the AI model and returns the response.
+func (c *Client) Complete(ctx context.Context, messages []Message) (string, error) {
 	// Convert messages to OpenAI format
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 	for _, msg := range messages {

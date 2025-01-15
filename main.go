@@ -25,9 +25,9 @@ type errMsg struct{ err error }
 
 func (e errMsg) Error() string { return e.err.Error() }
 
-func userMessage(m model) tea.Cmd {
+func complete(m model) tea.Cmd {
 	return func() tea.Msg {
-		reply, err := m.client.SendMessage(context.Background(), m.messages)
+		reply, err := m.client.Complete(context.Background(), m.messages)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -144,11 +144,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Add user message to chat history
 			m.messages = append(m.messages, ai.Message{Role: ai.User, Content: v})
 
-			cmds := []tea.Cmd{
-				userMessage(m), // send user message to AI
-			}
-
-			return m, tea.Batch(cmds...)
+			return m, complete(m)
 
 		default:
 			// Send all other keypresses to the textarea.
