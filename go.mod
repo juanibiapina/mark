@@ -1,4 +1,4 @@
-module github.com/juanibiapina/aiassistant
+module ant
 
 go 1.23.4
 
