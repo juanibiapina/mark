@@ -6,12 +6,13 @@ import (
 	"io"
 	"os"
 
+	"ant/pkg/ai"
+
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/openai/openai-go"
 )
 
 func main() {
@@ -27,23 +28,14 @@ func (e errMsg) Error() string { return e.err.Error() }
 
 func userMessage(text string) tea.Cmd {
 	return func() tea.Msg {
-		client := openai.NewClient()
+		client := ai.NewClient()
 
-		ctx := context.Background()
-
-		completion, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
-			Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
-				openai.UserMessage(text),
-			}),
-			Seed:  openai.Int(1),
-			Model: openai.F(openai.ChatModelGPT4o),
-		})
-
+		reply, err := client.SendMessage(context.Background(), text)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return replyMessage(completion.Choices[0].Message.Content)
+		return replyMessage(reply)
 	}
 }
 
