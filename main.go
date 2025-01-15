@@ -64,13 +64,12 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 type model struct {
+	// layout
+	ready  bool
+
 	// view models
 	viewport viewport.Model
-	list     list.Model
 	textarea textarea.Model
-
-	// state
-	ready bool
 
 	// ai client
 	client *ai.Client
@@ -98,15 +97,8 @@ func initialModel() model {
 
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
-	l := list.New([]list.Item{}, itemDelegate{}, 0, 0)
-	l.SetShowTitle(false)
-	l.SetShowStatusBar(false)
-	l.SetShowHelp(false)
-	l.SetFilteringEnabled(false)
-
 	return model{
 		textarea: ta,
-		list:     l,
 		client:   ai.NewClient(),
 	}
 }
@@ -123,22 +115,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case replyMessage:
-		m.list.InsertItem(len(m.list.Items()), ChatMessage{author: "AI", text: string(msg)})
-
+		m.viewport.SetContent(string(msg))
 		return m, nil
 
 	case tea.WindowSizeMsg:
-		if !m.ready {
-			m.viewport = viewport.New(msg.Width, msg.Height)
-			m.ready = true
-		} else {
-			m.viewport.Width = msg.Width
-			m.viewport.Height = msg.Height
-		}
-
 		textAreaHeight := lipgloss.Height(borderStyle.Render(m.textarea.View()))
 
-		m.list.SetSize(msg.Width-borderStyle.GetVerticalFrameSize(), msg.Height-textAreaHeight-borderStyle.GetHorizontalFrameSize())
+		if !m.ready {
+			m.viewport = viewport.New(msg.Width - borderStyle.GetVerticalFrameSize(), msg.Height - borderStyle.GetHorizontalFrameSize() - textAreaHeight)
+			m.ready = true
+		} else {
+			m.viewport.Width = msg.Width - borderStyle.GetVerticalFrameSize()
+			m.viewport.Height = msg.Height - borderStyle.GetHorizontalFrameSize() - textAreaHeight
+		}
 
 		m.textarea.SetWidth(msg.Width - borderStyle.GetVerticalFrameSize())
 
@@ -161,7 +150,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea.Reset()
 
 			cmds := []tea.Cmd{
-				m.list.InsertItem(len(m.list.Items()), ChatMessage{author: "You", text: v}), // insert user message into list
 				userMessage(m, v), // send user message to AI
 			}
 
@@ -190,12 +178,8 @@ func (m model) View() string {
 		return "Initializing..."
 	}
 
-	m.viewport.SetContent(fmt.Sprintf("%s\n%s",
-		borderStyle.Render(m.list.View()),
+	return docStyle.Render(fmt.Sprintf("%s\n%s",
+		borderStyle.Render(m.viewport.View()),
 		borderStyle.Render(m.textarea.View()),
-	))
-
-	return docStyle.Render(fmt.Sprintf("%s",
-		m.viewport.View(),
 	))
 }
