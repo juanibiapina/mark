@@ -3,17 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 
 	"ant/pkg/ai"
 
 	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -41,27 +38,8 @@ func userMessage(m model, text string) tea.Cmd {
 
 type replyMessage string
 
-type ChatMessage struct {
-	author string
+type Message struct {
 	text   string
-}
-
-func (i ChatMessage) FilterValue() string { return "" }
-
-type itemDelegate struct{}
-
-func (d itemDelegate) Height() int                             { return 1 }
-func (d itemDelegate) Spacing() int                            { return 0 }
-func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
-func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(ChatMessage)
-	if !ok {
-		return
-	}
-
-	str := fmt.Sprintf("%s: %s", i.author, i.text)
-
-	fmt.Fprint(w, str)
 }
 
 type model struct {
@@ -71,6 +49,9 @@ type model struct {
 	// view models
 	viewport viewport.Model
 	textarea textarea.Model
+
+	// models
+	messages []Message
 
 	// ai client
 	client *ai.Client
@@ -116,19 +97,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case replyMessage:
-		renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
-		if err != nil {
-			m.err = err
-			return m, tea.Quit
-		}
+		m.messages = append(m.messages, Message{text: string(msg)})
+		//renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
+		//if err != nil {
+		//	m.err = err
+		//	return m, tea.Quit
+		//}
 
-		str, err := renderer.Render(string(msg))
-		if err != nil {
-			m.err = err
-			return m, tea.Quit
-		}
+		//str, err := renderer.Render(string(msg))
+		//if err != nil {
+		//	m.err = err
+		//	return m, tea.Quit
+		//}
 
-		m.viewport.SetContent(str)
+		//m.viewport.SetContent(str)
 		return m, nil
 
 	case tea.WindowSizeMsg:
@@ -161,6 +143,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			m.textarea.Reset()
+			m.messages = append(m.messages, Message{text: v})
 
 			cmds := []tea.Cmd{
 				userMessage(m, v), // send user message to AI
@@ -190,6 +173,20 @@ func (m model) View() string {
 	if !m.ready {
 		return "Initializing..."
 	}
+
+	messageViews := make([]string, len(m.messages))
+	for i, msg := range m.messages {
+		messageViews[i] = fmt.Sprintf("%s", msg.text)
+	}
+
+	// Render the messages
+	var messages string
+	if len(messageViews) > 0 {
+		messages = fmt.Sprintf("%s\n", lipgloss.JoinVertical(0, messageViews...))
+	}
+
+	m.viewport.SetContent(messages)
+	m.viewport.GotoBottom()
 
 	return docStyle.Render(fmt.Sprintf("%s\n%s",
 		borderStyle.Render(m.viewport.View()),
