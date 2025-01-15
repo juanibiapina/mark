@@ -40,7 +40,8 @@ func userMessage(m model, text string) tea.Cmd {
 type replyMessage string
 
 type ChatMessage struct {
-	title, desc string
+	author string
+	text string
 }
 
 func (i ChatMessage) FilterValue() string { return "" }
@@ -56,7 +57,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		return
 	}
 
-	str := fmt.Sprintf("%s: %s", i.title, i.desc)
+	str := fmt.Sprintf("%s: %s", i.author, i.text)
 
 	fmt.Fprint(w, str)
 }
@@ -116,7 +117,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case replyMessage:
-		m.list.InsertItem(len(m.list.Items()), ChatMessage{title: "AI", desc: string(msg)})
+		m.list.InsertItem(len(m.list.Items()), ChatMessage{author: "AI", text: string(msg)})
 
 		return m, nil
 
@@ -146,7 +147,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea.Reset()
 
 			cmds := []tea.Cmd{
-				m.list.InsertItem(len(m.list.Items()), ChatMessage{title: "You", desc: v}), // insert user message into list
+				m.list.InsertItem(len(m.list.Items()), ChatMessage{author: "You", text: v}), // insert user message into list
 				userMessage(m, v), // send user message to AI
 			}
 
