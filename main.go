@@ -145,7 +145,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.textarea.Reset()
 
-			return m, tea.Batch(m.list.InsertItem(len(m.list.Items()), ChatMessage{title: "You", desc: v}), userMessage(m, v))
+			cmds := []tea.Cmd{
+				m.list.InsertItem(len(m.list.Items()), ChatMessage{title: "You", desc: v}), // insert user message into list
+				userMessage(m, v), // send user message to AI
+			}
+
+			return m, tea.Batch(cmds...)
 
 		default:
 			// Send all other keypresses to the textarea.
