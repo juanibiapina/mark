@@ -25,9 +25,9 @@ type errMsg struct{ err error }
 
 func (e errMsg) Error() string { return e.err.Error() }
 
-func userMessage(m model, text string) tea.Cmd {
+func userMessage(m model) tea.Cmd {
 	return func() tea.Msg {
-		reply, err := m.client.SendMessage(context.Background(), text)
+		reply, err := m.client.SendMessage(context.Background(), m.messages)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -38,10 +38,6 @@ func userMessage(m model, text string) tea.Cmd {
 
 type replyMessage string
 
-type Message struct {
-	text   string
-}
-
 type model struct {
 	// layout
 	ready bool
@@ -51,7 +47,7 @@ type model struct {
 	textarea textarea.Model
 
 	// models
-	messages []Message
+	messages []ai.Message
 
 	// ai client
 	client *ai.Client
@@ -97,7 +93,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case replyMessage:
-		m.messages = append(m.messages, Message{text: string(msg)})
+		m.messages = append(m.messages, ai.Message{Role: ai.Assistant, Content: string(msg)})
 		//renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
 		//if err != nil {
 		//	m.err = err
@@ -142,11 +138,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
+			// Clear the textarea after the message has been sent.
 			m.textarea.Reset()
-			m.messages = append(m.messages, Message{text: v})
+
+			// Add user message to chat history
+			m.messages = append(m.messages, ai.Message{Role: ai.User, Content: v})
 
 			cmds := []tea.Cmd{
-				userMessage(m, v), // send user message to AI
+				userMessage(m), // send user message to AI
 			}
 
 			return m, tea.Batch(cmds...)
@@ -176,7 +175,7 @@ func (m model) View() string {
 
 	messageViews := make([]string, len(m.messages))
 	for i, msg := range m.messages {
-		messageViews[i] = fmt.Sprintf("%s", msg.text)
+		messageViews[i] = fmt.Sprintf("%s", msg.Content)
 	}
 
 	// Render the messages

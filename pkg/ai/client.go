@@ -20,24 +20,19 @@ type Message struct {
 
 type Client struct {
 	client   *openai.Client
-	messages []Message
 }
 
 func NewClient() *Client {
 	return &Client{
 		client:   openai.NewClient(),
-		messages: make([]Message, 0),
 	}
 }
 
 // SendMessage sends a message to the AI model and returns the response.
-func (c *Client) SendMessage(ctx context.Context, text string) (string, error) {
-	// Add user message to history
-	c.messages = append(c.messages, Message{Role: User, Content: text})
-
+func (c *Client) SendMessage(ctx context.Context, messages []Message) (string, error) {
 	// Convert messages to OpenAI format
 	var chatMessages []openai.ChatCompletionMessageParamUnion
-	for _, msg := range c.messages {
+	for _, msg := range messages {
 		if msg.Role == User {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 		} else {
@@ -55,9 +50,8 @@ func (c *Client) SendMessage(ctx context.Context, text string) (string, error) {
 		return "", err
 	}
 
-	// Add assistant response to history
+	// Return the response
 	response := completion.Choices[0].Message.Content
-	c.messages = append(c.messages, Message{Role: Assistant, Content: response})
 
 	return response, nil
 }
