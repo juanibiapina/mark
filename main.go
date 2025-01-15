@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -41,7 +42,7 @@ type replyMessage string
 
 type ChatMessage struct {
 	author string
-	text string
+	text   string
 }
 
 func (i ChatMessage) FilterValue() string { return "" }
@@ -64,8 +65,12 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 
 type model struct {
 	// view models
+	viewport viewport.Model
 	list     list.Model
 	textarea textarea.Model
+
+	// state
+	ready bool
 
 	// ai client
 	client *ai.Client
@@ -75,6 +80,7 @@ type model struct {
 }
 
 var docStyle = lipgloss.NewStyle()
+var borderStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
 
 func initialModel() model {
 	ta := textarea.New()
@@ -93,7 +99,7 @@ func initialModel() model {
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
 	l := list.New([]list.Item{}, itemDelegate{}, 0, 0)
-	l.Title = "Messages"
+	l.SetShowTitle(false)
 	l.SetShowStatusBar(false)
 	l.SetShowHelp(false)
 	l.SetFilteringEnabled(false)
@@ -122,11 +128,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.WindowSizeMsg:
-		textAreaHeight := m.textarea.Height()
+		if !m.ready {
+			m.viewport = viewport.New(msg.Width, msg.Height)
+			m.ready = true
+		} else {
+			m.viewport.Width = msg.Width
+			m.viewport.Height = msg.Height
+		}
 
-		m.list.SetSize(msg.Width, msg.Height-textAreaHeight)
+		textAreaHeight := lipgloss.Height(borderStyle.Render(m.textarea.View()))
 
-		m.textarea.SetWidth(msg.Width)
+		m.list.SetSize(msg.Width-borderStyle.GetVerticalFrameSize(), msg.Height-textAreaHeight-borderStyle.GetHorizontalFrameSize())
+
+		m.textarea.SetWidth(msg.Width - borderStyle.GetVerticalFrameSize())
 
 		return m, nil
 
@@ -172,9 +186,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return docStyle.Render(fmt.Sprintf(
-		"%s\n%s",
-		m.list.View(),
-		m.textarea.View(),
+	if !m.ready {
+		return "Initializing..."
+	}
+
+	m.viewport.SetContent(fmt.Sprintf("%s\n%s",
+		borderStyle.Render(m.list.View()),
+		borderStyle.Render(m.textarea.View()),
+	))
+
+	return docStyle.Render(fmt.Sprintf("%s",
+		m.viewport.View(),
 	))
 }
