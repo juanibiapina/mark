@@ -26,11 +26,9 @@ type errMsg struct{ err error }
 
 func (e errMsg) Error() string { return e.err.Error() }
 
-func userMessage(text string) tea.Cmd {
+func userMessage(m model, text string) tea.Cmd {
 	return func() tea.Msg {
-		client := ai.NewClient()
-
-		reply, err := client.SendMessage(context.Background(), text)
+		reply, err := m.client.SendMessage(context.Background(), text)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -64,9 +62,15 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 type model struct {
+	// view models
 	list     list.Model
 	textarea textarea.Model
-	err      error
+
+	// ai client
+	client *ai.Client
+
+	// error
+	err error
 }
 
 var docStyle = lipgloss.NewStyle()
@@ -96,7 +100,7 @@ func initialModel() model {
 	return model{
 		textarea: ta,
 		list:     l,
-		err:      nil,
+		client:   ai.NewClient(),
 	}
 }
 
@@ -141,7 +145,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.textarea.Reset()
 
-			return m, tea.Batch(m.list.InsertItem(len(m.list.Items()), ChatMessage{title: "You", desc: v}), userMessage(v))
+			return m, tea.Batch(m.list.InsertItem(len(m.list.Items()), ChatMessage{title: "You", desc: v}), userMessage(m, v))
 
 		default:
 			// Send all other keypresses to the textarea.
