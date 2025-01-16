@@ -27,16 +27,27 @@ func (e errMsg) Error() string { return e.err.Error() }
 
 func complete(m model) tea.Cmd {
 	return func() tea.Msg {
-		reply, err := m.client.Complete(context.Background(), m.messages)
-		if err != nil {
-			return errMsg{err}
-		}
+		// create a channel to receive chunks of the response
+		partialMessageCh := make(chan string)
 
-		return replyMessage(reply)
+		// create a channel to receive the final response
+		replyCh := make(chan string)
+
+		go m.client.Complete(context.Background(), m.messages, partialMessageCh, replyCh)
+
+		for {
+			select {
+			case reply := <-replyCh:
+				return replyMessage(reply)
+			case partial := <-partialMessageCh:
+				m.partialMessageCh <- partial
+			}
+		}
 	}
 }
 
 type replyMessage string
+type partialMessage string
 
 type model struct {
 	// layout
@@ -48,6 +59,10 @@ type model struct {
 
 	// models
 	messages []ai.Message
+	partialMessage *ai.Message
+
+	// channels
+	partialMessageCh chan string
 
 	// ai client
 	client *ai.Client
@@ -77,12 +92,19 @@ func initialModel() model {
 
 	return model{
 		textarea: ta,
+		partialMessageCh: make(chan string),
 		client:   ai.NewClient(),
 	}
 }
 
 func (m model) Init() tea.Cmd {
 	return textarea.Blink
+}
+
+func receivePartialMessage(m model) tea.Cmd {
+	return func() tea.Msg {
+		return partialMessage(<-m.partialMessageCh)
+	}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -92,7 +114,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.err
 		return m, tea.Quit
 
+	case partialMessage:
+		if m.partialMessage == nil {
+			m.partialMessage = &ai.Message{Role: ai.Assistant, Content: string(msg)}
+		} else {
+			m.partialMessage.Content += string(msg)
+		}
+		return m, receivePartialMessage(m)
+
 	case replyMessage:
+		m.partialMessage = nil
 		m.messages = append(m.messages, ai.Message{Role: ai.Assistant, Content: string(msg)})
 		//renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
 		//if err != nil {
@@ -138,13 +169,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			// Clear the textarea after the message has been sent.
+			// Clear the textarea
 			m.textarea.Reset()
 
 			// Add user message to chat history
 			m.messages = append(m.messages, ai.Message{Role: ai.User, Content: v})
 
-			return m, complete(m)
+			cmds := []tea.Cmd{
+				complete(m), // call completions API
+				receivePartialMessage(m), // start receiving partial message
+			}
+
+			return m, tea.Batch(cmds...)
 
 		default:
 			// Send all other keypresses to the textarea.
@@ -178,6 +214,11 @@ func (m model) View() string {
 	var messages string
 	if len(messageViews) > 0 {
 		messages = fmt.Sprintf("%s\n", lipgloss.JoinVertical(0, messageViews...))
+	}
+
+	// Render the partial message
+	if m.partialMessage != nil {
+		messages += fmt.Sprintf("%s", m.partialMessage.Content)
 	}
 
 	m.viewport.SetContent(messages)

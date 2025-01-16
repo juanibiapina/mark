@@ -9,8 +9,8 @@ import (
 type Role int
 
 const (
-    User Role = iota
-    Assistant
+	User Role = iota
+	Assistant
 )
 
 type Message struct {
@@ -19,17 +19,17 @@ type Message struct {
 }
 
 type Client struct {
-	client   *openai.Client
+	client *openai.Client
 }
 
 func NewClient() *Client {
 	return &Client{
-		client:   openai.NewClient(),
+		client: openai.NewClient(),
 	}
 }
 
-// Complete sends a message to the AI model and returns the response.
-func (c *Client) Complete(ctx context.Context, messages []Message) (string, error) {
+// Complete sends a list of messages to the OpenAI API and returns the response
+func (c *Client) Complete(ctx context.Context, messages []Message, pch chan string, ch chan string) {
 	// Convert messages to OpenAI format
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 	for _, msg := range messages {
@@ -40,18 +40,46 @@ func (c *Client) Complete(ctx context.Context, messages []Message) (string, erro
 		}
 	}
 
-	completion, err := c.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+	stream := c.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: openai.F(chatMessages),
 		Seed:     openai.Int(1),
 		Model:    openai.F(openai.ChatModelGPT4o),
 	})
 
-	if err != nil {
-		return "", err
+	acc := openai.ChatCompletionAccumulator{}
+
+	for stream.Next() {
+		chunk := stream.Current()
+		acc.AddChunk(chunk)
+
+		if _, ok := acc.JustFinishedContent(); ok {
+			// unused for now
+		}
+
+		// if using tool calls
+		if tool, ok := acc.JustFinishedToolCall(); ok {
+			println("Tool call stream finished:", tool.Index, tool.Name, tool.Arguments)
+		}
+
+		if refusal, ok := acc.JustFinishedRefusal(); ok {
+			println("Refusal stream finished:", refusal)
+		}
+
+		// it's best to use chunks after handling JustFinished events
+		if len(chunk.Choices) > 0 {
+			pch <- chunk.Choices[0].Delta.Content
+		}
 	}
 
-	// Return the response
-	response := completion.Choices[0].Message.Content
+	if err := stream.Err(); err != nil {
+		panic(err)
+	}
 
-	return response, nil
+	close(pch)
+
+	// After the stream is finished, acc can be used like a ChatCompletion
+	response := acc.Choices[0].Message.Content
+
+	ch <- response
+	close(ch)
 }
