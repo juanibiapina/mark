@@ -126,6 +126,9 @@ func (m *model) handleMessage() tea.Cmd {
 	// Add user message to chat history
 	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
 
+	// Create a new partial message
+	m.partialMessage = &ai.Message{Role: ai.Assistant, Content: ""}
+
 	cmds := []tea.Cmd{
 		complete(m),              // call completions API
 		receivePartialMessage(m), // start receiving partial message
@@ -142,11 +145,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case partialMessage:
-		if m.partialMessage == nil {
-			m.partialMessage = &ai.Message{Role: ai.Assistant, Content: string(msg)}
-		} else {
-			m.partialMessage.Content += string(msg)
-		}
+		m.partialMessage.Content += string(msg)
 		return m, receivePartialMessage(&m)
 
 	case replyMessage:
