@@ -36,13 +36,15 @@ func complete(m *model) tea.Cmd {
 		go m.client.Complete(context.Background(), m.conversation.Messages, partialMessageCh, replyCh)
 
 		for {
-			select {
-			case reply := <-replyCh:
-				return replyMessage(reply)
-			case partial := <-partialMessageCh:
-				m.partialMessageCh <- partial
+			val, ok := <-partialMessageCh
+			if !ok {
+				break
 			}
+			m.partialMessageCh <- val
 		}
+
+		reply := <-replyCh
+		return replyMessage(reply)
 	}
 }
 
