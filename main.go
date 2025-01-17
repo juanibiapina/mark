@@ -148,6 +148,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc", "ctrl+c":
 			return m, tea.Quit
 
+		case "ctrl+n":
+			m.conversation = ai.Conversation{Messages: []ai.Message{}}
+			m.partialMessage = nil
+			return m, nil
+
 		case "enter":
 			v := m.textarea.Value()
 
