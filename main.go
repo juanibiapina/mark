@@ -58,7 +58,7 @@ type model struct {
 	textarea textarea.Model
 
 	// models
-	messages []ai.Message
+	messages       []ai.Message
 	partialMessage *ai.Message
 
 	// channels
@@ -71,7 +71,6 @@ type model struct {
 	err error
 }
 
-var docStyle = lipgloss.NewStyle()
 var borderStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
 
 func initialModel() model {
@@ -91,9 +90,9 @@ func initialModel() model {
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
 	return model{
-		textarea: ta,
+		textarea:         ta,
 		partialMessageCh: make(chan string),
-		client:   ai.NewClient(),
+		client:           ai.NewClient(),
 	}
 }
 
@@ -176,7 +175,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.messages = append(m.messages, ai.Message{Role: ai.User, Content: v})
 
 			cmds := []tea.Cmd{
-				complete(m), // call completions API
+				complete(m),              // call completions API
 				receivePartialMessage(m), // start receiving partial message
 			}
 
@@ -224,8 +223,8 @@ func (m model) View() string {
 	m.viewport.SetContent(messages)
 	m.viewport.GotoBottom()
 
-	return docStyle.Render(fmt.Sprintf("%s\n%s",
+	return fmt.Sprintf("%s\n%s",
 		borderStyle.Render(m.viewport.View()),
 		borderStyle.Render(m.textarea.View()),
-	))
+	)
 }
