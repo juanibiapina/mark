@@ -78,7 +78,7 @@ func initialModel() model {
 	ta.Placeholder = "Message Assistant"
 	ta.Focus()
 
-	ta.Prompt = "┃ "
+	ta.Prompt = ""
 
 	ta.SetHeight(3)
 
