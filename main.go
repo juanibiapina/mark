@@ -25,7 +25,7 @@ type errMsg struct{ err error }
 
 func (e errMsg) Error() string { return e.err.Error() }
 
-func complete(m model) tea.Cmd {
+func complete(m *model) tea.Cmd {
 	return func() tea.Msg {
 		// create a channel to receive chunks of the response
 		partialMessageCh := make(chan string)
@@ -58,7 +58,7 @@ type model struct {
 	textarea textarea.Model
 
 	// models
-	conversation ai.Conversation
+	conversation   ai.Conversation
 	partialMessage *ai.Message
 
 	// channels
@@ -101,7 +101,7 @@ func (m model) Init() tea.Cmd {
 	return textarea.Blink
 }
 
-func receivePartialMessage(m model) tea.Cmd {
+func receivePartialMessage(m *model) tea.Cmd {
 	return func() tea.Msg {
 		return partialMessage(<-m.partialMessageCh)
 	}
@@ -110,6 +110,28 @@ func receivePartialMessage(m model) tea.Cmd {
 func (m *model) newConversation() {
 	m.conversation = ai.Conversation{Messages: []ai.Message{}}
 	m.partialMessage = nil
+}
+
+func (m *model) handleMessage() tea.Cmd {
+	v := m.textarea.Value()
+
+	// Don't send empty messages.
+	if v == "" {
+		return nil
+	}
+
+	// Clear the textarea
+	m.textarea.Reset()
+
+	// Add user message to chat history
+	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
+
+	cmds := []tea.Cmd{
+		complete(m),              // call completions API
+		receivePartialMessage(m), // start receiving partial message
+	}
+
+	return tea.Batch(cmds...)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -125,7 +147,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.partialMessage.Content += string(msg)
 		}
-		return m, receivePartialMessage(m)
+		return m, receivePartialMessage(&m)
 
 	case replyMessage:
 		m.partialMessage = nil
@@ -158,25 +180,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "enter":
-			v := m.textarea.Value()
-
-			if v == "" {
-				// Don't send empty messages.
-				return m, nil
-			}
-
-			// Clear the textarea
-			m.textarea.Reset()
-
-			// Add user message to chat history
-			m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
-
-			cmds := []tea.Cmd{
-				complete(m),              // call completions API
-				receivePartialMessage(m), // start receiving partial message
-			}
-
-			return m, tea.Batch(cmds...)
+			cmd := m.handleMessage()
+			return m, cmd
 
 		default:
 			// Send all other keypresses to the textarea.
