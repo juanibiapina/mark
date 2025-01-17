@@ -107,6 +107,11 @@ func receivePartialMessage(m model) tea.Cmd {
 	}
 }
 
+func (m *model) newConversation() {
+	m.conversation = ai.Conversation{Messages: []ai.Message{}}
+	m.partialMessage = nil
+}
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
@@ -149,8 +154,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "ctrl+n":
-			m.conversation = ai.Conversation{Messages: []ai.Message{}}
-			m.partialMessage = nil
+			m.newConversation()
 			return m, nil
 
 		case "enter":
