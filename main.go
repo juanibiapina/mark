@@ -60,8 +60,8 @@ type model struct {
 	textarea textarea.Model
 
 	// models
-	conversation   ai.Conversation
-	partialMessage *ai.Message
+	conversation     ai.Conversation
+	streamingMessage *ai.StreamingMessage
 
 	// channels
 	partialMessageCh chan string
@@ -111,7 +111,7 @@ func receivePartialMessage(m *model) tea.Cmd {
 
 func (m *model) newConversation() {
 	m.conversation = ai.Conversation{Messages: []ai.Message{}}
-	m.partialMessage = nil
+	m.streamingMessage = nil
 }
 
 func (m *model) handleMessage() tea.Cmd {
@@ -128,8 +128,8 @@ func (m *model) handleMessage() tea.Cmd {
 	// Add user message to chat history
 	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
 
-	// Create a new partial message
-	m.partialMessage = &ai.Message{Role: ai.Assistant, Content: ""}
+	// Create a new streaming message
+	m.streamingMessage = &ai.StreamingMessage{Content: ""}
 
 	cmds := []tea.Cmd{
 		complete(m),              // call completions API
@@ -147,11 +147,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case partialMessage:
-		m.partialMessage.Content += string(msg)
+		m.streamingMessage.Content += string(msg)
 		return m, receivePartialMessage(&m)
 
 	case replyMessage:
-		m.partialMessage = nil
+		m.streamingMessage = nil
 		m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.Assistant, Content: string(msg)})
 		return m, nil
 
@@ -219,8 +219,8 @@ func (m model) View() string {
 	}
 
 	// Render the partial message
-	if m.partialMessage != nil {
-		messages += fmt.Sprintf("%s", m.partialMessage.Content)
+	if m.streamingMessage != nil {
+		messages += fmt.Sprintf("%s", m.streamingMessage.Content)
 	}
 
 	m.viewport.SetContent(messages)
