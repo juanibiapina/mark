@@ -33,7 +33,7 @@ func complete(m model) tea.Cmd {
 		// create a channel to receive the final response
 		replyCh := make(chan string)
 
-		go m.client.Complete(context.Background(), m.messages, partialMessageCh, replyCh)
+		go m.client.Complete(context.Background(), m.conversation.Messages, partialMessageCh, replyCh)
 
 		for {
 			select {
@@ -58,7 +58,7 @@ type model struct {
 	textarea textarea.Model
 
 	// models
-	messages       []ai.Message
+	conversation ai.Conversation
 	partialMessage *ai.Message
 
 	// channels
@@ -93,6 +93,7 @@ func initialModel() model {
 		textarea:         ta,
 		partialMessageCh: make(chan string),
 		client:           ai.NewClient(),
+		conversation:     ai.Conversation{Messages: []ai.Message{}},
 	}
 }
 
@@ -123,20 +124,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case replyMessage:
 		m.partialMessage = nil
-		m.messages = append(m.messages, ai.Message{Role: ai.Assistant, Content: string(msg)})
-		//renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
-		//if err != nil {
-		//	m.err = err
-		//	return m, tea.Quit
-		//}
-
-		//str, err := renderer.Render(string(msg))
-		//if err != nil {
-		//	m.err = err
-		//	return m, tea.Quit
-		//}
-
-		//m.viewport.SetContent(str)
+		m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.Assistant, Content: string(msg)})
 		return m, nil
 
 	case tea.WindowSizeMsg:
@@ -172,7 +160,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea.Reset()
 
 			// Add user message to chat history
-			m.messages = append(m.messages, ai.Message{Role: ai.User, Content: v})
+			m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
 
 			cmds := []tea.Cmd{
 				complete(m),              // call completions API
@@ -204,8 +192,8 @@ func (m model) View() string {
 		return "Initializing..."
 	}
 
-	messageViews := make([]string, len(m.messages))
-	for i, msg := range m.messages {
+	messageViews := make([]string, len(m.conversation.Messages))
+	for i, msg := range m.conversation.Messages {
 		messageViews[i] = fmt.Sprintf("%s", msg.Content)
 	}
 

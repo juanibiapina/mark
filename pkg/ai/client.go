@@ -13,6 +13,10 @@ const (
 	Assistant
 )
 
+type Conversation struct {
+	Messages []Message
+}
+
 type Message struct {
 	Role    Role
 	Content string
