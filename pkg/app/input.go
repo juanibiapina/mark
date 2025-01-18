@@ -9,6 +9,10 @@ type input struct {
 	textarea textarea.Model
 }
 
+func (i *input) Reset() {
+	i.textarea.Reset()
+}
+
 func MakeInput() input {
 	ta := textarea.New()
 	ta.Placeholder = "Message Assistant"

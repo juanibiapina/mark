@@ -100,7 +100,7 @@ func (m *App) handleMessage() tea.Cmd {
 	}
 
 	// Clear the textarea
-	m.input.textarea.Reset()
+	m.input.Reset()
 
 	// Add user message to chat history
 	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
