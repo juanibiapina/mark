@@ -22,7 +22,7 @@ type partialMessage string
 
 var borderStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
 
-type Model struct {
+type App struct {
 	// layout
 	ready bool
 
@@ -44,7 +44,7 @@ type Model struct {
 	err error
 }
 
-func InitialModel() Model {
+func MakeApp() App {
 	ta := textarea.New()
 	ta.Placeholder = "Message Assistant"
 	ta.Focus()
@@ -60,7 +60,7 @@ func InitialModel() Model {
 
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
-	return Model{
+	return App{
 		textarea:         ta,
 		partialMessageCh: make(chan string),
 		client:           ai.NewClient(),
@@ -68,7 +68,7 @@ func InitialModel() Model {
 	}
 }
 
-func complete(m *Model) tea.Cmd {
+func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
 		// create a channel to receive chunks of the response
 		partialMessageCh := make(chan string)
@@ -91,22 +91,22 @@ func complete(m *Model) tea.Cmd {
 	}
 }
 
-func (m Model) Init() tea.Cmd {
+func (m App) Init() tea.Cmd {
 	return textarea.Blink
 }
 
-func receivePartialMessage(m *Model) tea.Cmd {
+func receivePartialMessage(m *App) tea.Cmd {
 	return func() tea.Msg {
 		return partialMessage(<-m.partialMessageCh)
 	}
 }
 
-func (m *Model) newConversation() {
+func (m *App) newConversation() {
 	m.conversation = ai.Conversation{Messages: []ai.Message{}}
 	m.streamingMessage = nil
 }
 
-func (m *Model) handleMessage() tea.Cmd {
+func (m *App) handleMessage() tea.Cmd {
 	v := m.textarea.Value()
 
 	// Don't send empty messages.
@@ -131,7 +131,7 @@ func (m *Model) handleMessage() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case errMsg:
@@ -194,7 +194,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m Model) View() string {
+func (m App) View() string {
 	if !m.ready {
 		return "Initializing..."
 	}

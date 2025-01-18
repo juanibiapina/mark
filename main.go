@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	p := tea.NewProgram(app.InitialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(app.MakeApp(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 	}
