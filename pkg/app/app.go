@@ -28,7 +28,7 @@ type App struct {
 
 	// view models
 	viewport viewport.Model
-	textarea textarea.Model
+	input    input
 
 	// models
 	conversation     ai.Conversation
@@ -45,23 +45,8 @@ type App struct {
 }
 
 func MakeApp() App {
-	ta := textarea.New()
-	ta.Placeholder = "Message Assistant"
-	ta.Focus()
-
-	ta.Prompt = ""
-
-	ta.SetHeight(3)
-
-	// Remove cursor line styling
-	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
-
-	ta.ShowLineNumbers = false
-
-	ta.KeyMap.InsertNewline.SetEnabled(false)
-
 	return App{
-		textarea:         ta,
+		input:            MakeInput(),
 		partialMessageCh: make(chan string),
 		client:           ai.NewClient(),
 		conversation:     ai.Conversation{Messages: []ai.Message{}},
@@ -107,7 +92,7 @@ func (m *App) newConversation() {
 }
 
 func (m *App) handleMessage() tea.Cmd {
-	v := m.textarea.Value()
+	v := m.input.textarea.Value()
 
 	// Don't send empty messages.
 	if v == "" {
@@ -115,7 +100,7 @@ func (m *App) handleMessage() tea.Cmd {
 	}
 
 	// Clear the textarea
-	m.textarea.Reset()
+	m.input.textarea.Reset()
 
 	// Add user message to chat history
 	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
@@ -148,7 +133,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.WindowSizeMsg:
-		textAreaHeight := lipgloss.Height(borderStyle.Render(m.textarea.View()))
+		textAreaHeight := lipgloss.Height(borderStyle.Render(m.input.textarea.View()))
 
 		if !m.ready {
 			m.viewport = viewport.New(msg.Width-borderStyle.GetVerticalFrameSize(), msg.Height-borderStyle.GetHorizontalFrameSize()-textAreaHeight)
@@ -158,7 +143,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.Height = msg.Height - borderStyle.GetHorizontalFrameSize() - textAreaHeight
 		}
 
-		m.textarea.SetWidth(msg.Width - borderStyle.GetVerticalFrameSize())
+		m.input.textarea.SetWidth(msg.Width - borderStyle.GetVerticalFrameSize())
 
 		return m, nil
 
@@ -179,14 +164,14 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			// Send all other keypresses to the textarea.
 			var cmd tea.Cmd
-			m.textarea, cmd = m.textarea.Update(msg)
+			m.input.textarea, cmd = m.input.textarea.Update(msg)
 			return m, cmd
 		}
 
 	case cursor.BlinkMsg:
 		// Textarea should also process cursor blinks.
 		var cmd tea.Cmd
-		m.textarea, cmd = m.textarea.Update(msg)
+		m.input.textarea, cmd = m.input.textarea.Update(msg)
 		return m, cmd
 
 	default:
@@ -220,6 +205,6 @@ func (m App) View() string {
 
 	return fmt.Sprintf("%s\n%s",
 		borderStyle.Render(m.viewport.View()),
-		borderStyle.Render(m.textarea.View()),
+		borderStyle.Render(m.input.textarea.View()),
 	)
 }
