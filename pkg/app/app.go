@@ -7,7 +7,6 @@ import (
 	"ant/pkg/ai"
 
 	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -19,8 +18,6 @@ func (e errMsg) Error() string { return e.err.Error() }
 
 type replyMessage string
 type partialMessage string
-
-var borderStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
 
 type App struct {
 	// layout
@@ -77,7 +74,9 @@ func complete(m *App) tea.Cmd {
 }
 
 func (m App) Init() tea.Cmd {
-	return textarea.Blink
+	return tea.Batch(
+		m.input.Init(),
+	)
 }
 
 func receivePartialMessage(m *App) tea.Cmd {
@@ -92,14 +91,14 @@ func (m *App) newConversation() {
 }
 
 func (m *App) handleMessage() tea.Cmd {
-	v := m.input.textarea.Value()
+	v := m.input.Value()
 
 	// Don't send empty messages.
 	if v == "" {
 		return nil
 	}
 
-	// Clear the textarea
+	// Clear the input
 	m.input.Reset()
 
 	// Add user message to chat history
@@ -133,17 +132,17 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.WindowSizeMsg:
-		textAreaHeight := lipgloss.Height(borderStyle.Render(m.input.textarea.View()))
+		inputHeight := lipgloss.Height(m.input.View())
 
 		if !m.ready {
-			m.viewport = viewport.New(msg.Width-borderStyle.GetVerticalFrameSize(), msg.Height-borderStyle.GetHorizontalFrameSize()-textAreaHeight)
+			m.viewport = viewport.New(msg.Width-borderStyle.GetVerticalFrameSize(), msg.Height-borderStyle.GetHorizontalFrameSize()-inputHeight)
 			m.ready = true
 		} else {
 			m.viewport.Width = msg.Width - borderStyle.GetVerticalFrameSize()
-			m.viewport.Height = msg.Height - borderStyle.GetHorizontalFrameSize() - textAreaHeight
+			m.viewport.Height = msg.Height - borderStyle.GetHorizontalFrameSize() - inputHeight
 		}
 
-		m.input.textarea.SetWidth(msg.Width - borderStyle.GetVerticalFrameSize())
+		m.input.SetWidth(msg.Width)
 
 		return m, nil
 
@@ -162,16 +161,15 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 
 		default:
-			// Send all other keypresses to the textarea.
+			// Send all other keypresses to the input component
 			var cmd tea.Cmd
-			m.input.textarea, cmd = m.input.textarea.Update(msg)
+			m.input, cmd = m.input.Update(msg)
 			return m, cmd
 		}
 
 	case cursor.BlinkMsg:
-		// Textarea should also process cursor blinks.
 		var cmd tea.Cmd
-		m.input.textarea, cmd = m.input.textarea.Update(msg)
+		m.input, cmd = m.input.Update(msg)
 		return m, cmd
 
 	default:
@@ -205,6 +203,6 @@ func (m App) View() string {
 
 	return fmt.Sprintf("%s\n%s",
 		borderStyle.Render(m.viewport.View()),
-		borderStyle.Render(m.input.textarea.View()),
+		m.input.View(),
 	)
 }
