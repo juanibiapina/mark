@@ -31,9 +31,6 @@ type App struct {
 	conversation     ai.Conversation
 	streamingMessage *ai.StreamingMessage
 
-	// channels
-	partialMessageCh chan string
-
 	// ai client
 	client *ai.Client
 
@@ -44,7 +41,6 @@ type App struct {
 func MakeApp() App {
 	return App{
 		input:            MakeInput(),
-		partialMessageCh: make(chan string),
 		client:           ai.NewClient(),
 		conversation:     ai.Conversation{Messages: []ai.Message{}},
 	}
@@ -52,24 +48,9 @@ func MakeApp() App {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		// create a channel to receive chunks of the response
-		partialMessageCh := make(chan string)
+		m.client.Complete(context.Background(), m.conversation.Messages, m.streamingMessage.Chunks, m.streamingMessage.Reply)
 
-		// create a channel to receive the final response
-		replyCh := make(chan string)
-
-		go m.client.Complete(context.Background(), m.conversation.Messages, partialMessageCh, replyCh)
-
-		for {
-			val, ok := <-partialMessageCh
-			if !ok {
-				break
-			}
-			m.partialMessageCh <- val
-		}
-
-		reply := <-replyCh
-		return replyMessage(reply)
+		return nil
 	}
 }
 
@@ -81,7 +62,12 @@ func (m App) Init() tea.Cmd {
 
 func receivePartialMessage(m *App) tea.Cmd {
 	return func() tea.Msg {
-		return partialMessage(<-m.partialMessageCh)
+		select {
+		case v := <-m.streamingMessage.Reply:
+			return replyMessage(v)
+		case v := <-m.streamingMessage.Chunks:
+			return partialMessage(v)
+		}
 	}
 }
 
