@@ -6,7 +6,6 @@ import (
 	"ant/pkg/ai"
 
 	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -23,8 +22,8 @@ type App struct {
 	uiReady bool
 
 	// view models
-	viewport viewport.Model
-	input    input
+	conversationView conversation
+	input            input
 
 	// models
 	conversation     ai.Conversation
@@ -39,9 +38,10 @@ type App struct {
 
 func MakeApp() App {
 	return App{
-		input:        MakeInput(),
-		client:       ai.NewClient(),
-		conversation: ai.Conversation{Messages: []ai.Message{}},
+		input:            MakeInput(),
+		client:           ai.NewClient(),
+		conversationView: MakeConversation(),
+		conversation:     ai.Conversation{Messages: []ai.Message{}},
 	}
 }
 
@@ -65,7 +65,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.streamingMessage.Content += string(msg)
-		m.updateViewport()
+		m.updateConversationView()
 		return m, receivePartialMessage(&m)
 
 	case replyMessage:
@@ -76,18 +76,17 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.streamingMessage = nil
 		m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.Assistant, Content: string(msg)})
-		m.updateViewport()
+		m.updateConversationView()
 		return m, nil
 
 	case tea.WindowSizeMsg:
 		inputHeight := lipgloss.Height(m.input.View())
 
 		if !m.uiReady {
-			m.viewport = viewport.New(msg.Width-borderStyle.GetVerticalFrameSize(), msg.Height-borderStyle.GetHorizontalFrameSize()-inputHeight)
+			m.conversationView.Initialize(msg.Width, msg.Height-inputHeight)
 			m.uiReady = true
 		} else {
-			m.viewport.Width = msg.Width - borderStyle.GetVerticalFrameSize()
-			m.viewport.Height = msg.Height - borderStyle.GetHorizontalFrameSize() - inputHeight
+			m.conversationView.SetSize(msg.Width, msg.Height - inputHeight)
 		}
 
 		m.input.SetWidth(msg.Width)
@@ -106,12 +105,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "ctrl+n":
 			m.newConversation()
-			m.updateViewport()
+			m.updateConversationView()
 			return m, nil
 
 		case "enter":
 			cmd := m.handleMessage()
-			m.updateViewport()
+			m.updateConversationView()
 			return m, cmd
 
 		default:
@@ -137,12 +136,12 @@ func (m App) View() string {
 	}
 
 	return fmt.Sprintf("%s\n%s",
-		borderStyle.Render(m.viewport.View()),
+		m.conversationView.View(),
 		m.input.View(),
 	)
 }
 
-func (m *App) updateViewport() {
+func (m *App) updateConversationView() {
 	messageViews := make([]string, len(m.conversation.Messages))
 	for i, msg := range m.conversation.Messages {
 		messageViews[i] = fmt.Sprintf("%s", msg.Content)
@@ -159,8 +158,8 @@ func (m *App) updateViewport() {
 		messages += fmt.Sprintf("%s", m.streamingMessage.Content)
 	}
 
-	m.viewport.SetContent(messages)
-	m.viewport.GotoBottom()
+	m.conversationView.viewport.SetContent(messages)
+	m.conversationView.viewport.GotoBottom()
 }
 
 func (m *App) cancelStreaming() {
