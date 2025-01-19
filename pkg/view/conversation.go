@@ -2,6 +2,7 @@ package view
 
 import (
 	"ant/pkg/ai"
+	"ant/pkg/model"
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/viewport"
@@ -20,7 +21,7 @@ func (c *Conversation) Initialize(w int, h int) {
 	c.viewport = viewport.New(w-borderStyle.GetVerticalFrameSize(), h-borderStyle.GetHorizontalFrameSize())
 }
 
-func (c *Conversation) RenderMessages(messages []ai.Message, sm *ai.StreamingMessage) {
+func (c *Conversation) RenderMessages(messages []model.Message, sm *ai.StreamingMessage) {
 	messageViews := make([]string, len(messages))
 	for i, msg := range messages {
 		messageViews[i] = fmt.Sprintf("%s", msg.Content)

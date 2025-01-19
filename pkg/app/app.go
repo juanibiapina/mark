@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"ant/pkg/ai"
+	"ant/pkg/model"
 	"ant/pkg/view"
 
 	"github.com/charmbracelet/bubbles/cursor"
@@ -27,7 +28,7 @@ type App struct {
 	input            view.Input
 
 	// models
-	conversation     ai.Conversation
+	conversation     model.Conversation
 	streamingMessage *ai.StreamingMessage
 
 	// ai client
@@ -42,7 +43,7 @@ func MakeApp() App {
 		input:            view.MakeInput(),
 		client:           ai.NewClient(),
 		conversationView: view.MakeConversation(),
-		conversation:     ai.Conversation{Messages: []ai.Message{}},
+		conversation:     model.Conversation{Messages: []model.Message{}},
 	}
 }
 
@@ -76,7 +77,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.streamingMessage = nil
-		m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.Assistant, Content: string(msg)})
+		m.conversation.Messages = append(m.conversation.Messages, model.Message{Role: model.Assistant, Content: string(msg)})
 		m.updateConversationView()
 		return m, nil
 
@@ -154,7 +155,7 @@ func (m *App) cancelStreaming() {
 	m.streamingMessage.Cancel()
 
 	// Add the partial message to the chat history
-	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.Assistant, Content: m.streamingMessage.Content})
+	m.conversation.Messages = append(m.conversation.Messages, model.Message{Role: model.Assistant, Content: m.streamingMessage.Content})
 
 	m.streamingMessage = nil
 }
@@ -180,7 +181,7 @@ func receivePartialMessage(m *App) tea.Cmd {
 
 func (m *App) newConversation() {
 	m.cancelStreaming()
-	m.conversation = ai.Conversation{Messages: []ai.Message{}}
+	m.conversation = model.Conversation{Messages: []model.Message{}}
 }
 
 func (m *App) handleMessage() tea.Cmd {
@@ -195,7 +196,7 @@ func (m *App) handleMessage() tea.Cmd {
 	m.input.Reset()
 
 	// Add user message to chat history
-	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
+	m.conversation.Messages = append(m.conversation.Messages, model.Message{Role: model.User, Content: v})
 
 	// Create a new streaming message
 	m.streamingMessage = ai.NewStreamingMessage()
