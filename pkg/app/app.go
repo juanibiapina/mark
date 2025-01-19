@@ -105,7 +105,7 @@ func (m *App) handleMessage() tea.Cmd {
 	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
 
 	// Create a new streaming message
-	m.streamingMessage = &ai.StreamingMessage{Content: ""}
+	m.streamingMessage = ai.NewStreamingMessage()
 
 	cmds := []tea.Cmd{
 		complete(m),              // call completions API

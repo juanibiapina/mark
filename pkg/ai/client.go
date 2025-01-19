@@ -22,10 +22,6 @@ type Message struct {
 	Content string
 }
 
-type StreamingMessage struct {
-	Content string
-}
-
 type Client struct {
 	client *openai.Client
 }
