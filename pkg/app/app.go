@@ -68,6 +68,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.streamingMessage.Content += string(msg)
 		m.updateConversationView()
+		m.conversationView.ScrollToBottom()
 		return m, receivePartialMessage(&m)
 
 	case replyMessage:
@@ -79,6 +80,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streamingMessage = nil
 		m.conversation.Messages = append(m.conversation.Messages, model.Message{Role: model.Assistant, Content: string(msg)})
 		m.updateConversationView()
+		m.conversationView.ScrollToBottom()
 		return m, nil
 
 	case tea.WindowSizeMsg:
@@ -112,7 +114,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 			cmd := m.handleMessage()
-			m.updateConversationView()
 			return m, cmd
 
 		default:
@@ -200,6 +201,9 @@ func (m *App) handleMessage() tea.Cmd {
 
 	// Create a new streaming message
 	m.streamingMessage = ai.NewStreamingMessage()
+
+	// Render conversation view again to show the new message
+	m.updateConversationView()
 
 	cmds := []tea.Cmd{
 		complete(m),              // call completions API
