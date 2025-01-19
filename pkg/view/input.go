@@ -1,4 +1,4 @@
-package app
+package view
 
 import (
 	"github.com/charmbracelet/bubbles/textarea"
@@ -6,11 +6,11 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type input struct {
+type Input struct {
 	textarea textarea.Model
 }
 
-func MakeInput() input {
+func MakeInput() Input {
 	ta := textarea.New()
 	ta.Placeholder = "Message Assistant"
 	ta.Focus()
@@ -26,33 +26,33 @@ func MakeInput() input {
 
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
-	return input{
+	return Input{
 		textarea: ta,
 	}
 }
 
-func (i input) Init() tea.Cmd {
+func (i Input) Init() tea.Cmd {
 	return textarea.Blink
 }
 
-func (i input) Update(msg tea.Msg) (input, tea.Cmd) {
+func (i Input) Update(msg tea.Msg) (Input, tea.Cmd) {
 	var cmd tea.Cmd
 	i.textarea, cmd = i.textarea.Update(msg)
 	return i, cmd
 }
 
-func (i input) View() string {
+func (i Input) View() string {
 	return borderStyle.Render(i.textarea.View())
 }
 
-func (i *input) Value() string {
+func (i *Input) Value() string {
 	return i.textarea.Value()
 }
 
-func (i *input) Reset() {
+func (i *Input) Reset() {
 	i.textarea.Reset()
 }
 
-func (i *input) SetWidth(w int) {
+func (i *Input) SetWidth(w int) {
 	i.textarea.SetWidth(w - borderStyle.GetVerticalFrameSize())
 }

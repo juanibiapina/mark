@@ -1,4 +1,4 @@
-package app
+package view
 
 import (
 	"github.com/charmbracelet/lipgloss"

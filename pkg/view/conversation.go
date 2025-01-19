@@ -1,4 +1,4 @@
-package app
+package view
 
 import (
 	"ant/pkg/ai"
@@ -8,19 +8,19 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type conversation struct {
+type Conversation struct {
 	viewport viewport.Model
 }
 
-func MakeConversation() conversation {
-	return conversation{}
+func MakeConversation() Conversation {
+	return Conversation{}
 }
 
-func (c *conversation) Initialize(w int, h int) {
+func (c *Conversation) Initialize(w int, h int) {
 	c.viewport = viewport.New(w-borderStyle.GetVerticalFrameSize(), h-borderStyle.GetHorizontalFrameSize())
 }
 
-func (c *conversation) RenderMessages(messages []ai.Message, sm *ai.StreamingMessage) {
+func (c *Conversation) RenderMessages(messages []ai.Message, sm *ai.StreamingMessage) {
 	messageViews := make([]string, len(messages))
 	for i, msg := range messages {
 		messageViews[i] = fmt.Sprintf("%s", msg.Content)
@@ -40,11 +40,11 @@ func (c *conversation) RenderMessages(messages []ai.Message, sm *ai.StreamingMes
 	c.viewport.SetContent(content)
 }
 
-func (c conversation) View() string {
+func (c Conversation) View() string {
 	return borderStyle.Render(c.viewport.View())
 }
 
-func (c *conversation) SetSize(w int, h int) {
+func (c *Conversation) SetSize(w int, h int) {
 	c.viewport.Width = w-borderStyle.GetVerticalFrameSize()
 	c.viewport.Height = h-borderStyle.GetHorizontalFrameSize()
 }

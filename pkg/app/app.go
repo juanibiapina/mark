@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"ant/pkg/ai"
+	"ant/pkg/view"
 
 	"github.com/charmbracelet/bubbles/cursor"
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,8 +23,8 @@ type App struct {
 	uiReady bool
 
 	// view models
-	conversationView conversation
-	input            input
+	conversationView view.Conversation
+	input            view.Input
 
 	// models
 	conversation     ai.Conversation
@@ -38,9 +39,9 @@ type App struct {
 
 func MakeApp() App {
 	return App{
-		input:            MakeInput(),
+		input:            view.MakeInput(),
 		client:           ai.NewClient(),
-		conversationView: MakeConversation(),
+		conversationView: view.MakeConversation(),
 		conversation:     ai.Conversation{Messages: []ai.Message{}},
 	}
 }
@@ -86,7 +87,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.conversationView.Initialize(msg.Width, msg.Height-inputHeight)
 			m.uiReady = true
 		} else {
-			m.conversationView.SetSize(msg.Width, msg.Height - inputHeight)
+			m.conversationView.SetSize(msg.Width, msg.Height-inputHeight)
 		}
 
 		m.input.SetWidth(msg.Width)
