@@ -46,59 +46,10 @@ func MakeApp() App {
 	}
 }
 
-func complete(m *App) tea.Cmd {
-	return func() tea.Msg {
-		m.client.Complete(context.Background(), m.conversation.Messages, m.streamingMessage.Chunks, m.streamingMessage.Reply)
-
-		return nil
-	}
-}
-
 func (m App) Init() tea.Cmd {
 	return tea.Batch(
 		m.input.Init(),
 	)
-}
-
-func receivePartialMessage(m *App) tea.Cmd {
-	return func() tea.Msg {
-		select {
-		case v := <-m.streamingMessage.Reply:
-			return replyMessage(v)
-		case v := <-m.streamingMessage.Chunks:
-			return partialMessage(v)
-		}
-	}
-}
-
-func (m *App) newConversation() {
-	m.conversation = ai.Conversation{Messages: []ai.Message{}}
-	m.streamingMessage = nil
-}
-
-func (m *App) handleMessage() tea.Cmd {
-	v := m.input.Value()
-
-	// Don't send empty messages.
-	if v == "" {
-		return nil
-	}
-
-	// Clear the input
-	m.input.Reset()
-
-	// Add user message to chat history
-	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
-
-	// Create a new streaming message
-	m.streamingMessage = ai.NewStreamingMessage()
-
-	cmds := []tea.Cmd{
-		complete(m),              // call completions API
-		receivePartialMessage(m), // start receiving partial message
-	}
-
-	return tea.Batch(cmds...)
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -191,4 +142,53 @@ func (m App) View() string {
 		borderStyle.Render(m.viewport.View()),
 		m.input.View(),
 	)
+}
+
+func complete(m *App) tea.Cmd {
+	return func() tea.Msg {
+		m.client.Complete(context.Background(), m.conversation.Messages, m.streamingMessage.Chunks, m.streamingMessage.Reply)
+
+		return nil
+	}
+}
+
+func receivePartialMessage(m *App) tea.Cmd {
+	return func() tea.Msg {
+		select {
+		case v := <-m.streamingMessage.Reply:
+			return replyMessage(v)
+		case v := <-m.streamingMessage.Chunks:
+			return partialMessage(v)
+		}
+	}
+}
+
+func (m *App) newConversation() {
+	m.conversation = ai.Conversation{Messages: []ai.Message{}}
+	m.streamingMessage = nil
+}
+
+func (m *App) handleMessage() tea.Cmd {
+	v := m.input.Value()
+
+	// Don't send empty messages.
+	if v == "" {
+		return nil
+	}
+
+	// Clear the input
+	m.input.Reset()
+
+	// Add user message to chat history
+	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.User, Content: v})
+
+	// Create a new streaming message
+	m.streamingMessage = ai.NewStreamingMessage()
+
+	cmds := []tea.Cmd{
+		complete(m),              // call completions API
+		receivePartialMessage(m), // start receiving partial message
+	}
+
+	return tea.Batch(cmds...)
 }
