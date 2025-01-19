@@ -19,8 +19,8 @@ type replyMessage string
 type partialMessage string
 
 type App struct {
-	// layout
-	ready bool
+	// initialization
+	uiReady bool
 
 	// view models
 	viewport viewport.Model
@@ -80,9 +80,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		inputHeight := lipgloss.Height(m.input.View())
 
-		if !m.ready {
+		if !m.uiReady {
 			m.viewport = viewport.New(msg.Width-borderStyle.GetVerticalFrameSize(), msg.Height-borderStyle.GetHorizontalFrameSize()-inputHeight)
-			m.ready = true
+			m.uiReady = true
 		} else {
 			m.viewport.Width = msg.Width - borderStyle.GetVerticalFrameSize()
 			m.viewport.Height = msg.Height - borderStyle.GetHorizontalFrameSize() - inputHeight
@@ -128,8 +128,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m App) View() string {
-	if !m.ready {
-		return "Initializing..."
+	if !m.uiReady {
+		return "Initializing UI..."
 	}
 
 	messageViews := make([]string, len(m.conversation.Messages))
