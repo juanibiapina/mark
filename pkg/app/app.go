@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 
 	"ant/pkg/ai"
@@ -40,9 +39,9 @@ type App struct {
 
 func MakeApp() App {
 	return App{
-		input:            MakeInput(),
-		client:           ai.NewClient(),
-		conversation:     ai.Conversation{Messages: []ai.Message{}},
+		input:        MakeInput(),
+		client:       ai.NewClient(),
+		conversation: ai.Conversation{Messages: []ai.Message{}},
 	}
 }
 
@@ -60,10 +59,20 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case partialMessage:
+		// Ignore messages if streaming has been cancelled
+		if m.streamingMessage == nil {
+			return m, nil
+		}
+
 		m.streamingMessage.Content += string(msg)
 		return m, receivePartialMessage(&m)
 
 	case replyMessage:
+		// Ignore messages if streaming has been cancelled
+		if m.streamingMessage == nil {
+			return m, nil
+		}
+
 		m.streamingMessage = nil
 		m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.Assistant, Content: string(msg)})
 		return m, nil
@@ -86,8 +95,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 
-		case "esc", "ctrl+c":
+		case "esc":
 			return m, tea.Quit
+
+		case "ctrl+c":
+			m.cancelStreaming()
+			return m, nil
 
 		case "ctrl+n":
 			m.newConversation()
@@ -144,9 +157,22 @@ func (m App) View() string {
 	)
 }
 
+func (m *App) cancelStreaming() {
+	if m.streamingMessage == nil {
+		return
+	}
+
+	m.streamingMessage.Cancel()
+
+	// Add the partial message to the chat history
+	m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.Assistant, Content: m.streamingMessage.Content})
+
+	m.streamingMessage = nil
+}
+
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.client.Complete(context.Background(), m.conversation.Messages, m.streamingMessage.Chunks, m.streamingMessage.Reply)
+		m.client.Complete(m.streamingMessage.Ctx, m.conversation.Messages, m.streamingMessage.Chunks, m.streamingMessage.Reply)
 
 		return nil
 	}
