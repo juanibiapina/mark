@@ -65,6 +65,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.streamingMessage.Content += string(msg)
+		m.updateViewport()
 		return m, receivePartialMessage(&m)
 
 	case replyMessage:
@@ -75,6 +76,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.streamingMessage = nil
 		m.conversation.Messages = append(m.conversation.Messages, ai.Message{Role: ai.Assistant, Content: string(msg)})
+		m.updateViewport()
 		return m, nil
 
 	case tea.WindowSizeMsg:
@@ -104,10 +106,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "ctrl+n":
 			m.newConversation()
+			m.updateViewport()
 			return m, nil
 
 		case "enter":
 			cmd := m.handleMessage()
+			m.updateViewport()
 			return m, cmd
 
 		default:
@@ -132,6 +136,13 @@ func (m App) View() string {
 		return "Initializing UI..."
 	}
 
+	return fmt.Sprintf("%s\n%s",
+		borderStyle.Render(m.viewport.View()),
+		m.input.View(),
+	)
+}
+
+func (m *App) updateViewport() {
 	messageViews := make([]string, len(m.conversation.Messages))
 	for i, msg := range m.conversation.Messages {
 		messageViews[i] = fmt.Sprintf("%s", msg.Content)
@@ -150,11 +161,6 @@ func (m App) View() string {
 
 	m.viewport.SetContent(messages)
 	m.viewport.GotoBottom()
-
-	return fmt.Sprintf("%s\n%s",
-		borderStyle.Render(m.viewport.View()),
-		m.input.View(),
-	)
 }
 
 func (m *App) cancelStreaming() {
