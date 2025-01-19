@@ -142,24 +142,7 @@ func (m App) View() string {
 }
 
 func (m *App) updateConversationView() {
-	messageViews := make([]string, len(m.conversation.Messages))
-	for i, msg := range m.conversation.Messages {
-		messageViews[i] = fmt.Sprintf("%s", msg.Content)
-	}
-
-	// Render the messages
-	var messages string
-	if len(messageViews) > 0 {
-		messages = fmt.Sprintf("%s\n", lipgloss.JoinVertical(0, messageViews...))
-	}
-
-	// Render the partial message
-	if m.streamingMessage != nil {
-		messages += fmt.Sprintf("%s", m.streamingMessage.Content)
-	}
-
-	m.conversationView.viewport.SetContent(messages)
-	m.conversationView.viewport.GotoBottom()
+	m.conversationView.RenderMessages(m.conversation.Messages, m.streamingMessage)
 }
 
 func (m *App) cancelStreaming() {
