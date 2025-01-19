@@ -190,8 +190,8 @@ func receivePartialMessage(m *App) tea.Cmd {
 }
 
 func (m *App) newConversation() {
+	m.cancelStreaming()
 	m.conversation = ai.Conversation{Messages: []ai.Message{}}
-	m.streamingMessage = nil
 }
 
 func (m *App) handleMessage() tea.Cmd {
