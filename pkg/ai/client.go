@@ -19,6 +19,9 @@ func NewClient() *Client {
 
 // Complete sends a list of messages to the OpenAI API and returns the response
 func (c *Client) Complete(ctx context.Context, messages []model.Message, pch chan string, ch chan string) {
+	defer close(pch)
+	defer close(ch)
+
 	// Convert messages to OpenAI format
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 	for _, msg := range messages {
@@ -61,14 +64,15 @@ func (c *Client) Complete(ctx context.Context, messages []model.Message, pch cha
 	}
 
 	if err := stream.Err(); err != nil {
+		if err == context.Canceled {
+			return
+		}
+
 		panic(err)
 	}
-
-	close(pch)
 
 	// After the stream is finished, acc can be used like a ChatCompletion
 	response := acc.Choices[0].Message.Content
 
 	ch <- response
-	close(ch)
 }
