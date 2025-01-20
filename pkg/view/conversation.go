@@ -25,6 +25,31 @@ func (c *Conversation) ScrollToBottom() {
 	c.viewport.GotoBottom()
 }
 
+func (c *Conversation) RenderMessagesTop(messages []model.Message, sm *ai.StreamingMessage) {
+	var n int
+	if sm == nil {
+		n = 2
+	} else {
+		n = 1
+	}
+
+	var content string
+
+	for i := len(messages) - n; i < len(messages); i++ {
+		if i < 0 {
+			continue
+		}
+
+		content += fmt.Sprintf("%s\n", messages[i].Content)
+	}
+
+	if sm != nil {
+		content += fmt.Sprintf("%s", sm.Content)
+	}
+
+	c.viewport.SetContent(content)
+}
+
 func (c *Conversation) RenderMessages(messages []model.Message, sm *ai.StreamingMessage) {
 	messageViews := make([]string, len(messages))
 	for i, msg := range messages {
@@ -50,6 +75,6 @@ func (c Conversation) View() string {
 }
 
 func (c *Conversation) SetSize(w int, h int) {
-	c.viewport.Width = w-borderStyle.GetVerticalFrameSize()
-	c.viewport.Height = h-borderStyle.GetHorizontalFrameSize()
+	c.viewport.Width = w - borderStyle.GetVerticalFrameSize()
+	c.viewport.Height = h - borderStyle.GetHorizontalFrameSize()
 }

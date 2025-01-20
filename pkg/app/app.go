@@ -152,7 +152,7 @@ func (m App) View() string {
 }
 
 func (m *App) updateConversationView() {
-	m.conversationView.RenderMessages(m.conversation.Messages, m.streamingMessage)
+	m.conversationView.RenderMessagesTop(m.conversation.Messages, m.streamingMessage)
 }
 
 func (m *App) cancelStreaming() {
