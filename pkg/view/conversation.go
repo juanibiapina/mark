@@ -4,8 +4,10 @@ import (
 	"ant/pkg/ai"
 	"ant/pkg/model"
 	"fmt"
+	"log"
 
 	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -26,6 +28,16 @@ func (c *Conversation) ScrollToBottom() {
 }
 
 func (c *Conversation) RenderMessagesTop(messages []model.Message, sm *ai.StreamingMessage) {
+	// create a new glamour renderer
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithAutoStyle(),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// calculate number of messages to render
 	var n int
 	if sm == nil {
 		n = 2
@@ -40,40 +52,27 @@ func (c *Conversation) RenderMessagesTop(messages []model.Message, sm *ai.Stream
 			continue
 		}
 
-		var alignment lipgloss.Position
+		var m string
 		if messages[i].Role == model.User {
-			alignment = lipgloss.Right
+			m = lipgloss.NewStyle().Width(c.viewport.Width).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", messages[i].Content))
 		} else {
-			alignment = lipgloss.Left
-		}
+			m, err = renderer.Render(messages[i].Content)
 
-		m := lipgloss.NewStyle().Width(c.viewport.Width).Align(alignment).Render(fmt.Sprintf("%s\n", messages[i].Content))
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 
 		content += m
 	}
 
 	if sm != nil {
-		content += fmt.Sprintf("%s\n", sm.Content)
-	}
+		c, err := renderer.Render(sm.Content)
 
-	c.viewport.SetContent(content)
-}
-
-func (c *Conversation) RenderMessages(messages []model.Message, sm *ai.StreamingMessage) {
-	messageViews := make([]string, len(messages))
-	for i, msg := range messages {
-		messageViews[i] = fmt.Sprintf("%s", msg.Content)
-	}
-
-	// Render the messages
-	var content string
-	if len(messageViews) > 0 {
-		content = fmt.Sprintf("%s\n", lipgloss.JoinVertical(0, messageViews...))
-	}
-
-	// Render the streaming message
-	if sm != nil {
-		content += fmt.Sprintf("%s", sm.Content)
+		if err != nil {
+			log.Fatal(err)
+		}
+		content += c
 	}
 
 	c.viewport.SetContent(content)
