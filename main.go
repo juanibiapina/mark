@@ -21,6 +21,6 @@ func main() {
 
 	p := tea.NewProgram(app.MakeApp(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	}
 }
