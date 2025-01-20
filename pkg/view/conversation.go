@@ -40,11 +40,20 @@ func (c *Conversation) RenderMessagesTop(messages []model.Message, sm *ai.Stream
 			continue
 		}
 
-		content += fmt.Sprintf("%s\n", messages[i].Content)
+		var alignment lipgloss.Position
+		if messages[i].Role == model.User {
+			alignment = lipgloss.Right
+		} else {
+			alignment = lipgloss.Left
+		}
+
+		m := lipgloss.NewStyle().Width(c.viewport.Width).Align(alignment).Render(fmt.Sprintf("%s\n", messages[i].Content))
+
+		content += m
 	}
 
 	if sm != nil {
-		content += fmt.Sprintf("%s", sm.Content)
+		content += fmt.Sprintf("%s\n", sm.Content)
 	}
 
 	c.viewport.SetContent(content)
