@@ -2,6 +2,9 @@ package app
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"reflect"
 
 	"ant/pkg/ai"
 	"ant/pkg/model"
@@ -54,6 +57,10 @@ func (m App) Init() tea.Cmd {
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if len(os.Getenv("DEBUG")) > 0 {
+		log.Print("msg: ", reflect.TypeOf(msg), msg)
+	}
+
 	switch msg := msg.(type) {
 
 	case errMsg:
