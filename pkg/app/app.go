@@ -10,7 +10,6 @@ import (
 	"ant/pkg/model"
 	"ant/pkg/view"
 
-	"github.com/charmbracelet/bubbles/cursor"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -129,11 +128,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.input, cmd = m.input.Update(msg)
 			return m, cmd
 		}
-
-	case cursor.BlinkMsg:
-		var cmd tea.Cmd
-		m.input, cmd = m.input.Update(msg)
-		return m, cmd
 
 	default:
 		return m, nil
