@@ -1,6 +1,7 @@
 package view
 
 import (
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -14,6 +15,8 @@ func MakeInput() Input {
 	ta := textarea.New()
 	ta.Placeholder = "Message Assistant"
 	ta.Focus()
+
+	ta.Cursor.SetMode(cursor.CursorStatic)
 
 	ta.Prompt = ""
 
@@ -32,7 +35,7 @@ func MakeInput() Input {
 }
 
 func (i Input) Init() tea.Cmd {
-	return textarea.Blink
+	return nil
 }
 
 func (i Input) Update(msg tea.Msg) (Input, tea.Cmd) {
