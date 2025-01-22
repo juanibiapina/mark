@@ -67,28 +67,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.err
 		return m, tea.Quit
 
-	case partialMessage:
-		// Ignore messages if streaming has been cancelled
-		if m.conversation.StreamingMessage == nil {
-			return m, nil
-		}
-
-		m.conversation.StreamingMessage.Content += string(msg)
-		m.conversation.RenderMessagesTop()
-		m.conversation.ScrollToBottom()
-		return m, receivePartialMessage(&m)
-
-	case replyMessage:
-		// Ignore messages if streaming has been cancelled
-		if m.conversation.StreamingMessage == nil {
-			return m, nil
-		}
-
-		m.conversation.StreamingMessage = nil
-		m.conversation.messages = append(m.conversation.messages, llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
-		m.conversation.RenderMessagesTop()
-		m.conversation.ScrollToBottom()
-		return m, nil
+	case partialMessage, replyMessage:
+		var cmd tea.Cmd
+		m.conversation, cmd = m.conversation.Update(msg)
+		return m, cmd
 
 	case tea.WindowSizeMsg:
 		inputHeight := lipgloss.Height(m.input.View())
@@ -105,6 +87,20 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		// global keybindings
+		switch msg.String() {
+			case "ctrl+n":
+				m.conversation.CancelStreaming()
+				m.conversation.ResetMessages()
+				m.conversation.RenderMessagesTop()
+				return m, nil
+
+			case "ctrl+c":
+				m.conversation.CancelStreaming()
+				return m, nil
+		}
+
+		// normal mode keybindings
 		if m.mode == ModeNormal {
 			switch msg.String() {
 
@@ -115,21 +111,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "q":
 				return m, tea.Quit
 
-			case "ctrl+n":
-				m.conversation.CancelStreaming()
-				m.conversation.ResetMessages()
-				m.conversation.RenderMessagesTop()
-				return m, nil
-
-			case "ctrl+c":
-				m.conversation.CancelStreaming()
-				return m, nil
-
 			default:
 				return m, nil
 			}
 		}
 
+		// insert mode keybindings
 		if m.mode == ModeInsert {
 			switch msg.String() {
 
@@ -137,22 +124,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = ModeNormal
 				return m, nil
 
-			case "ctrl+c":
-				m.conversation.CancelStreaming()
-				return m, nil
-
-			case "ctrl+n":
-				m.conversation.CancelStreaming()
-				m.conversation.ResetMessages()
-				m.conversation.RenderMessagesTop()
-				return m, nil
-
 			case "enter":
 				cmd := m.handleMessage()
 				return m, cmd
 
 			default:
-				// Send all other keypresses to the input component
+				// Send keypresses to the input component
 				var cmd tea.Cmd
 				m.input, cmd = m.input.Update(msg)
 				return m, cmd
@@ -190,12 +167,12 @@ func complete(m *App) tea.Cmd {
 	}
 }
 
-func receivePartialMessage(m *App) tea.Cmd {
+func receivePartialMessage(c *Conversation) tea.Cmd {
 	return func() tea.Msg {
 		select {
-		case v := <-m.conversation.StreamingMessage.Reply:
+		case v := <-c.StreamingMessage.Reply:
 			return replyMessage(v)
-		case v := <-m.conversation.StreamingMessage.Chunks:
+		case v := <-c.StreamingMessage.Chunks:
 			return partialMessage(v)
 		}
 	}
@@ -222,8 +199,8 @@ func (m *App) handleMessage() tea.Cmd {
 	m.conversation.RenderMessagesTop()
 
 	cmds := []tea.Cmd{
-		complete(m),              // call completions API
-		receivePartialMessage(m), // start receiving partial message
+		complete(m),                            // call completions API
+		receivePartialMessage(&m.conversation), // start receiving partial message
 	}
 
 	return tea.Batch(cmds...)

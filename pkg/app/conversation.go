@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -20,6 +21,38 @@ type Conversation struct {
 func MakeConversation() Conversation {
 	return Conversation{
 		messages: []llm.Message{},
+	}
+}
+
+func (c Conversation) Update(msg tea.Msg) (Conversation, tea.Cmd) {
+	switch msg := msg.(type) {
+
+	case partialMessage:
+		// Ignore message if streaming has been cancelled
+		if c.StreamingMessage == nil {
+			return c, nil
+		}
+
+		c.StreamingMessage.Content += string(msg)
+		c.RenderMessagesTop()
+		c.ScrollToBottom()
+
+		return c, receivePartialMessage(&c)
+
+	case replyMessage:
+		// Ignore message if streaming has been cancelled
+		if c.StreamingMessage == nil {
+			return c, nil
+		}
+
+		c.StreamingMessage = nil
+		c.messages = append(c.messages, llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
+		c.RenderMessagesTop()
+		c.ScrollToBottom()
+		return c, nil
+
+	default:
+		return c, nil
 	}
 }
 
