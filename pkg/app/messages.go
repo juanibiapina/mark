@@ -6,7 +6,9 @@ type newConversationMsg struct{}
 type cancelStreamingMsg struct{}
 type focusInputMsg struct{}
 type focusConversationMsg struct{}
-type completeMsg struct{}
+type input struct{
+	content string
+}
 type replyMessage string
 type partialMessage string
 

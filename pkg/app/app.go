@@ -85,9 +85,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.conversation.CancelStreaming()
 		return m, nil
 
-	case completeMsg:
+	case input:
 		m.conversation.CancelStreaming()
-		cmd := m.handleMessage()
+		cmd := m.handleMessage(msg.content)
 		return m, cmd
 
 	default:
@@ -137,17 +137,7 @@ func receivePartialMessage(c *Conversation) tea.Cmd {
 	}
 }
 
-func (m *App) handleMessage() tea.Cmd {
-	v := m.input.Value()
-
-	// Don't send empty messages.
-	if v == "" {
-		return nil
-	}
-
-	// Clear the input
-	m.input.Reset()
-
+func (m *App) handleMessage(v string) tea.Cmd {
 	// Create a new streaming message
 	m.conversation.StreamingMessage = NewStreamingMessage()
 
