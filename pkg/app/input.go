@@ -80,14 +80,6 @@ func (i Input) View() string {
 	return i.BorderStyle().Render(i.textarea.View())
 }
 
-func (i *Input) Value() string {
-	return i.textarea.Value()
-}
-
-func (i *Input) Reset() {
-	i.textarea.Reset()
-}
-
 func (i *Input) SetWidth(w int) {
 	i.textarea.SetWidth(w - i.BorderStyle().GetVerticalFrameSize())
 }
