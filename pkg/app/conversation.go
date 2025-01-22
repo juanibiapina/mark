@@ -34,7 +34,7 @@ func (c Conversation) Update(msg tea.Msg) (Conversation, tea.Cmd) {
 		}
 
 		c.StreamingMessage.Content += string(msg)
-		c.RenderMessagesTop()
+		c.render()
 		c.ScrollToBottom()
 
 		return c, receivePartialMessage(&c)
@@ -47,7 +47,7 @@ func (c Conversation) Update(msg tea.Msg) (Conversation, tea.Cmd) {
 
 		c.StreamingMessage = nil
 		c.messages = append(c.messages, llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
-		c.RenderMessagesTop()
+		c.render()
 		c.ScrollToBottom()
 		return c, nil
 
@@ -56,12 +56,19 @@ func (c Conversation) Update(msg tea.Msg) (Conversation, tea.Cmd) {
 	}
 }
 
+func (c *Conversation) AddMessage(m llm.Message) {
+	c.messages = append(c.messages, m)
+	c.render()
+}
+
 func (c *Conversation) Messages() []llm.Message {
 	return c.messages
 }
 
-func (c *Conversation) ResetMessages() {
+func (c *Conversation) Reset() {
+	c.CancelStreaming()
 	c.messages = []llm.Message{}
+	c.render()
 }
 
 func (c *Conversation) CancelStreaming() {
@@ -85,7 +92,7 @@ func (c *Conversation) ScrollToBottom() {
 	c.viewport.GotoBottom()
 }
 
-func (c *Conversation) RenderMessagesTop() {
+func (c *Conversation) render() {
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),

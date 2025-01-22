@@ -90,9 +90,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// global keybindings
 		switch msg.String() {
 			case "ctrl+n":
-				m.conversation.CancelStreaming()
-				m.conversation.ResetMessages()
-				m.conversation.RenderMessagesTop()
+				m.conversation.Reset()
 				return m, nil
 
 			case "ctrl+c":
@@ -125,6 +123,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case "enter":
+				m.conversation.CancelStreaming()
 				cmd := m.handleMessage()
 				return m, cmd
 
@@ -189,14 +188,11 @@ func (m *App) handleMessage() tea.Cmd {
 	// Clear the input
 	m.input.Reset()
 
-	// Add user message to chat history
-	m.conversation.messages = append(m.conversation.messages, llm.Message{Role: llm.RoleUser, Content: v})
-
 	// Create a new streaming message
 	m.conversation.StreamingMessage = NewStreamingMessage()
 
-	// Render conversation view again to show the new message
-	m.conversation.RenderMessagesTop()
+	// Add user message to chat history
+	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
 
 	cmds := []tea.Cmd{
 		complete(m),                            // call completions API
