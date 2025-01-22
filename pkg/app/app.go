@@ -43,16 +43,16 @@ type App struct {
 func MakeApp() App {
 	return App{
 		input:            view.MakeInput(),
-		client:           ai.NewClient(),
 		conversationView: view.MakeConversation(),
+
 		conversation:     model.Conversation{Messages: []model.Message{}},
+
+		client:           ai.NewClient(),
 	}
 }
 
 func (m App) Init() tea.Cmd {
-	return tea.Batch(
-		m.input.Init(),
-	)
+	return nil
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
