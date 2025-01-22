@@ -2,6 +2,7 @@ package app
 
 import (
 	"ant/pkg/llm"
+	"ant/pkg/view"
 	"fmt"
 	"log"
 
@@ -12,6 +13,8 @@ import (
 )
 
 type Conversation struct {
+	view.Focusable
+
 	viewport viewport.Model
 
 	messages         []llm.Message
@@ -85,7 +88,7 @@ func (c *Conversation) CancelStreaming() {
 }
 
 func (c *Conversation) Initialize(w int, h int) {
-	c.viewport = viewport.New(w-borderStyle.GetVerticalFrameSize(), h-borderStyle.GetHorizontalFrameSize())
+	c.viewport = viewport.New(w-c.BorderStyle().GetVerticalFrameSize(), h-c.BorderStyle().GetHorizontalFrameSize())
 }
 
 func (c *Conversation) ScrollToBottom() {
@@ -144,10 +147,10 @@ func (c *Conversation) render() {
 }
 
 func (c Conversation) View() string {
-	return borderStyle.Render(c.viewport.View())
+	return c.BorderStyle().Render(c.viewport.View())
 }
 
 func (c *Conversation) SetSize(w int, h int) {
-	c.viewport.Width = w - borderStyle.GetVerticalFrameSize()
-	c.viewport.Height = h - borderStyle.GetHorizontalFrameSize()
+	c.viewport.Width = w - c.BorderStyle().GetVerticalFrameSize()
+	c.viewport.Height = h - c.BorderStyle().GetHorizontalFrameSize()
 }

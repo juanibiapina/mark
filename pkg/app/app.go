@@ -18,17 +18,9 @@ func (e errMsg) Error() string { return e.err.Error() }
 type replyMessage string
 type partialMessage string
 
-type Mode int
-
-const (
-	ModeNormal Mode = iota
-	ModeInsert
-)
-
 type App struct {
 	// app state
 	uiReady bool
-	mode    Mode
 
 	// view models
 	conversation Conversation
@@ -43,8 +35,6 @@ type App struct {
 
 func MakeApp() App {
 	return App{
-		mode: ModeInsert,
-
 		input:        MakeInput(),
 		conversation: MakeConversation(),
 
@@ -91,6 +81,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+n":
 			m.conversation.Reset()
+			m.conversation.Blur()
+			m.input.Focus()
 			return m, nil
 
 		case "ctrl+c":
@@ -98,12 +90,13 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// normal mode keybindings
-		if m.mode == ModeNormal {
+		// conversation keybindings
+		if m.conversation.Focused() {
 			switch msg.String() {
 
 			case "i":
-				m.mode = ModeInsert
+				m.input.Focus()
+				m.conversation.Blur()
 				return m, nil
 
 			case "q":
@@ -114,12 +107,13 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// insert mode keybindings
-		if m.mode == ModeInsert {
+		// input keybindings
+		if m.input.Focused() {
 			switch msg.String() {
 
 			case "esc":
-				m.mode = ModeNormal
+				m.input.Blur()
+				m.conversation.Focus()
 				return m, nil
 
 			case "enter":

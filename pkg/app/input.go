@@ -1,6 +1,8 @@
 package app
 
 import (
+	"ant/pkg/view"
+
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
@@ -8,10 +10,9 @@ import (
 )
 
 type Input struct {
-	focus bool
-	// temporary border style depending on focus
-	borderStyle lipgloss.Style
-	textarea    textarea.Model
+	view.Focusable
+
+	textarea textarea.Model
 }
 
 func MakeInput() Input {
@@ -33,9 +34,8 @@ func MakeInput() Input {
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
 	return Input{
-		focus:    true,
-		borderStyle: focusedBorderStyle,
-		textarea: ta,
+		Focusable: view.MakeFocusable(),
+		textarea:  ta,
 	}
 }
 
@@ -50,7 +50,7 @@ func (i Input) Update(msg tea.Msg) (Input, tea.Cmd) {
 }
 
 func (i Input) View() string {
-	return i.borderStyle.Render(i.textarea.View())
+	return i.BorderStyle().Render(i.textarea.View())
 }
 
 func (i *Input) Value() string {
@@ -62,5 +62,5 @@ func (i *Input) Reset() {
 }
 
 func (i *Input) SetWidth(w int) {
-	i.textarea.SetWidth(w - borderStyle.GetVerticalFrameSize())
+	i.textarea.SetWidth(w - i.BorderStyle().GetVerticalFrameSize())
 }
