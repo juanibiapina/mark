@@ -8,7 +8,10 @@ import (
 )
 
 type Input struct {
-	textarea textarea.Model
+	focus bool
+	// temporary border style depending on focus
+	borderStyle lipgloss.Style
+	textarea    textarea.Model
 }
 
 func MakeInput() Input {
@@ -30,6 +33,8 @@ func MakeInput() Input {
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
 	return Input{
+		focus:    true,
+		borderStyle: focusedBorderStyle,
 		textarea: ta,
 	}
 }
@@ -45,7 +50,7 @@ func (i Input) Update(msg tea.Msg) (Input, tea.Cmd) {
 }
 
 func (i Input) View() string {
-	return borderStyle.Render(i.textarea.View())
+	return i.borderStyle.Render(i.textarea.View())
 }
 
 func (i *Input) Value() string {

@@ -89,13 +89,13 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// global keybindings
 		switch msg.String() {
-			case "ctrl+n":
-				m.conversation.Reset()
-				return m, nil
+		case "ctrl+n":
+			m.conversation.Reset()
+			return m, nil
 
-			case "ctrl+c":
-				m.conversation.CancelStreaming()
-				return m, nil
+		case "ctrl+c":
+			m.conversation.CancelStreaming()
+			return m, nil
 		}
 
 		// normal mode keybindings
