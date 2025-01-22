@@ -44,9 +44,30 @@ func (i Input) Init() tea.Cmd {
 }
 
 func (i Input) Update(msg tea.Msg) (Input, tea.Cmd) {
-	var cmd tea.Cmd
-	i.textarea, cmd = i.textarea.Update(msg)
-	return i, cmd
+	if !i.Focused() {
+		return i, nil
+	}
+
+	switch msg := msg.(type) {
+
+	case tea.KeyMsg:
+		switch msg.String() {
+
+		case "esc":
+			return i, message(focusConversationMsg{})
+
+		case "enter":
+			return i, message(completeMsg{})
+
+		default:
+			// Send keypresses to the input component
+			var cmd tea.Cmd
+			i.textarea, cmd = i.textarea.Update(msg)
+			return i, cmd
+		}
+	}
+
+	return i, nil
 }
 
 func (i Input) View() string {

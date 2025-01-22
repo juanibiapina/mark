@@ -11,18 +11,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type errMsg struct{ err error }
-
-func (e errMsg) Error() string { return e.err.Error() }
-
-type replyMessage string
-type partialMessage string
-
 type App struct {
 	// app state
 	uiReady bool
 
 	// view models
+	global       Global
 	conversation Conversation
 	input        Input
 
@@ -57,11 +51,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.err
 		return m, tea.Quit
 
-	case partialMessage, replyMessage:
-		var cmd tea.Cmd
-		m.conversation, cmd = m.conversation.Update(msg)
-		return m, cmd
-
 	case tea.WindowSizeMsg:
 		inputHeight := lipgloss.Height(m.input.View())
 
@@ -76,63 +65,40 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, nil
 
-	case tea.KeyMsg:
-		// global keybindings
-		switch msg.String() {
-		case "ctrl+n":
-			m.conversation.Reset()
-			m.conversation.Blur()
-			m.input.Focus()
-			return m, nil
-
-		case "ctrl+c":
-			m.conversation.CancelStreaming()
-			return m, nil
-		}
-
-		// conversation keybindings
-		if m.conversation.Focused() {
-			switch msg.String() {
-
-			case "i":
-				m.input.Focus()
-				m.conversation.Blur()
-				return m, nil
-
-			case "q":
-				return m, tea.Quit
-
-			default:
-				return m, nil
-			}
-		}
-
-		// input keybindings
-		if m.input.Focused() {
-			switch msg.String() {
-
-			case "esc":
-				m.input.Blur()
-				m.conversation.Focus()
-				return m, nil
-
-			case "enter":
-				m.conversation.CancelStreaming()
-				cmd := m.handleMessage()
-				return m, cmd
-
-			default:
-				// Send keypresses to the input component
-				var cmd tea.Cmd
-				m.input, cmd = m.input.Update(msg)
-				return m, cmd
-			}
-		}
-
+	case focusInputMsg:
+		m.input.Focus()
+		m.conversation.Blur()
 		return m, nil
+
+	case focusConversationMsg:
+		m.input.Blur()
+		m.conversation.Focus()
+		return m, nil
+
+	case newConversationMsg:
+		m.conversation.Reset()
+		m.conversation.Blur()
+		m.input.Focus()
+		return m, nil
+
+	case cancelStreamingMsg:
+		m.conversation.CancelStreaming()
+		return m, nil
+
+	case completeMsg:
+		m.conversation.CancelStreaming()
+		cmd := m.handleMessage()
+		return m, cmd
 
 	default:
-		return m, nil
+		var cmd1 tea.Cmd
+		var cmd2 tea.Cmd
+		var cmd3 tea.Cmd
+		m.conversation, cmd1 = m.conversation.Update(msg)
+		m.input, cmd2 = m.input.Update(msg)
+		m.global, cmd3 = m.global.Update(msg)
+		return m, tea.Batch(cmd1, cmd2, cmd3)
+
 	}
 }
 

@@ -1,0 +1,21 @@
+package app
+
+import tea "github.com/charmbracelet/bubbletea"
+
+type newConversationMsg struct{}
+type cancelStreamingMsg struct{}
+type focusInputMsg struct{}
+type focusConversationMsg struct{}
+type completeMsg struct{}
+type replyMessage string
+type partialMessage string
+
+type errMsg struct{ err error }
+
+func (e errMsg) Error() string { return e.err.Error() }
+
+func message(msg tea.Msg) tea.Cmd {
+	return func() tea.Msg {
+		return msg
+	}
+}
