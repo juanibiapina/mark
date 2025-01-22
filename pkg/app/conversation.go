@@ -27,6 +27,10 @@ func (c *Conversation) Messages() []llm.Message {
 	return c.messages
 }
 
+func (c *Conversation) ResetMessages() {
+	c.messages = []llm.Message{}
+}
+
 func (c *Conversation) CancelStreaming() {
 	if c.StreamingMessage == nil {
 		return

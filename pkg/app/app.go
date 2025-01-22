@@ -106,7 +106,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "ctrl+n":
 			m.conversation.CancelStreaming()
-			m.conversation = Conversation{messages: []llm.Message{}}
+			m.conversation.ResetMessages()
 			m.conversation.RenderMessagesTop()
 			return m, nil
 
