@@ -23,8 +23,8 @@ type App struct {
 	uiReady bool
 
 	// view models
-	conversationView Conversation
-	input            Input
+	conversation Conversation
+	input        Input
 
 	// LLM
 	ai llm.Llm
@@ -35,10 +35,10 @@ type App struct {
 
 func MakeApp() App {
 	return App{
-		input:            MakeInput(),
-		conversationView: MakeConversation(),
+		input:        MakeInput(),
+		conversation: MakeConversation(),
 
-		ai:           llm.NewOpenAIClient(),
+		ai: llm.NewOpenAIClient(),
 	}
 }
 
@@ -59,35 +59,35 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case partialMessage:
 		// Ignore messages if streaming has been cancelled
-		if m.conversationView.StreamingMessage == nil {
+		if m.conversation.StreamingMessage == nil {
 			return m, nil
 		}
 
-		m.conversationView.StreamingMessage.Content += string(msg)
-		m.updateConversationView()
-		m.conversationView.ScrollToBottom()
+		m.conversation.StreamingMessage.Content += string(msg)
+		m.conversation.RenderMessagesTop()
+		m.conversation.ScrollToBottom()
 		return m, receivePartialMessage(&m)
 
 	case replyMessage:
 		// Ignore messages if streaming has been cancelled
-		if m.conversationView.StreamingMessage == nil {
+		if m.conversation.StreamingMessage == nil {
 			return m, nil
 		}
 
-		m.conversationView.StreamingMessage = nil
-		m.conversationView.messages = append(m.conversationView.messages, llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
-		m.updateConversationView()
-		m.conversationView.ScrollToBottom()
+		m.conversation.StreamingMessage = nil
+		m.conversation.messages = append(m.conversation.messages, llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
+		m.conversation.RenderMessagesTop()
+		m.conversation.ScrollToBottom()
 		return m, nil
 
 	case tea.WindowSizeMsg:
 		inputHeight := lipgloss.Height(m.input.View())
 
 		if !m.uiReady {
-			m.conversationView.Initialize(msg.Width, msg.Height-inputHeight)
+			m.conversation.Initialize(msg.Width, msg.Height-inputHeight)
 			m.uiReady = true
 		} else {
-			m.conversationView.SetSize(msg.Width, msg.Height-inputHeight)
+			m.conversation.SetSize(msg.Width, msg.Height-inputHeight)
 		}
 
 		m.input.SetWidth(msg.Width)
@@ -101,12 +101,13 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "ctrl+c":
-			m.cancelStreaming()
+			m.conversation.CancelStreaming()
 			return m, nil
 
 		case "ctrl+n":
-			m.newConversation()
-			m.updateConversationView()
+			m.conversation.CancelStreaming()
+			m.conversation = Conversation{messages: []llm.Message{}}
+			m.conversation.RenderMessagesTop()
 			return m, nil
 
 		case "enter":
@@ -131,31 +132,14 @@ func (m App) View() string {
 	}
 
 	return fmt.Sprintf("%s\n%s",
-		m.conversationView.View(),
+		m.conversation.View(),
 		m.input.View(),
 	)
 }
 
-func (m *App) updateConversationView() {
-	m.conversationView.RenderMessagesTop()
-}
-
-func (m *App) cancelStreaming() {
-	if m.conversationView.StreamingMessage == nil {
-		return
-	}
-
-	m.conversationView.StreamingMessage.Cancel()
-
-	// Add the partial message to the chat history
-	m.conversationView.messages = append(m.conversationView.messages, llm.Message{Role: llm.RoleAssistant, Content: m.conversationView.StreamingMessage.Content})
-
-	m.conversationView.StreamingMessage = nil
-}
-
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.ai.CompleteStreaming(m.conversationView.StreamingMessage.Ctx, &m.conversationView, m.conversationView.StreamingMessage.Chunks, m.conversationView.StreamingMessage.Reply)
+		m.ai.CompleteStreaming(m.conversation.StreamingMessage.Ctx, &m.conversation, m.conversation.StreamingMessage.Chunks, m.conversation.StreamingMessage.Reply)
 
 		return nil
 	}
@@ -164,17 +148,12 @@ func complete(m *App) tea.Cmd {
 func receivePartialMessage(m *App) tea.Cmd {
 	return func() tea.Msg {
 		select {
-		case v := <-m.conversationView.StreamingMessage.Reply:
+		case v := <-m.conversation.StreamingMessage.Reply:
 			return replyMessage(v)
-		case v := <-m.conversationView.StreamingMessage.Chunks:
+		case v := <-m.conversation.StreamingMessage.Chunks:
 			return partialMessage(v)
 		}
 	}
-}
-
-func (m *App) newConversation() {
-	m.cancelStreaming()
-	m.conversationView = Conversation{messages: []llm.Message{}}
 }
 
 func (m *App) handleMessage() tea.Cmd {
@@ -189,13 +168,13 @@ func (m *App) handleMessage() tea.Cmd {
 	m.input.Reset()
 
 	// Add user message to chat history
-	m.conversationView.messages = append(m.conversationView.messages, llm.Message{Role: llm.RoleUser, Content: v})
+	m.conversation.messages = append(m.conversation.messages, llm.Message{Role: llm.RoleUser, Content: v})
 
 	// Create a new streaming message
-	m.conversationView.StreamingMessage = NewStreamingMessage()
+	m.conversation.StreamingMessage = NewStreamingMessage()
 
 	// Render conversation view again to show the new message
-	m.updateConversationView()
+	m.conversation.RenderMessagesTop()
 
 	cmds := []tea.Cmd{
 		complete(m),              // call completions API

@@ -27,6 +27,19 @@ func (c *Conversation) Messages() []llm.Message {
 	return c.messages
 }
 
+func (c *Conversation) CancelStreaming() {
+	if c.StreamingMessage == nil {
+		return
+	}
+
+	c.StreamingMessage.Cancel()
+
+	// Add the partial message to the chat history
+	c.messages = append(c.messages, llm.Message{Role: llm.RoleAssistant, Content: c.StreamingMessage.Content})
+
+	c.StreamingMessage = nil
+}
+
 func (c *Conversation) Initialize(w int, h int) {
 	c.viewport = viewport.New(w-borderStyle.GetVerticalFrameSize(), h-borderStyle.GetHorizontalFrameSize())
 }
