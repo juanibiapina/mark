@@ -1,31 +1,30 @@
-package ai
+package app
 
 import (
-	"ant/pkg/model"
 	"context"
 
 	"github.com/openai/openai-go"
 )
 
-type Client struct {
+type AIClient struct {
 	client *openai.Client
 }
 
-func NewClient() *Client {
-	return &Client{
+func NewAIClient() *AIClient {
+	return &AIClient{
 		client: openai.NewClient(),
 	}
 }
 
 // Complete sends a list of messages to the OpenAI API and returns the response
-func (c *Client) Complete(ctx context.Context, messages []model.Message, pch chan string, ch chan string) {
+func (c *AIClient) Complete(ctx context.Context, messages []Message, pch chan string, ch chan string) {
 	defer close(pch)
 	defer close(ch)
 
 	// Convert messages to OpenAI format
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 	for _, msg := range messages {
-		if msg.Role == model.User {
+		if msg.Role == RoleUser {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 		} else {
 			chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))

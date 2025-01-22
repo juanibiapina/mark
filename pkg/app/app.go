@@ -6,10 +6,6 @@ import (
 	"os"
 	"reflect"
 
-	"ant/pkg/ai"
-	"ant/pkg/model"
-	"ant/pkg/view"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -26,15 +22,11 @@ type App struct {
 	uiReady bool
 
 	// view models
-	conversationView view.Conversation
-	input            view.Input
+	conversationView Conversation
+	input            Input
 
-	// models
-	conversation     model.Conversation
-	streamingMessage *ai.StreamingMessage
-
-	// ai client
-	client *ai.Client
+	// clients
+	ai *AIClient
 
 	// error
 	err error
@@ -42,12 +34,10 @@ type App struct {
 
 func MakeApp() App {
 	return App{
-		input:            view.MakeInput(),
-		conversationView: view.MakeConversation(),
+		input:            MakeInput(),
+		conversationView: MakeConversation(),
 
-		conversation:     model.Conversation{Messages: []model.Message{}},
-
-		client:           ai.NewClient(),
+		ai:           NewAIClient(),
 	}
 }
 
@@ -68,23 +58,23 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case partialMessage:
 		// Ignore messages if streaming has been cancelled
-		if m.streamingMessage == nil {
+		if m.conversationView.StreamingMessage == nil {
 			return m, nil
 		}
 
-		m.streamingMessage.Content += string(msg)
+		m.conversationView.StreamingMessage.Content += string(msg)
 		m.updateConversationView()
 		m.conversationView.ScrollToBottom()
 		return m, receivePartialMessage(&m)
 
 	case replyMessage:
 		// Ignore messages if streaming has been cancelled
-		if m.streamingMessage == nil {
+		if m.conversationView.StreamingMessage == nil {
 			return m, nil
 		}
 
-		m.streamingMessage = nil
-		m.conversation.Messages = append(m.conversation.Messages, model.Message{Role: model.Assistant, Content: string(msg)})
+		m.conversationView.StreamingMessage = nil
+		m.conversationView.Messages = append(m.conversationView.Messages, Message{Role: RoleAssistant, Content: string(msg)})
 		m.updateConversationView()
 		m.conversationView.ScrollToBottom()
 		return m, nil
@@ -146,25 +136,25 @@ func (m App) View() string {
 }
 
 func (m *App) updateConversationView() {
-	m.conversationView.RenderMessagesTop(m.conversation.Messages, m.streamingMessage)
+	m.conversationView.RenderMessagesTop()
 }
 
 func (m *App) cancelStreaming() {
-	if m.streamingMessage == nil {
+	if m.conversationView.StreamingMessage == nil {
 		return
 	}
 
-	m.streamingMessage.Cancel()
+	m.conversationView.StreamingMessage.Cancel()
 
 	// Add the partial message to the chat history
-	m.conversation.Messages = append(m.conversation.Messages, model.Message{Role: model.Assistant, Content: m.streamingMessage.Content})
+	m.conversationView.Messages = append(m.conversationView.Messages, Message{Role: RoleAssistant, Content: m.conversationView.StreamingMessage.Content})
 
-	m.streamingMessage = nil
+	m.conversationView.StreamingMessage = nil
 }
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.client.Complete(m.streamingMessage.Ctx, m.conversation.Messages, m.streamingMessage.Chunks, m.streamingMessage.Reply)
+		m.ai.Complete(m.conversationView.StreamingMessage.Ctx, m.conversationView.Messages, m.conversationView.StreamingMessage.Chunks, m.conversationView.StreamingMessage.Reply)
 
 		return nil
 	}
@@ -173,9 +163,9 @@ func complete(m *App) tea.Cmd {
 func receivePartialMessage(m *App) tea.Cmd {
 	return func() tea.Msg {
 		select {
-		case v := <-m.streamingMessage.Reply:
+		case v := <-m.conversationView.StreamingMessage.Reply:
 			return replyMessage(v)
-		case v := <-m.streamingMessage.Chunks:
+		case v := <-m.conversationView.StreamingMessage.Chunks:
 			return partialMessage(v)
 		}
 	}
@@ -183,7 +173,7 @@ func receivePartialMessage(m *App) tea.Cmd {
 
 func (m *App) newConversation() {
 	m.cancelStreaming()
-	m.conversation = model.Conversation{Messages: []model.Message{}}
+	m.conversationView = Conversation{Messages: []Message{}}
 }
 
 func (m *App) handleMessage() tea.Cmd {
@@ -198,10 +188,10 @@ func (m *App) handleMessage() tea.Cmd {
 	m.input.Reset()
 
 	// Add user message to chat history
-	m.conversation.Messages = append(m.conversation.Messages, model.Message{Role: model.User, Content: v})
+	m.conversationView.Messages = append(m.conversationView.Messages, Message{Role: RoleUser, Content: v})
 
 	// Create a new streaming message
-	m.streamingMessage = ai.NewStreamingMessage()
+	m.conversationView.StreamingMessage = NewStreamingMessage()
 
 	// Render conversation view again to show the new message
 	m.updateConversationView()
