@@ -139,7 +139,12 @@ func (m App) View() string {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.ai.CompleteStreaming(m.conversation.StreamingMessage.Ctx, &m.conversation, m.conversation.StreamingMessage.Chunks, m.conversation.StreamingMessage.Reply)
+		m.ai.CompleteStreaming(
+			m.conversation.StreamingMessage.Ctx,
+			&m.conversation,
+			m.conversation.StreamingMessage.Chunks,
+			m.conversation.StreamingMessage.Reply,
+		)
 
 		return nil
 	}
