@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ant/pkg/llm"
 	"fmt"
 	"log"
 	"os"
@@ -25,8 +26,8 @@ type App struct {
 	conversationView Conversation
 	input            Input
 
-	// clients
-	ai *AIClient
+	// LLM
+	ai llm.Llm
 
 	// error
 	err error
@@ -37,7 +38,7 @@ func MakeApp() App {
 		input:            MakeInput(),
 		conversationView: MakeConversation(),
 
-		ai:           NewAIClient(),
+		ai:           llm.NewOpenAIClient(),
 	}
 }
 
@@ -74,7 +75,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.conversationView.StreamingMessage = nil
-		m.conversationView.Messages = append(m.conversationView.Messages, Message{Role: RoleAssistant, Content: string(msg)})
+		m.conversationView.messages = append(m.conversationView.messages, llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
 		m.updateConversationView()
 		m.conversationView.ScrollToBottom()
 		return m, nil
@@ -147,14 +148,14 @@ func (m *App) cancelStreaming() {
 	m.conversationView.StreamingMessage.Cancel()
 
 	// Add the partial message to the chat history
-	m.conversationView.Messages = append(m.conversationView.Messages, Message{Role: RoleAssistant, Content: m.conversationView.StreamingMessage.Content})
+	m.conversationView.messages = append(m.conversationView.messages, llm.Message{Role: llm.RoleAssistant, Content: m.conversationView.StreamingMessage.Content})
 
 	m.conversationView.StreamingMessage = nil
 }
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.ai.Complete(m.conversationView.StreamingMessage.Ctx, m.conversationView.Messages, m.conversationView.StreamingMessage.Chunks, m.conversationView.StreamingMessage.Reply)
+		m.ai.CompleteStreaming(m.conversationView.StreamingMessage.Ctx, &m.conversationView, m.conversationView.StreamingMessage.Chunks, m.conversationView.StreamingMessage.Reply)
 
 		return nil
 	}
@@ -173,7 +174,7 @@ func receivePartialMessage(m *App) tea.Cmd {
 
 func (m *App) newConversation() {
 	m.cancelStreaming()
-	m.conversationView = Conversation{Messages: []Message{}}
+	m.conversationView = Conversation{messages: []llm.Message{}}
 }
 
 func (m *App) handleMessage() tea.Cmd {
@@ -188,7 +189,7 @@ func (m *App) handleMessage() tea.Cmd {
 	m.input.Reset()
 
 	// Add user message to chat history
-	m.conversationView.Messages = append(m.conversationView.Messages, Message{Role: RoleUser, Content: v})
+	m.conversationView.messages = append(m.conversationView.messages, llm.Message{Role: llm.RoleUser, Content: v})
 
 	// Create a new streaming message
 	m.conversationView.StreamingMessage = NewStreamingMessage()

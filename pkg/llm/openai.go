@@ -1,4 +1,4 @@
-package app
+package llm
 
 import (
 	"context"
@@ -6,24 +6,24 @@ import (
 	"github.com/openai/openai-go"
 )
 
-type AIClient struct {
+type OpenAI struct {
 	client *openai.Client
 }
 
-func NewAIClient() *AIClient {
-	return &AIClient{
+func NewOpenAIClient() *OpenAI {
+	return &OpenAI{
 		client: openai.NewClient(),
 	}
 }
 
 // Complete sends a list of messages to the OpenAI API and returns the response
-func (c *AIClient) Complete(ctx context.Context, messages []Message, pch chan string, ch chan string) {
+func (a *OpenAI) CompleteStreaming(ctx context.Context, c Conversation, pch chan string, ch chan string) error {
 	defer close(pch)
 	defer close(ch)
 
 	// Convert messages to OpenAI format
 	var chatMessages []openai.ChatCompletionMessageParamUnion
-	for _, msg := range messages {
+	for _, msg := range c.Messages() {
 		if msg.Role == RoleUser {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 		} else {
@@ -31,7 +31,7 @@ func (c *AIClient) Complete(ctx context.Context, messages []Message, pch chan st
 		}
 	}
 
-	stream := c.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
+	stream := a.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: openai.F(chatMessages),
 		Seed:     openai.Int(1),
 		Model:    openai.F(openai.ChatModelGPT4o),
@@ -63,15 +63,12 @@ func (c *AIClient) Complete(ctx context.Context, messages []Message, pch chan st
 	}
 
 	if err := stream.Err(); err != nil {
-		if err == context.Canceled {
-			return
-		}
-
-		panic(err)
+		return err
 	}
 
 	// After the stream is finished, acc can be used like a ChatCompletion
 	response := acc.Choices[0].Message.Content
 
 	ch <- response
+	return nil
 }

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ant/pkg/llm"
 	"fmt"
 	"log"
 
@@ -9,29 +10,21 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type Role int
-
-const (
-	RoleUser Role = iota
-	RoleAssistant
-)
-
-type Message struct {
-	Role    Role
-	Content string
-}
-
 type Conversation struct {
 	viewport viewport.Model
 
-	Messages         []Message
+	messages         []llm.Message
 	StreamingMessage *StreamingMessage
 }
 
 func MakeConversation() Conversation {
 	return Conversation{
-		Messages: []Message{},
+		messages: []llm.Message{},
 	}
+}
+
+func (c *Conversation) Messages() []llm.Message {
+	return c.messages
 }
 
 func (c *Conversation) Initialize(w int, h int) {
@@ -62,16 +55,16 @@ func (c *Conversation) RenderMessagesTop() {
 
 	var content string
 
-	for i := len(c.Messages) - n; i < len(c.Messages); i++ {
+	for i := len(c.messages) - n; i < len(c.messages); i++ {
 		if i < 0 {
 			continue
 		}
 
 		var m string
-		if c.Messages[i].Role == RoleUser {
-			m = lipgloss.NewStyle().Width(c.viewport.Width).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", c.Messages[i].Content))
+		if c.messages[i].Role == llm.RoleUser {
+			m = lipgloss.NewStyle().Width(c.viewport.Width).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", c.messages[i].Content))
 		} else {
-			m, err = renderer.Render(c.Messages[i].Content)
+			m, err = renderer.Render(c.messages[i].Content)
 
 			if err != nil {
 				log.Fatal(err)
