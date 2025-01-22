@@ -18,9 +18,17 @@ func (e errMsg) Error() string { return e.err.Error() }
 type replyMessage string
 type partialMessage string
 
+type Mode int
+
+const (
+	ModeNormal Mode = iota
+	ModeInsert
+)
+
 type App struct {
-	// initialization
+	// app state
 	uiReady bool
+	mode    Mode
 
 	// view models
 	conversation Conversation
@@ -35,6 +43,8 @@ type App struct {
 
 func MakeApp() App {
 	return App{
+		mode: ModeInsert,
+
 		input:        MakeInput(),
 		conversation: MakeConversation(),
 
@@ -95,31 +105,61 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		switch msg.String() {
+		if m.mode == ModeNormal {
+			switch msg.String() {
 
-		case "esc":
-			return m, tea.Quit
+			case "i":
+				m.mode = ModeInsert
+				return m, nil
 
-		case "ctrl+c":
-			m.conversation.CancelStreaming()
-			return m, nil
+			case "q":
+				return m, tea.Quit
 
-		case "ctrl+n":
-			m.conversation.CancelStreaming()
-			m.conversation.ResetMessages()
-			m.conversation.RenderMessagesTop()
-			return m, nil
+			case "ctrl+n":
+				m.conversation.CancelStreaming()
+				m.conversation.ResetMessages()
+				m.conversation.RenderMessagesTop()
+				return m, nil
 
-		case "enter":
-			cmd := m.handleMessage()
-			return m, cmd
+			case "ctrl+c":
+				m.conversation.CancelStreaming()
+				return m, nil
 
-		default:
-			// Send all other keypresses to the input component
-			var cmd tea.Cmd
-			m.input, cmd = m.input.Update(msg)
-			return m, cmd
+			default:
+				return m, nil
+			}
 		}
+
+		if m.mode == ModeInsert {
+			switch msg.String() {
+
+			case "esc":
+				m.mode = ModeNormal
+				return m, nil
+
+			case "ctrl+c":
+				m.conversation.CancelStreaming()
+				return m, nil
+
+			case "ctrl+n":
+				m.conversation.CancelStreaming()
+				m.conversation.ResetMessages()
+				m.conversation.RenderMessagesTop()
+				return m, nil
+
+			case "enter":
+				cmd := m.handleMessage()
+				return m, cmd
+
+			default:
+				// Send all other keypresses to the input component
+				var cmd tea.Cmd
+				m.input, cmd = m.input.Update(msg)
+				return m, cmd
+			}
+		}
+
+		return m, nil
 
 	default:
 		return m, nil
