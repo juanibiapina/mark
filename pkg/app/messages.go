@@ -2,8 +2,6 @@ package app
 
 import tea "github.com/charmbracelet/bubbletea"
 
-type newConversationMsg struct{}
-type cancelStreamingMsg struct{}
 type focusInputMsg struct{}
 type focusConversationMsg struct{}
 type input struct{
