@@ -16,12 +16,12 @@ type App struct {
 	uiReady bool
 
 	// models
-	messages         []llm.Message
+	conversation     llm.Conversation
 	StreamingMessage *StreamingMessage
 
 	// view models
-	conversation Conversation
-	input        Input
+	conversationView Conversation
+	input            Input
 
 	// llm
 	ai llm.Llm
@@ -32,8 +32,8 @@ type App struct {
 
 func MakeApp() App {
 	return App{
-		input:        MakeInput(),
-		ai:           llm.NewOpenAIClient(),
+		input: MakeInput(),
+		ai:    llm.NewOpenAIClient(),
 	}
 }
 
@@ -56,10 +56,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		inputHeight := lipgloss.Height(m.input.View())
 
 		if !m.uiReady {
-			m.conversation.Initialize(msg.Width, msg.Height-inputHeight)
+			m.conversationView.Initialize(msg.Width, msg.Height-inputHeight)
 			m.uiReady = true
 		} else {
-			m.conversation.SetSize(msg.Width, msg.Height-inputHeight)
+			m.conversationView.SetSize(msg.Width, msg.Height-inputHeight)
 		}
 
 		m.input.SetWidth(msg.Width)
@@ -73,8 +73,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.StreamingMessage.Content += string(msg)
-		m.conversation.render(m.messages, m.StreamingMessage)
-		m.conversation.ScrollToBottom()
+		m.conversationView.render(m.conversation.Messages(), m.StreamingMessage)
+		m.conversationView.ScrollToBottom()
 
 		return m, receivePartialMessage(&m)
 
@@ -85,16 +85,16 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.StreamingMessage = nil
-		m.messages = append(m.messages, llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
-		m.conversation.render(m.messages, m.StreamingMessage)
-		m.conversation.ScrollToBottom()
+		m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
+		m.conversationView.render(m.conversation.Messages(), m.StreamingMessage)
+		m.conversationView.ScrollToBottom()
 		return m, nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
 
 		case "q":
-			if m.conversation.Focused() {
+			if m.conversationView.Focused() {
 				return m, tea.Quit
 			}
 
@@ -115,14 +115,14 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			if m.input.Focused() {
 				m.input.Blur()
-				m.conversation.Focus()
+				m.conversationView.Focus()
 				return m, nil
 			}
 
 		case "i":
-			if m.conversation.Focused() {
+			if m.conversationView.Focused() {
 				m.input.Focus()
-				m.conversation.Blur()
+				m.conversationView.Blur()
 				return m, nil
 			}
 		}
@@ -131,7 +131,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 
-	m.conversation, cmd = m.conversation.Update(msg)
+	m.conversationView, cmd = m.conversationView.Update(msg)
 	cmds = append(cmds, cmd)
 	m.input, cmd = m.input.Update(msg)
 	cmds = append(cmds, cmd)
@@ -145,16 +145,16 @@ func (m App) View() string {
 	}
 
 	return fmt.Sprintf("%s\n%s",
-		m.conversation.View(),
+		m.conversationView.View(),
 		m.input.View(),
 	)
 }
 
 func (m *App) newConversation() {
 	m.cancelStreaming()
-	m.messages = []llm.Message{}
-	m.conversation.render(m.messages, m.StreamingMessage)
-	m.conversation.Blur()
+	m.conversation.Reset()
+	m.conversationView.render(m.conversation.Messages(), m.StreamingMessage)
+	m.conversationView.Blur()
 	m.input.Focus()
 }
 
@@ -166,7 +166,7 @@ func (m *App) cancelStreaming() {
 	m.StreamingMessage.Cancel()
 
 	// Add the partial message to the chat history
-	m.messages = append(m.messages, llm.Message{Role: llm.RoleAssistant, Content: m.StreamingMessage.Content})
+	m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: m.StreamingMessage.Content})
 
 	m.StreamingMessage = nil
 }
@@ -185,7 +185,7 @@ func (m *App) submitMessage() tea.Cmd {
 	m.StreamingMessage = NewStreamingMessage()
 
 	// Add user message to chat history
-	m.messages = append(m.messages, llm.Message{Role: llm.RoleUser, Content: v})
+	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
 
 	cmds := []tea.Cmd{
 		complete(m),              // call completions API
@@ -198,7 +198,7 @@ func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
 		m.ai.CompleteStreaming(
 			m.StreamingMessage.Ctx,
-			m.messages,
+			m.conversation.Messages(),
 			m.StreamingMessage.Chunks,
 			m.StreamingMessage.Reply,
 		)
