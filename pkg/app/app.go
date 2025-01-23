@@ -19,16 +19,18 @@ type App struct {
 	conversation Conversation
 	input        Input
 
+	// llm
+	ai llm.Llm
+
 	// error
 	err error
 }
 
 func MakeApp() App {
-	ai := llm.NewOpenAIClient()
-
 	return App{
 		input:        MakeInput(),
-		conversation: MakeConversation(ai),
+		conversation: MakeConversation(),
+		ai:           llm.NewOpenAIClient(),
 	}
 }
 
@@ -71,6 +73,30 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.conversation.Focus()
 		return m, nil
 
+	case partialMessage:
+		// Ignore message if streaming has been cancelled
+		if m.conversation.StreamingMessage == nil {
+			return m, nil
+		}
+
+		m.conversation.StreamingMessage.Content += string(msg)
+		m.conversation.render()
+		m.conversation.ScrollToBottom()
+
+		return m, receivePartialMessage(&m)
+
+	case replyMessage:
+		// Ignore message if streaming has been cancelled
+		if m.conversation.StreamingMessage == nil {
+			return m, nil
+		}
+
+		m.conversation.StreamingMessage = nil
+		m.conversation.messages = append(m.conversation.messages, llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
+		m.conversation.render()
+		m.conversation.ScrollToBottom()
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.String() {
 
@@ -81,6 +107,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			m.cancelStreaming()
 			return m, nil
+
+		case "enter":
+			cmd := m.submitMessage()
+			return m, cmd
 
 		default:
 			var cmd1 tea.Cmd
@@ -121,4 +151,55 @@ func (m *App) newConversation() {
 
 func (m *App) cancelStreaming() {
 	m.conversation.CancelStreaming()
+}
+
+func (m *App) submitMessage() tea.Cmd {
+	if !m.input.Focused() {
+		return nil
+	}
+
+	v := m.input.Value()
+	if v == "" {
+		return nil
+	}
+
+	m.input.Reset()
+
+	m.cancelStreaming()
+
+	// Create a new streaming message
+	m.conversation.StreamingMessage = NewStreamingMessage()
+
+	// Add user message to chat history
+	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
+
+	cmds := []tea.Cmd{
+		complete(m),              // call completions API
+		receivePartialMessage(m), // start receiving partial message
+	}
+	return tea.Batch(cmds...)
+}
+
+func complete(m *App) tea.Cmd {
+	return func() tea.Msg {
+		m.ai.CompleteStreaming(
+			m.conversation.StreamingMessage.Ctx,
+			&m.conversation,
+			m.conversation.StreamingMessage.Chunks,
+			m.conversation.StreamingMessage.Reply,
+		)
+
+		return nil
+	}
+}
+
+func receivePartialMessage(m *App) tea.Cmd {
+	return func() tea.Msg {
+		select {
+		case v := <-m.conversation.StreamingMessage.Reply:
+			return replyMessage(v)
+		case v := <-m.conversation.StreamingMessage.Chunks:
+			return partialMessage(v)
+		}
+	}
 }

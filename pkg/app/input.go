@@ -56,16 +56,6 @@ func (i Input) Update(msg tea.Msg) (Input, tea.Cmd) {
 		case "esc":
 			return i, message(focusConversationMsg{})
 
-		case "enter":
-			v := i.textarea.Value()
-			if v == "" {
-				return i, nil
-			}
-
-			i.textarea.Reset()
-
-			return i, message(input{v})
-
 		default:
 			var cmd tea.Cmd
 			i.textarea, cmd = i.textarea.Update(msg)
@@ -82,4 +72,12 @@ func (i Input) View() string {
 
 func (i *Input) SetWidth(w int) {
 	i.textarea.SetWidth(w - i.BorderStyle().GetVerticalFrameSize())
+}
+
+func (i *Input) Value() string {
+	return i.textarea.Value()
+}
+
+func (i *Input) Reset() {
+	i.textarea.Reset()
 }

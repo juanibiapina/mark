@@ -4,9 +4,6 @@ import tea "github.com/charmbracelet/bubbletea"
 
 type focusInputMsg struct{}
 type focusConversationMsg struct{}
-type input struct{
-	content string
-}
 type replyMessage string
 type partialMessage string
 
