@@ -7,7 +7,6 @@ import (
 	"log"
 
 	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -16,10 +15,6 @@ type Conversation struct {
 	view.Focusable
 
 	viewport viewport.Model
-}
-
-func (c Conversation) Update(msg tea.Msg) (Conversation, tea.Cmd) {
-	return c, nil
 }
 
 func (c *Conversation) Initialize(w int, h int) {
