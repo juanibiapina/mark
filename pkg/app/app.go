@@ -76,7 +76,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.conversationView.render(&m.conversation, m.StreamingMessage)
 		m.conversationView.ScrollToBottom()
 
-		return m, receivePartialMessage(&m)
+		return m, processStream(&m)
 
 	case replyMessage:
 		// Ignore message if streaming has been cancelled
@@ -188,8 +188,8 @@ func (m *App) submitMessage() tea.Cmd {
 	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
 
 	cmds := []tea.Cmd{
-		complete(m),              // call completions API
-		receivePartialMessage(m), // start receiving partial message
+		complete(m),      // call completions API
+		processStream(m), // start receiving partial message
 	}
 	return tea.Batch(cmds...)
 }
@@ -207,7 +207,7 @@ func complete(m *App) tea.Cmd {
 	}
 }
 
-func receivePartialMessage(m *App) tea.Cmd {
+func processStream(m *App) tea.Cmd {
 	return func() tea.Msg {
 		select {
 		case v := <-m.StreamingMessage.Reply:
