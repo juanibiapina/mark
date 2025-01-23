@@ -17,13 +17,13 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // Complete sends a list of messages to the OpenAI API and returns the response
-func (a *OpenAI) CompleteStreaming(ctx context.Context, messages []Message, pch chan string, ch chan string) error {
+func (a *OpenAI) CompleteStreaming(ctx context.Context, c *Conversation, pch chan string, ch chan string) error {
 	defer close(pch)
 	defer close(ch)
 
 	// Convert messages to OpenAI format
 	var chatMessages []openai.ChatCompletionMessageParamUnion
-	for _, msg := range messages {
+	for _, msg := range c.Messages() {
 		if msg.Role == RoleUser {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 		} else {

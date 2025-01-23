@@ -73,7 +73,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.StreamingMessage.Content += string(msg)
-		m.conversationView.render(m.conversation.Messages(), m.StreamingMessage)
+		m.conversationView.render(&m.conversation, m.StreamingMessage)
 		m.conversationView.ScrollToBottom()
 
 		return m, receivePartialMessage(&m)
@@ -86,7 +86,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.StreamingMessage = nil
 		m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
-		m.conversationView.render(m.conversation.Messages(), m.StreamingMessage)
+		m.conversationView.render(&m.conversation, m.StreamingMessage)
 		m.conversationView.ScrollToBottom()
 		return m, nil
 
@@ -153,7 +153,7 @@ func (m App) View() string {
 func (m *App) newConversation() {
 	m.cancelStreaming()
 	m.conversation.Reset()
-	m.conversationView.render(m.conversation.Messages(), m.StreamingMessage)
+	m.conversationView.render(&m.conversation, m.StreamingMessage)
 	m.conversationView.Blur()
 	m.input.Focus()
 }
@@ -198,7 +198,7 @@ func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
 		m.ai.CompleteStreaming(
 			m.StreamingMessage.Ctx,
-			m.conversation.Messages(),
+			&m.conversation,
 			m.StreamingMessage.Chunks,
 			m.StreamingMessage.Reply,
 		)
