@@ -63,16 +63,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, nil
 
-	case focusInputMsg:
-		m.input.Focus()
-		m.conversation.Blur()
-		return m, nil
-
-	case focusConversationMsg:
-		m.input.Blur()
-		m.conversation.Focus()
-		return m, nil
-
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
 		if m.conversation.StreamingMessage == nil {
@@ -100,6 +90,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 
+		case "q":
+			if m.conversation.Focused() {
+				return m, tea.Quit
+			}
+
 		case "ctrl+n":
 			m.newConversation()
 			return m, nil
@@ -109,27 +104,36 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "enter":
-			cmd := m.submitMessage()
-			return m, cmd
+			if m.input.Focused() {
+				cmd := m.submitMessage()
+				return m, cmd
+			}
 
-		default:
-			var cmd1 tea.Cmd
-			var cmd2 tea.Cmd
-			var cmd3 tea.Cmd
-			m.conversation, cmd1 = m.conversation.Update(msg)
-			m.input, cmd2 = m.input.Update(msg)
-			return m, tea.Batch(cmd1, cmd2, cmd3)
+		case "esc":
+			if m.input.Focused() {
+				m.input.Blur()
+				m.conversation.Focus()
+				return m, nil
+			}
+
+		case "i":
+			if m.conversation.Focused() {
+				m.input.Focus()
+				m.conversation.Blur()
+				return m, nil
+			}
 		}
-
-	default:
-		var cmd1 tea.Cmd
-		var cmd2 tea.Cmd
-		var cmd3 tea.Cmd
-		m.conversation, cmd1 = m.conversation.Update(msg)
-		m.input, cmd2 = m.input.Update(msg)
-		return m, tea.Batch(cmd1, cmd2, cmd3)
-
 	}
+
+	var cmds []tea.Cmd
+	var cmd tea.Cmd
+
+	m.conversation, cmd = m.conversation.Update(msg)
+	cmds = append(cmds, cmd)
+	m.input, cmd = m.input.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m App) View() string {
@@ -154,10 +158,6 @@ func (m *App) cancelStreaming() {
 }
 
 func (m *App) submitMessage() tea.Cmd {
-	if !m.input.Focused() {
-		return nil
-	}
-
 	v := m.input.Value()
 	if v == "" {
 		return nil

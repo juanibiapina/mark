@@ -48,22 +48,9 @@ func (i Input) Update(msg tea.Msg) (Input, tea.Cmd) {
 		return i, nil
 	}
 
-	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-		switch msg.String() {
-
-		case "esc":
-			return i, message(focusConversationMsg{})
-
-		default:
-			var cmd tea.Cmd
-			i.textarea, cmd = i.textarea.Update(msg)
-			return i, cmd
-		}
-	}
-
-	return i, nil
+	var cmd tea.Cmd
+	i.textarea, cmd = i.textarea.Update(msg)
+	return i, cmd
 }
 
 func (i Input) View() string {

@@ -2,8 +2,6 @@ package app
 
 import tea "github.com/charmbracelet/bubbletea"
 
-type focusInputMsg struct{}
-type focusConversationMsg struct{}
 type replyMessage string
 type partialMessage string
 

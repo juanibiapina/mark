@@ -28,28 +28,7 @@ func MakeConversation() Conversation {
 }
 
 func (c Conversation) Update(msg tea.Msg) (Conversation, tea.Cmd) {
-	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-		if !c.Focused() {
-			return c, nil
-		}
-
-		switch msg.String() {
-
-		case "q":
-			return c, tea.Quit
-
-		case "i":
-			return c, message(focusInputMsg{})
-
-		default:
-			return c, nil
-		}
-
-	default:
-		return c, nil
-	}
+	return c, nil
 }
 
 func (c *Conversation) AddMessage(m llm.Message) {
