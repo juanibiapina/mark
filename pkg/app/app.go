@@ -46,6 +46,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		log.Print("msg: ", reflect.TypeOf(msg), msg)
 	}
 
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 
 	case errMsg:
@@ -64,8 +66,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.input.SetWidth(msg.Width)
 
-		return m, nil
-
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
 		if m.StreamingMessage == nil {
@@ -73,10 +73,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.StreamingMessage.Content += string(msg)
-		m.conversationView.render(&m.conversation, m.StreamingMessage)
-		m.conversationView.ScrollToBottom()
 
-		return m, processStream(&m)
+		cmds = append(cmds, processStream(&m))
 
 	case replyMessage:
 		// Ignore message if streaming has been cancelled
@@ -86,9 +84,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.StreamingMessage = nil
 		m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
-		m.conversationView.render(&m.conversation, m.StreamingMessage)
-		m.conversationView.ScrollToBottom()
-		return m, nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -100,37 +95,37 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "ctrl+n":
 			m.newConversation()
-			return m, nil
 
 		case "ctrl+c":
 			m.cancelStreaming()
-			return m, nil
 
 		case "enter":
 			if m.input.Focused() {
 				cmd := m.submitMessage()
-				return m, cmd
+				cmds = append(cmds, cmd)
 			}
 
 		case "esc":
 			if m.input.Focused() {
 				m.input.Blur()
 				m.conversationView.Focus()
-				return m, nil
 			}
 
 		case "i":
 			if m.conversationView.Focused() {
 				m.input.Focus()
 				m.conversationView.Blur()
-				return m, nil
 			}
 		}
 	}
 
 	cmd := m.processInputView(msg)
+	cmds = append(cmds, cmd)
 
-	return m, cmd
+	m.conversationView.render(&m.conversation, m.StreamingMessage)
+	m.conversationView.ScrollToBottom()
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m App) View() string {
@@ -153,7 +148,6 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 func (m *App) newConversation() {
 	m.cancelStreaming()
 	m.conversation.Reset()
-	m.conversationView.render(&m.conversation, m.StreamingMessage)
 	m.conversationView.Blur()
 	m.input.Focus()
 }
