@@ -19,16 +19,35 @@ type Conversation struct {
 
 	messages         []llm.Message
 	StreamingMessage *StreamingMessage
+
+	ai llm.Llm
 }
 
-func MakeConversation() Conversation {
+func MakeConversation(ai llm.Llm) Conversation {
 	return Conversation{
 		messages: []llm.Message{},
+		ai:       ai,
 	}
 }
 
 func (c Conversation) Update(msg tea.Msg) (Conversation, tea.Cmd) {
 	switch msg := msg.(type) {
+
+	case input:
+		// cancel streaming if it is in progress
+		c.CancelStreaming()
+
+		// Create a new streaming message
+		c.StreamingMessage = NewStreamingMessage()
+
+		// Add user message to chat history
+		c.AddMessage(llm.Message{Role: llm.RoleUser, Content: msg.content})
+
+		cmds := []tea.Cmd{
+			complete(&c),              // call completions API
+			receivePartialMessage(&c), // start receiving partial message
+		}
+		return c, tea.Batch(cmds...)
 
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
@@ -73,6 +92,30 @@ func (c Conversation) Update(msg tea.Msg) (Conversation, tea.Cmd) {
 
 	default:
 		return c, nil
+	}
+}
+
+func complete(c *Conversation) tea.Cmd {
+	return func() tea.Msg {
+		c.ai.CompleteStreaming(
+			c.StreamingMessage.Ctx,
+			c,
+			c.StreamingMessage.Chunks,
+			c.StreamingMessage.Reply,
+		)
+
+		return nil
+	}
+}
+
+func receivePartialMessage(c *Conversation) tea.Cmd {
+	return func() tea.Msg {
+		select {
+		case v := <-c.StreamingMessage.Reply:
+			return replyMessage(v)
+		case v := <-c.StreamingMessage.Chunks:
+			return partialMessage(v)
+		}
 	}
 }
 
