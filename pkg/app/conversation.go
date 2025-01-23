@@ -16,47 +16,10 @@ type Conversation struct {
 	view.Focusable
 
 	viewport viewport.Model
-
-	messages         []llm.Message
-	StreamingMessage *StreamingMessage
-}
-
-func MakeConversation() Conversation {
-	return Conversation{
-		messages: []llm.Message{},
-	}
 }
 
 func (c Conversation) Update(msg tea.Msg) (Conversation, tea.Cmd) {
 	return c, nil
-}
-
-func (c *Conversation) AddMessage(m llm.Message) {
-	c.messages = append(c.messages, m)
-	c.render()
-}
-
-func (c *Conversation) Messages() []llm.Message {
-	return c.messages
-}
-
-func (c *Conversation) Reset() {
-	c.CancelStreaming()
-	c.messages = []llm.Message{}
-	c.render()
-}
-
-func (c *Conversation) CancelStreaming() {
-	if c.StreamingMessage == nil {
-		return
-	}
-
-	c.StreamingMessage.Cancel()
-
-	// Add the partial message to the chat history
-	c.messages = append(c.messages, llm.Message{Role: llm.RoleAssistant, Content: c.StreamingMessage.Content})
-
-	c.StreamingMessage = nil
 }
 
 func (c *Conversation) Initialize(w int, h int) {
@@ -67,7 +30,7 @@ func (c *Conversation) ScrollToBottom() {
 	c.viewport.GotoBottom()
 }
 
-func (c *Conversation) render() {
+func (c *Conversation) render(messages []llm.Message, sm *StreamingMessage) {
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
@@ -79,7 +42,7 @@ func (c *Conversation) render() {
 
 	// calculate number of messages to render
 	var n int
-	if c.StreamingMessage == nil {
+	if sm == nil {
 		n = 2
 	} else {
 		n = 1
@@ -87,16 +50,16 @@ func (c *Conversation) render() {
 
 	var content string
 
-	for i := len(c.messages) - n; i < len(c.messages); i++ {
+	for i := len(messages) - n; i < len(messages); i++ {
 		if i < 0 {
 			continue
 		}
 
 		var m string
-		if c.messages[i].Role == llm.RoleUser {
-			m = lipgloss.NewStyle().Width(c.viewport.Width).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", c.messages[i].Content))
+		if messages[i].Role == llm.RoleUser {
+			m = lipgloss.NewStyle().Width(c.viewport.Width).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", messages[i].Content))
 		} else {
-			m, err = renderer.Render(c.messages[i].Content)
+			m, err = renderer.Render(messages[i].Content)
 
 			if err != nil {
 				log.Fatal(err)
@@ -106,8 +69,8 @@ func (c *Conversation) render() {
 		content += m
 	}
 
-	if c.StreamingMessage != nil {
-		c, err := renderer.Render(c.StreamingMessage.Content)
+	if sm != nil {
+		c, err := renderer.Render(sm.Content)
 
 		if err != nil {
 			log.Fatal(err)
