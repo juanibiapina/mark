@@ -128,13 +128,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	var cmds []tea.Cmd
-	var cmd tea.Cmd
+	cmd := m.processInputView(msg)
 
-	m.input, cmd = m.input.Update(msg)
-	cmds = append(cmds, cmd)
-
-	return m, tea.Batch(cmds...)
+	return m, cmd
 }
 
 func (m App) View() string {
@@ -146,6 +142,12 @@ func (m App) View() string {
 		m.conversationView.View(),
 		m.input.View(),
 	)
+}
+
+func (m *App) processInputView(msg tea.Msg) tea.Cmd {
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	return cmd
 }
 
 func (m *App) newConversation() {
