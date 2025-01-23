@@ -17,7 +17,7 @@ type App struct {
 
 	// models
 	conversation     llm.Conversation
-	StreamingMessage *StreamingMessage
+	StreamingMessage *llm.StreamingMessage
 
 	// view models
 	conversationView Conversation
@@ -182,7 +182,7 @@ func (m *App) submitMessage() tea.Cmd {
 	m.cancelStreaming()
 
 	// Create a new streaming message
-	m.StreamingMessage = NewStreamingMessage()
+	m.StreamingMessage = llm.NewStreamingMessage()
 
 	// Add user message to chat history
 	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
