@@ -96,7 +96,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.newConversation()
 
 		case "ctrl+c":
-			m.cancelStreaming()
+			m.conversation.CancelStreaming()
 
 		case "enter":
 			if m.input.Focused() {
@@ -121,7 +121,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := m.processInputView(msg)
 	cmds = append(cmds, cmd)
 
-	m.conversationView.render(&m.conversation, m.conversation.StreamingMessage)
+	m.conversationView.render(&m.conversation)
 	m.conversationView.ScrollToBottom()
 
 	return m, tea.Batch(cmds...)
@@ -145,23 +145,10 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 }
 
 func (m *App) newConversation() {
-	m.cancelStreaming()
+	m.conversation.CancelStreaming()
 	m.conversation.Reset()
 	m.conversationView.Blur()
 	m.input.Focus()
-}
-
-func (m *App) cancelStreaming() {
-	if m.conversation.StreamingMessage == nil {
-		return
-	}
-
-	m.conversation.StreamingMessage.Cancel()
-
-	// Add the partial message to the chat history
-	m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: m.conversation.StreamingMessage.Content})
-
-	m.conversation.StreamingMessage = nil
 }
 
 func (m *App) submitMessage() tea.Cmd {
@@ -172,13 +159,13 @@ func (m *App) submitMessage() tea.Cmd {
 
 	m.input.Reset()
 
-	m.cancelStreaming()
-
-	// Create a new streaming message
-	m.conversation.StreamingMessage = llm.NewStreamingMessage()
+	m.conversation.CancelStreaming()
 
 	// Add user message to chat history
 	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
+
+	// Create a new streaming message
+	m.conversation.StreamingMessage = llm.NewStreamingMessage()
 
 	cmds := []tea.Cmd{
 		complete(m),      // call completions API
@@ -189,12 +176,7 @@ func (m *App) submitMessage() tea.Cmd {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.ai.CompleteStreaming(
-			m.conversation.StreamingMessage.Ctx,
-			&m.conversation,
-			m.conversation.StreamingMessage.Chunks,
-			m.conversation.StreamingMessage.Reply,
-		)
+		m.ai.CompleteStreaming(&m.conversation)
 
 		return nil
 	}

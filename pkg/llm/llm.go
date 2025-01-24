@@ -1,9 +1,7 @@
 package llm
 
-import "context"
-
 type Llm interface {
-	CompleteStreaming(ctx context.Context, c *Conversation, pch chan string, ch chan string) error
+	CompleteStreaming(c *Conversation) error
 }
 
 type Role int
@@ -16,6 +14,19 @@ const (
 type Conversation struct {
 	messages         []Message
 	StreamingMessage *StreamingMessage
+}
+
+func (c *Conversation) CancelStreaming() {
+	if c.StreamingMessage == nil {
+		return
+	}
+
+	c.StreamingMessage.Cancel()
+
+	// Add the partial message to the chat history
+	c.AddMessage(Message{Role: RoleAssistant, Content: c.StreamingMessage.Content})
+
+	c.StreamingMessage = nil
 }
 
 func (c *Conversation) AddMessage(m Message) {

@@ -1,8 +1,6 @@
 package llm
 
 import (
-	"context"
-
 	"github.com/openai/openai-go"
 )
 
@@ -17,7 +15,11 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // Complete sends a list of messages to the OpenAI API and returns the response
-func (a *OpenAI) CompleteStreaming(ctx context.Context, c *Conversation, pch chan string, ch chan string) error {
+func (a *OpenAI) CompleteStreaming(c *Conversation) error {
+	ctx := c.StreamingMessage.Ctx
+	pch := c.StreamingMessage.Chunks
+	ch := c.StreamingMessage.Reply
+
 	defer close(pch)
 	defer close(ch)
 
