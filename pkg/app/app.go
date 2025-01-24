@@ -17,7 +17,6 @@ type App struct {
 
 	// models
 	conversation     llm.Conversation
-	StreamingMessage *llm.StreamingMessage
 
 	// view models
 	conversationView Conversation
@@ -68,21 +67,21 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
-		if m.StreamingMessage == nil {
+		if m.conversation.StreamingMessage == nil {
 			return m, nil
 		}
 
-		m.StreamingMessage.Content += string(msg)
+		m.conversation.StreamingMessage.Content += string(msg)
 
 		cmds = append(cmds, processStream(&m))
 
 	case replyMessage:
 		// Ignore message if streaming has been cancelled
-		if m.StreamingMessage == nil {
+		if m.conversation.StreamingMessage == nil {
 			return m, nil
 		}
 
-		m.StreamingMessage = nil
+		m.conversation.StreamingMessage = nil
 		m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
 
 	case tea.KeyMsg:
@@ -122,7 +121,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := m.processInputView(msg)
 	cmds = append(cmds, cmd)
 
-	m.conversationView.render(&m.conversation, m.StreamingMessage)
+	m.conversationView.render(&m.conversation, m.conversation.StreamingMessage)
 	m.conversationView.ScrollToBottom()
 
 	return m, tea.Batch(cmds...)
@@ -153,16 +152,16 @@ func (m *App) newConversation() {
 }
 
 func (m *App) cancelStreaming() {
-	if m.StreamingMessage == nil {
+	if m.conversation.StreamingMessage == nil {
 		return
 	}
 
-	m.StreamingMessage.Cancel()
+	m.conversation.StreamingMessage.Cancel()
 
 	// Add the partial message to the chat history
-	m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: m.StreamingMessage.Content})
+	m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: m.conversation.StreamingMessage.Content})
 
-	m.StreamingMessage = nil
+	m.conversation.StreamingMessage = nil
 }
 
 func (m *App) submitMessage() tea.Cmd {
@@ -176,7 +175,7 @@ func (m *App) submitMessage() tea.Cmd {
 	m.cancelStreaming()
 
 	// Create a new streaming message
-	m.StreamingMessage = llm.NewStreamingMessage()
+	m.conversation.StreamingMessage = llm.NewStreamingMessage()
 
 	// Add user message to chat history
 	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
@@ -191,10 +190,10 @@ func (m *App) submitMessage() tea.Cmd {
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
 		m.ai.CompleteStreaming(
-			m.StreamingMessage.Ctx,
+			m.conversation.StreamingMessage.Ctx,
 			&m.conversation,
-			m.StreamingMessage.Chunks,
-			m.StreamingMessage.Reply,
+			m.conversation.StreamingMessage.Chunks,
+			m.conversation.StreamingMessage.Reply,
 		)
 
 		return nil
@@ -204,9 +203,9 @@ func complete(m *App) tea.Cmd {
 func processStream(m *App) tea.Cmd {
 	return func() tea.Msg {
 		select {
-		case v := <-m.StreamingMessage.Reply:
+		case v := <-m.conversation.StreamingMessage.Reply:
 			return replyMessage(v)
-		case v := <-m.StreamingMessage.Chunks:
+		case v := <-m.conversation.StreamingMessage.Chunks:
 			return partialMessage(v)
 		}
 	}

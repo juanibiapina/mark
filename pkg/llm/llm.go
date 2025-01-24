@@ -14,7 +14,8 @@ const (
 )
 
 type Conversation struct {
-	messages []Message
+	messages         []Message
+	StreamingMessage *StreamingMessage
 }
 
 func (c *Conversation) AddMessage(m Message) {
