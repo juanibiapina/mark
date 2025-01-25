@@ -2,8 +2,10 @@ package app
 
 import tea "github.com/charmbracelet/bubbletea"
 
-type replyMessage string
-type partialMessage string
+type (
+	replyMessage   string
+	partialMessage string
+)
 
 type errMsg struct{ err error }
 

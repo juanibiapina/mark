@@ -1,10 +1,11 @@
 package app
 
 import (
-	"ant/pkg/llm"
-	"ant/pkg/view"
 	"fmt"
 	"log"
+
+	"ant/pkg/llm"
+	"ant/pkg/view"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/glamour"
@@ -32,7 +33,6 @@ func (c *Conversation) render(con *llm.Conversation) {
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 	)
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,7 +57,6 @@ func (c *Conversation) render(con *llm.Conversation) {
 			m = lipgloss.NewStyle().Width(c.viewport.Width).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", messages[i].Content))
 		} else {
 			m, err = renderer.Render(messages[i].Content)
-
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -68,10 +67,10 @@ func (c *Conversation) render(con *llm.Conversation) {
 
 	if con.StreamingMessage != nil {
 		c, err := renderer.Render(con.StreamingMessage.Content)
-
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		content += c
 	}
 

@@ -1,11 +1,12 @@
 package app
 
 import (
-	"ant/pkg/llm"
 	"fmt"
 	"log"
 	"os"
 	"reflect"
+
+	"ant/pkg/llm"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -16,7 +17,7 @@ type App struct {
 	uiReady bool
 
 	// models
-	conversation     llm.Conversation
+	conversation llm.Conversation
 
 	// view models
 	conversationView Conversation
