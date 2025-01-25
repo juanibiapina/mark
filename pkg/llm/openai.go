@@ -23,8 +23,28 @@ func (a *OpenAI) CompleteStreaming(c *Conversation) error {
 	defer close(pch)
 	defer close(ch)
 
-	// Convert messages to OpenAI format
+	// Initialize the chat messages
 	var chatMessages []openai.ChatCompletionMessageParamUnion
+
+	// Add a user message containing context
+	if len(c.context) != 0 {
+		con := "Context:\n"
+		for _, v := range c.context {
+			con += v + "\n"
+		}
+		chatMessages = append(chatMessages, openai.UserMessage(con))
+	}
+
+	// Add a user message containing variables
+	if len(c.variables) != 0 {
+		con := "Variables:\n"
+		for k, v := range c.variables {
+			con += k + ": " + v + "\n"
+		}
+		chatMessages = append(chatMessages, openai.UserMessage(con))
+	}
+
+	// Add the actual conversation messages
 	for _, msg := range c.Messages() {
 		if msg.Role == RoleUser {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))

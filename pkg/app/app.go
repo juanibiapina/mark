@@ -31,10 +31,14 @@ type App struct {
 }
 
 func MakeApp() App {
-	return App{
+	app := App{
 		input: MakeInput(),
 		ai:    llm.NewOpenAIClient(),
 	}
+
+	app.newConversation()
+
+	return app
 }
 
 func (m App) Init() tea.Cmd {
@@ -147,7 +151,20 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 
 func (m *App) newConversation() {
 	m.conversation.CancelStreaming()
-	m.conversation.Reset()
+
+	m.conversation = llm.MakeConversation()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		m.err = err
+		return
+	}
+
+	m.conversation.AddContext("You're a TUI companion app called Mark. You are direct and to the point. Behave like a professional software engineer. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested.")
+	m.conversation.AddContext("My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS.")
+
+	m.conversation.AddVariable("cwd", cwd)
+
 	m.conversationView.Blur()
 	m.input.Focus()
 }
