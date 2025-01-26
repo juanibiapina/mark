@@ -48,6 +48,16 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 		Messages: openai.F(chatMessages),
 		Seed:     openai.Int(1),
 		Model:    openai.F(openai.ChatModelGPT4o),
+		Tools: openai.F([]openai.ChatCompletionToolParam{
+			{
+				Type: openai.F(openai.ChatCompletionToolTypeFunction),
+				Function: openai.F(openai.FunctionDefinitionParam{
+					Name:        openai.String("ping"),
+					Description: openai.String("A simple tool that returns 'pong'"),
+					Strict:      openai.Bool(false),
+				}),
+			},
+		}),
 	})
 
 	acc := openai.ChatCompletionAccumulator{}
@@ -56,13 +66,13 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 		chunk := stream.Current()
 		acc.AddChunk(chunk)
 
-		if _, ok := acc.JustFinishedContent(); ok {
-			// unused for now
-		}
-
 		// if using tool calls
-		if tool, ok := acc.JustFinishedToolCall(); ok {
-			println("Tool call stream finished:", tool.Index, tool.Name, tool.Arguments)
+		if toolCall, ok := acc.JustFinishedToolCall(); ok {
+			if toolCall.Name == "ping" {
+				tool := &PingTool{}
+				ch <- tool.Invoke()
+				continue
+			}
 		}
 
 		if refusal, ok := acc.JustFinishedRefusal(); ok {
@@ -79,9 +89,7 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 		return err
 	}
 
-	// After the stream is finished, acc can be used like a ChatCompletion
 	response := acc.Choices[0].Message.Content
-
 	ch <- response
 	return nil
 }
