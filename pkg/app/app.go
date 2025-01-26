@@ -187,6 +187,8 @@ func (m *App) newConversation() {
 
 	m.conversation.AddContext("You're a TUI companion app called Mark. You are direct and to the point. Behave like a professional software engineer. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested.")
 	m.conversation.AddContext("My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS.")
+	m.conversation.AddContext("I'm currently working on a project. I'm in the project's root directory.")
+	m.conversation.AddContext("My goal is: 'on app start, already trigger the completion API so the AI actually greets me before I input anything'")
 
 	m.conversation.AddVariable("cwd", cwd)
 
