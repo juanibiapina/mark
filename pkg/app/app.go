@@ -189,10 +189,9 @@ func (m *App) newConversation() {
 
 	m.conversation = llm.MakeConversation()
 
-	m.conversation.AddContext("You're a TUI companion app called Mark. You are direct and to the point. Behave like a staff software engineer. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested.")
-	m.conversation.AddContext("My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS.")
-	m.conversation.AddContext("I'm currently working on a software project. I'm in the project's root directory.")
-	m.conversation.AddContext("If there are changes, explain the git diff.")
+	m.conversation.SetContext("assistant", "You're a TUI companion app called Mark. You are direct and to the point. Behave like a staff software engineer. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested.")
+	m.conversation.SetContext("user", "My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS.")
+	m.conversation.SetContext("prompt", "I'm currently working on a software project. I'm in the project's root directory. If there are changes, explain the git diff.")
 
 	c, err := m.project.Context()
 	if err != nil {
@@ -200,8 +199,7 @@ func (m *App) newConversation() {
 		log.Panic(err)
 	}
 
-	m.conversation.AddContext(c)
-
+	m.conversation.SetContext("project", c)
 
 	m.conversationView.Blur()
 	m.input.Focus()
@@ -221,6 +219,14 @@ func (m *App) submitMessage() tea.Cmd {
 	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
 
 	m.startStreaming()
+
+	c, err := m.project.Context()
+	if err != nil {
+		m.err = err
+		log.Panic(err)
+	}
+
+	m.conversation.SetContext("project", c)
 
 	cmds := []tea.Cmd{
 		complete(m),      // call completions API

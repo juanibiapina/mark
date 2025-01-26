@@ -35,15 +35,6 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 		chatMessages = append(chatMessages, openai.UserMessage(con))
 	}
 
-	// Add a user message containing variables
-	if len(c.variables) != 0 {
-		con := "Variables:\n"
-		for k, v := range c.variables {
-			con += k + ": " + v + "\n"
-		}
-		chatMessages = append(chatMessages, openai.UserMessage(con))
-	}
-
 	// Add the actual conversation messages
 	for _, msg := range c.Messages() {
 		if msg.Role == RoleUser {
