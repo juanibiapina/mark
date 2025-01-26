@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/neovim/go-client/nvim"
 )
 
-type Project struct{
+type Project struct {
 	entries []PromptEntry
 }
 
@@ -18,6 +20,7 @@ func NewProject() *Project {
 			&ShellCommandPromptEntry{Command: "git", Args: []string{"status"}},
 			&ShellCommandPromptEntry{Command: "git", Args: []string{"diff"}},
 			&ShellCommandPromptEntry{Command: "git", Args: []string{"log", "-n", "10"}},
+			&PromptEntryNeovimBuffers{Socket: "/tmp/nvim.739274.0"}, // TODO: find the correct socket path automatically (default place for current directory)
 		},
 	}
 }
@@ -65,6 +68,44 @@ func (s *ShellCommandPromptEntry) Prompt() (string, error) {
 	return fmt.Sprintf("Command: %s %v\n```\n%s\n```\n", s.Command, s.Args, output), nil
 }
 
+type PromptEntryNeovimBuffers struct {
+	Socket string
+}
+
+func (p *PromptEntryNeovimBuffers) Prompt() (string, error) {
+	nvim, err := nvim.Dial(p.Socket)
+	if err != nil {
+		return "", err
+	}
+	defer nvim.Close()
+
+	buffers, err := nvim.Buffers()
+	if err != nil {
+		return "", err
+	}
+
+	var output string
+	for _, buffer := range buffers {
+		isLoaded, err := nvim.IsBufferLoaded(buffer)
+		if err != nil || !isLoaded {
+			continue
+		}
+
+		name, err := nvim.BufferName(buffer)
+		if err != nil || name == "" {
+			continue
+		}
+
+		lines, err := nvim.BufferLines(buffer, 0, -1, true)
+		if err != nil {
+			return "", err
+		}
+		output += fmt.Sprintf("Buffer: %s\n```\n%s\n```\n", name, lines)
+	}
+
+	return output, nil
+}
+
 func (p *Project) Context() (string, error) {
 	var c string = "You're in a project context\n"
 	var tmp string
@@ -89,4 +130,3 @@ func runShellCommand(command string, args ...string) (string, error) {
 	}
 	return string(output), nil
 }
-
