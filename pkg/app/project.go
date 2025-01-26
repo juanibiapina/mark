@@ -13,16 +13,29 @@ type Project struct {
 }
 
 func NewProject() *Project {
-	return &Project{
-		entries: []PromptEntry{
-			&FilePromptEntry{Filename: "README.md"},
-			&ShellCommandPromptEntry{Command: "tree"},
+	entries := []PromptEntry{
+		&FilePromptEntry{Filename: "README.md"},
+		&ShellCommandPromptEntry{Command: "tree"},
+	}
+
+	if isGitRepo() {
+		entries = append(entries,
 			&ShellCommandPromptEntry{Command: "git", Args: []string{"status"}},
 			&ShellCommandPromptEntry{Command: "git", Args: []string{"diff"}},
 			&ShellCommandPromptEntry{Command: "git", Args: []string{"log", "-n", "10"}},
-			&PromptEntryNeovimBuffers{Socket: "/tmp/nvim.739274.0"}, // TODO: find the correct socket path automatically (default place for current directory)
-		},
+		)
 	}
+
+	// TODO: find the correct socket path automatically (default place for current directory)
+	entries = append(entries, &PromptEntryNeovimBuffers{Socket: "/tmp/nvim.739274.0"})
+
+	return &Project{entries: entries}
+}
+
+func isGitRepo() bool {
+	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	err := cmd.Run()
+	return err == nil
 }
 
 type PromptEntry interface {
