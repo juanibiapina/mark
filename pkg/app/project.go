@@ -12,12 +12,14 @@ func NewProject() *Project {
 }
 
 func (p *Project) Context() (string, error) {
+	var c string = "You're in a project context\n"
+
 	readme, err := p.ReadFile("README.md")
 	if err != nil {
 		return "", err
 	}
 
-	c := fmt.Sprintf("You're in a project context:\nREADME.md:\n```\n%s\n```\n", readme)
+	c += fmt.Sprintf("README.md:\n```\n%s\n```\n", readme)
 
 	return c, nil
 }

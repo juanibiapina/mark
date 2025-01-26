@@ -42,6 +42,7 @@ func MakeApp() App {
 		ai:    llm.NewOpenAIClient(),
 	}
 
+	app.project = NewProject()
 	app.newConversation()
 	app.startStreaming() // need to start streaming here because Init can't make changes to the model
 
@@ -115,14 +116,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+n":
 			m.newConversation()
 
-		case "ctrl+a":
-			err := m.addProjectContextToConversation()
-			if err != nil {
-				m.err = err
-				log.Panic(err)
-				return m, tea.Quit
-			}
-
 		case "ctrl+c":
 			m.cancelStreaming()
 
@@ -185,22 +178,6 @@ func (m *App) cancelStreaming() {
 	m.partialMessage = ""
 }
 
-// addProjectContextToConversation adds project context to the current model
-// and conversation. Will duplicate context if called multiple times. This is
-// just a proof of concept.
-func (m *App) addProjectContextToConversation() error {
-	m.project = NewProject()
-
-	c, err := m.project.Context()
-	if err != nil {
-		return err
-	}
-
-	m.conversation.AddContext(c)
-
-	return nil
-}
-
 func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
@@ -212,18 +189,19 @@ func (m *App) newConversation() {
 
 	m.conversation = llm.MakeConversation()
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		m.err = err
-		return
-	}
-
 	m.conversation.AddContext("You're a TUI companion app called Mark. You are direct and to the point. Behave like a staff software engineer. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested.")
 	m.conversation.AddContext("My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS.")
 	m.conversation.AddContext("I'm currently working on a software project. I'm in the project's root directory.")
 	m.conversation.AddContext("My goal is: code change: Add Project context to every new Conversation")
 
-	m.conversation.AddVariable("cwd", cwd)
+	c, err := m.project.Context()
+	if err != nil {
+		m.err = err
+		log.Panic(err)
+	}
+
+	m.conversation.AddContext(c)
+
 
 	m.conversationView.Blur()
 	m.input.Focus()
