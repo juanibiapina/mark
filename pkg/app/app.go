@@ -18,6 +18,7 @@ type App struct {
 
 	// models
 	conversation llm.Conversation
+	project      *Project
 
 	// view models
 	conversationView Conversation
@@ -100,6 +101,14 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+n":
 			m.newConversation()
 
+		case "ctrl+a":
+			err := m.addProjectContextToConversation()
+			if err != nil {
+				m.err = err
+				log.Panic(err)
+				return m, tea.Quit
+			}
+
 		case "ctrl+c":
 			m.conversation.CancelStreaming()
 
@@ -141,6 +150,22 @@ func (m App) View() string {
 		m.conversationView.View(),
 		m.input.View(),
 	)
+}
+
+// addProjectContextToConversation adds project context to the current model
+// and conversation. Will duplicate context if called multiple times. This is
+// just a proof of concept.
+func (m *App) addProjectContextToConversation() error {
+	m.project = NewProject()
+
+	c, err := m.project.Context()
+	if err != nil {
+		return err
+	}
+
+	m.conversation.AddContext(c)
+
+	return nil
 }
 
 func (m *App) processInputView(msg tea.Msg) tea.Cmd {
