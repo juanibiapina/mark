@@ -1,6 +1,10 @@
 package llm
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+
 	"github.com/openai/openai-go"
 )
 
@@ -57,6 +61,26 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 					Strict:      openai.Bool(false),
 				}),
 			},
+			{
+				Type: openai.F(openai.ChatCompletionToolTypeFunction),
+				Function: openai.F(openai.FunctionDefinitionParam{
+					Name:        openai.String("write_file"),
+					Description: openai.String("Write or replace a file in the filesystem"),
+					Parameters: openai.F(openai.FunctionParameters{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"filename": map[string]string{
+								"type": "string",
+							},
+							"content": map[string]interface{}{
+								"type": "string",
+							},
+						},
+						"required": []string{"filename", "content"},
+					}),
+					Strict: openai.Bool(false),
+				}),
+			},
 		}),
 	})
 
@@ -73,6 +97,26 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 				ch <- tool.Invoke()
 				continue
 			}
+
+			if toolCall.Name == "write_file" {
+				var params map[string]interface{}
+				if err := json.Unmarshal([]byte(toolCall.Arguments), &params); err != nil {
+					ch <- fmt.Sprintf("Error parsing arguments: %v", err)
+					continue
+				}
+
+				filename := params["filename"].(string)
+				content := params["content"].(string)
+
+				err := os.WriteFile(filename, []byte(content), 0o644)
+				if err != nil {
+					ch <- fmt.Sprintf("Error writing file: %v", err)
+					continue
+				}
+
+				ch <- fmt.Sprintf("File written: %s", filename)
+				continue
+			}
 		}
 
 		if refusal, ok := acc.JustFinishedRefusal(); ok {
@@ -81,7 +125,10 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 
 		// it's best to use chunks after handling JustFinished events
 		if len(chunk.Choices) > 0 {
-			pch <- chunk.Choices[0].Delta.Content
+			content := chunk.Choices[0].Delta.Content
+			if content != "" {
+				pch <- chunk.Choices[0].Delta.Content
+			}
 		}
 	}
 
