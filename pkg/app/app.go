@@ -42,6 +42,10 @@ func MakeApp() App {
 	return app
 }
 
+// Init Init is required by the bubbletea interface. It is called once when the
+// program starts. It is used to send an initial command to the update function.
+// Note: Modifications to the model here are lost since there's no way to return
+// the updated model like in Update.
 func (m App) Init() tea.Cmd {
 	return nil
 }
