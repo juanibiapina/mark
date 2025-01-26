@@ -26,7 +26,7 @@ func (c *Conversation) ScrollToBottom() {
 	c.viewport.GotoBottom()
 }
 
-func (c *Conversation) render(con *llm.Conversation) {
+func (c *Conversation) render(con *llm.Conversation, streaming bool, partialMessage string) {
 	messages := con.Messages()
 
 	// create a new glamour renderer
@@ -39,7 +39,7 @@ func (c *Conversation) render(con *llm.Conversation) {
 
 	// calculate number of messages to render
 	var n int
-	if con.StreamingMessage == nil {
+	if !streaming {
 		n = 2
 	} else {
 		n = 1
@@ -65,8 +65,8 @@ func (c *Conversation) render(con *llm.Conversation) {
 		content += m
 	}
 
-	if con.StreamingMessage != nil {
-		c, err := renderer.Render(con.StreamingMessage.Content)
+	if streaming {
+		c, err := renderer.Render(partialMessage)
 		if err != nil {
 			log.Fatal(err)
 		}

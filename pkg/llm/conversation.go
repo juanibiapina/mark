@@ -13,15 +13,14 @@ func MakeConversation() Conversation {
 	}
 }
 
+// CancelStreaming shouldn't exist because streaming variables should be in the
+// App model
 func (c *Conversation) CancelStreaming() {
 	if c.StreamingMessage == nil {
 		return
 	}
 
 	c.StreamingMessage.Cancel()
-
-	// Add the partial message to the chat history
-	c.AddMessage(Message{Role: RoleAssistant, Content: c.StreamingMessage.Content})
 
 	c.StreamingMessage = nil
 }

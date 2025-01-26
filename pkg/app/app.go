@@ -17,8 +17,10 @@ type App struct {
 	uiReady bool
 
 	// models
-	conversation llm.Conversation
-	project      *Project
+	conversation   llm.Conversation
+	streaming      bool
+	partialMessage string
+	project        *Project
 
 	// view models
 	conversationView Conversation
@@ -77,21 +79,22 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
-		if m.conversation.StreamingMessage == nil {
+		if !m.streaming {
 			return m, nil
 		}
 
-		m.conversation.StreamingMessage.Content += string(msg)
+		m.partialMessage += string(msg)
 
 		cmds = append(cmds, processStream(&m))
 
 	case replyMessage:
 		// Ignore message if streaming has been cancelled
-		if m.conversation.StreamingMessage == nil {
+		if !m.streaming {
 			return m, nil
 		}
 
-		m.conversation.StreamingMessage = nil
+		m.streaming = false
+		m.partialMessage = ""
 		m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
 
 	case tea.KeyMsg:
@@ -114,7 +117,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "ctrl+c":
-			m.conversation.CancelStreaming()
+			m.cancelStreaming()
 
 		case "enter":
 			if m.input.Focused() {
@@ -139,7 +142,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := m.processInputView(msg)
 	cmds = append(cmds, cmd)
 
-	m.conversationView.render(&m.conversation)
+	m.conversationView.render(&m.conversation, m.streaming, m.partialMessage)
 	m.conversationView.ScrollToBottom()
 
 	return m, tea.Batch(cmds...)
@@ -154,6 +157,16 @@ func (m App) View() string {
 		m.conversationView.View(),
 		m.input.View(),
 	)
+}
+
+func (m *App) cancelStreaming() {
+	m.conversation.CancelStreaming()
+
+	// Add the partial message to the chat history
+	m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: m.partialMessage})
+
+	m.streaming = false
+	m.partialMessage = ""
 }
 
 // addProjectContextToConversation adds project context to the current model
@@ -179,7 +192,7 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 }
 
 func (m *App) newConversation() {
-	m.conversation.CancelStreaming()
+	m.cancelStreaming()
 
 	m.conversation = llm.MakeConversation()
 
@@ -208,13 +221,15 @@ func (m *App) submitMessage() tea.Cmd {
 
 	m.input.Reset()
 
-	m.conversation.CancelStreaming()
+	m.cancelStreaming()
 
 	// Add user message to chat history
 	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
 
 	// Create a new streaming message
 	m.conversation.StreamingMessage = llm.NewStreamingMessage()
+
+	m.streaming = true
 
 	cmds := []tea.Cmd{
 		complete(m),      // call completions API
