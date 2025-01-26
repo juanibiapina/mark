@@ -17,10 +17,13 @@ type App struct {
 	uiReady bool
 
 	// models
-	conversation   llm.Conversation
+	conversation llm.Conversation
+	project      *Project
+
+	// streaming
 	streaming      bool
+	stream         *llm.StreamingMessage
 	partialMessage string
-	project        *Project
 
 	// view models
 	conversationView Conversation
@@ -159,13 +162,22 @@ func (m App) View() string {
 	)
 }
 
+func (m *App) startStreaming() {
+	m.stream = llm.NewStreamingMessage()
+	m.streaming = true
+}
+
 func (m *App) cancelStreaming() {
-	m.conversation.CancelStreaming()
+	if m.stream != nil {
+		m.stream.Cancel()
+	}
+	m.stream = nil
+
+	m.streaming = false
 
 	// Add the partial message to the chat history
 	m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: m.partialMessage})
 
-	m.streaming = false
 	m.partialMessage = ""
 }
 
@@ -226,10 +238,7 @@ func (m *App) submitMessage() tea.Cmd {
 	// Add user message to chat history
 	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
 
-	// Create a new streaming message
-	m.conversation.StreamingMessage = llm.NewStreamingMessage()
-
-	m.streaming = true
+	m.startStreaming()
 
 	cmds := []tea.Cmd{
 		complete(m),      // call completions API
@@ -240,7 +249,7 @@ func (m *App) submitMessage() tea.Cmd {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.ai.CompleteStreaming(&m.conversation)
+		m.ai.CompleteStreaming(&m.conversation, m.stream)
 
 		return nil
 	}
@@ -249,9 +258,9 @@ func complete(m *App) tea.Cmd {
 func processStream(m *App) tea.Cmd {
 	return func() tea.Msg {
 		select {
-		case v := <-m.conversation.StreamingMessage.Reply:
+		case v := <-m.stream.Reply:
 			return replyMessage(v)
-		case v := <-m.conversation.StreamingMessage.Chunks:
+		case v := <-m.stream.Chunks:
 			return partialMessage(v)
 		}
 	}

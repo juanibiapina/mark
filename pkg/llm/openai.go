@@ -15,10 +15,10 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // Complete sends a list of messages to the OpenAI API and returns the response
-func (a *OpenAI) CompleteStreaming(c *Conversation) error {
-	ctx := c.StreamingMessage.Ctx
-	pch := c.StreamingMessage.Chunks
-	ch := c.StreamingMessage.Reply
+func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
+	ctx := s.Ctx
+	pch := s.Chunks
+	ch := s.Reply
 
 	defer close(pch)
 	defer close(ch)

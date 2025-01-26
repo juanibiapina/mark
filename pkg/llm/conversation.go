@@ -4,25 +4,12 @@ type Conversation struct {
 	context          []string
 	variables        map[string]string
 	messages         []Message
-	StreamingMessage *StreamingMessage
 }
 
 func MakeConversation() Conversation {
 	return Conversation{
 		variables: make(map[string]string),
 	}
-}
-
-// CancelStreaming shouldn't exist because streaming variables should be in the
-// App model
-func (c *Conversation) CancelStreaming() {
-	if c.StreamingMessage == nil {
-		return
-	}
-
-	c.StreamingMessage.Cancel()
-
-	c.StreamingMessage = nil
 }
 
 func (c *Conversation) AddMessage(m Message) {

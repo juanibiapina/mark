@@ -1,7 +1,7 @@
 package llm
 
 type Llm interface {
-	CompleteStreaming(c *Conversation) error
+	CompleteStreaming(c *Conversation, s *StreamingMessage) error
 }
 
 type Role int
