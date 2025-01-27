@@ -1,6 +1,7 @@
 package app
 
 import (
+	"crypto/md5"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,10 +27,33 @@ func NewProject() *Project {
 		)
 	}
 
+	socket, err := determineNeovimSocket()
+	if err != nil {
+		panic(err) // TODO handle error
+	}
+
 	// TODO: find the correct socket path automatically (default place for current directory)
-	entries = append(entries, &PromptEntryNeovimBuffers{Socket: "/tmp/nvim.739274.0"})
+	entries = append(entries, &PromptEntryNeovimBuffers{Socket: socket})
 
 	return &Project{entries: entries}
+}
+
+func determineNeovimSocket() (string, error) {
+	// get cwd
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// create md5 of cwd
+	md5 := md5.New()
+	md5.Write([]byte(wd))
+	hash := fmt.Sprintf("%x", md5.Sum(nil))
+
+	// create socket path
+	socket := fmt.Sprintf("/tmp/nvim.%s", hash)
+
+	return socket, nil
 }
 
 func isGitRepo() bool {
