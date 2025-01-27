@@ -44,7 +44,6 @@ func MakeApp() App {
 
 	app.project = NewProject()
 	app.newConversation()
-	app.startStreaming() // need to start streaming here because Init can't make changes to the model
 
 	return app
 }
@@ -54,10 +53,7 @@ func MakeApp() App {
 // Note: Modifications to the model here are lost since there's no way to return
 // the updated model like in Update.
 func (m App) Init() tea.Cmd {
-	return tea.Batch(
-		complete(&m),      // call completions API
-		processStream(&m), // start receiving partial message
-	)
+	return nil
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
