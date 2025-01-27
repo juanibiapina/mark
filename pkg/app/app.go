@@ -62,6 +62,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmds []tea.Cmd
+	var handled bool // whether the key event was handled and shouldn't be passed to the input view
 
 	switch msg := msg.(type) {
 
@@ -123,32 +124,39 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "ctrl+n":
 			m.newConversation()
+			handled = true
 
 		case "ctrl+c":
 			m.cancelStreaming()
+			handled = true
 
 		case "enter":
 			if m.input.Focused() {
 				cmd := m.submitMessage()
 				cmds = append(cmds, cmd)
+				handled = true
 			}
 
 		case "esc":
 			if m.input.Focused() {
 				m.input.Blur()
 				m.conversationView.Focus()
+				handled = true
 			}
 
 		case "i":
 			if m.conversationView.Focused() {
 				m.input.Focus()
 				m.conversationView.Blur()
+				handled = true
 			}
 		}
 	}
 
-	cmd := m.processInputView(msg)
-	cmds = append(cmds, cmd)
+	if !handled {
+		cmd := m.processInputView(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	m.conversationView.render(&m.conversation, m.streaming, m.partialMessage)
 	m.conversationView.ScrollToBottom()
