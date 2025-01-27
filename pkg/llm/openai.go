@@ -56,14 +56,6 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 			{
 				Type: openai.F(openai.ChatCompletionToolTypeFunction),
 				Function: openai.F(openai.FunctionDefinitionParam{
-					Name:        openai.String("ping"),
-					Description: openai.String("A simple tool that returns 'pong'"),
-					Strict:      openai.Bool(false),
-				}),
-			},
-			{
-				Type: openai.F(openai.ChatCompletionToolTypeFunction),
-				Function: openai.F(openai.FunctionDefinitionParam{
 					Name:        openai.String("write_file"),
 					Description: openai.String("Write or replace a file in the filesystem"),
 					Parameters: openai.F(openai.FunctionParameters{
@@ -92,12 +84,6 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 
 		// if using tool calls
 		if toolCall, ok := acc.JustFinishedToolCall(); ok {
-			if toolCall.Name == "ping" {
-				tool := &PingTool{}
-				ch <- tool.Invoke()
-				continue
-			}
-
 			if toolCall.Name == "write_file" {
 				var params map[string]interface{}
 				if err := json.Unmarshal([]byte(toolCall.Arguments), &params); err != nil {
