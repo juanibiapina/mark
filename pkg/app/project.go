@@ -23,6 +23,7 @@ func NewProject() *Project {
 		entries = append(entries,
 			&ShellCommandPromptEntry{Command: "git", Args: []string{"status"}},
 			&ShellCommandPromptEntry{Command: "git", Args: []string{"diff"}},
+			&ShellCommandPromptEntry{Command: "git", Args: []string{"diff", "--cached"}},
 			&ShellCommandPromptEntry{Command: "git", Args: []string{"log", "-n", "10"}},
 		)
 	}
