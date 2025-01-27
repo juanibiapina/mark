@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/neovim/go-client/nvim"
 )
@@ -86,7 +87,14 @@ func (f *FilePromptEntry) Prompt() (string, error) {
 	}
 
 	// Format output
-	output += fmt.Sprintf("File: %s\n```\n%s\n```\n", f.Filename, content)
+	output += fmt.Sprintf("File: %s\n", f.Filename)
+	output += "```\n"
+	// Format output with line numbers
+	lines := strings.Split(string(content), "\n")
+	for i, line := range lines {
+		output += fmt.Sprintf("%d: %s\n", i+1, line)
+	}
+	output += "```\n"
 
 	return output, nil
 }
@@ -138,7 +146,14 @@ func (p *PromptEntryNeovimBuffers) Prompt() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		output += fmt.Sprintf("Buffer: %s\n```\n%s\n```\n", name, lines)
+
+		// Format output with line numbers
+		output += fmt.Sprintf("Buffer: %s\n", name)
+		output += "```\n"
+		for i, line := range lines {
+			output += fmt.Sprintf("%d: %s\n", i+1, line)
+		}
+		output += "```\n"
 	}
 
 	return output, nil
