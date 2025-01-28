@@ -1,6 +1,8 @@
-package llm
+package llmopenai
 
 import (
+	"ant/pkg/llm"
+
 	"github.com/openai/openai-go"
 )
 
@@ -15,7 +17,7 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // Complete sends a list of messages to the OpenAI API and returns the response
-func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
+func (a *OpenAI) CompleteStreaming(c *llm.Conversation, s *llm.StreamingMessage) error {
 	ctx := s.Ctx
 	pch := s.Chunks
 	ch := s.Reply
@@ -27,9 +29,10 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 
 	// Add a user message containing context
-	if len(c.context) != 0 {
+	context := c.Context()
+	if len(context) != 0 {
 		con := "Context:\n"
-		for _, v := range c.context {
+		for _, v := range context {
 			con += v + "\n"
 		}
 		chatMessages = append(chatMessages, openai.UserMessage(con))
@@ -37,7 +40,7 @@ func (a *OpenAI) CompleteStreaming(c *Conversation, s *StreamingMessage) error {
 
 	// Add the actual conversation messages
 	for _, msg := range c.Messages() {
-		if msg.Role == RoleUser {
+		if msg.Role == llm.RoleUser {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 		} else {
 			chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))

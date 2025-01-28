@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"ant/pkg/llm"
+	"ant/pkg/llmopenai"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -39,7 +40,7 @@ type App struct {
 func MakeApp() App {
 	app := App{
 		input: MakeInput(),
-		ai:    llm.NewOpenAIClient(),
+		ai:    llmopenai.NewOpenAIClient(),
 	}
 
 	app.project = NewProject()

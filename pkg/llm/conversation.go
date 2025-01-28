@@ -22,3 +22,7 @@ func (c *Conversation) SetContext(k, v string) {
 func (c *Conversation) Messages() []Message {
 	return c.messages
 }
+
+func (c *Conversation) Context() map[string]string {
+	return c.context
+}
