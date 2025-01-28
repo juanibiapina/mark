@@ -2,6 +2,7 @@ package llm
 
 type Llm interface {
 	CompleteStreaming(c *Conversation, s *StreamingMessage) error
+	CompleteStructured(c *Conversation, rs ResponseSchema, v interface{}) error
 }
 
 type Role int

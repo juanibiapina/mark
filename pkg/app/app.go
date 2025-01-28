@@ -84,6 +84,13 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.input.SetWidth(msg.Width)
 
+	case ReplaceLine:
+		// replace the line in the file
+		err := msg.Invoke()
+		if err != nil {
+			panic(err)
+		}
+
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
 		if !m.streaming {
@@ -254,9 +261,20 @@ func (m *App) submitMessage() tea.Cmd {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.ai.CompleteStreaming(&m.conversation, m.stream)
+		rs := llm.ResponseSchema{
+			Name: "replace_line",
+			Description: "Replace a line in a file",
+			Schema: ReplaceLineResponseSchema,
+		}
 
-		return nil
+		replaceLine := ReplaceLine{}
+
+		err := m.ai.CompleteStructured(&m.conversation, rs, &replaceLine)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return replaceLine
 	}
 }
 
