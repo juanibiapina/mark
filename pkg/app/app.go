@@ -120,7 +120,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			log.Printf("error writing to file: %v", err)
 		}
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 
 		case "q":
