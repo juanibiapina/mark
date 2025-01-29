@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -15,8 +14,9 @@ import (
 
 type App struct {
 	// app state
-	uiReady       bool
-	width, height int
+	uiReady        bool
+	width, height  int
+	mainPanelWidth int
 
 	// models
 	conversation llm.Conversation
@@ -76,6 +76,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.mainPanelWidth = int(float64(msg.Width) * float64(0.67))
 
 		if !m.uiReady {
 			m.uiReady = true
@@ -159,11 +160,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.uiReady {
-		inputHeight := lipgloss.Height(m.input.View())
+		m.conversationView.SetSize(m.mainPanelWidth, m.height)
 
-		m.conversationView.SetSize(m.width, m.height-inputHeight)
-
-		m.input.SetWidth(m.width)
+		m.input.SetWidth(m.width - m.mainPanelWidth)
 
 		if !handled {
 			cmd := m.processInputView(msg)
@@ -182,9 +181,9 @@ func (m App) View() string {
 		return "Initializing UI..."
 	}
 
-	return fmt.Sprintf("%s\n%s",
-		m.conversationView.View(),
+	return lipgloss.JoinHorizontal(lipgloss.Top,
 		m.input.View(),
+		m.conversationView.View(),
 	)
 }
 
