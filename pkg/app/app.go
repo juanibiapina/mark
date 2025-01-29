@@ -12,11 +12,19 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type State int
+
+const (
+	StateInput State = iota
+	StateNormal
+)
+
 type App struct {
 	// app state
 	uiReady        bool
 	width, height  int
 	mainPanelWidth int
+	state          State
 
 	// models
 	conversation llm.Conversation
@@ -40,6 +48,7 @@ type App struct {
 
 func MakeApp() App {
 	app := App{
+		state: StateInput,
 		input: MakeInput(),
 		ai:    llmopenai.NewOpenAIClient(),
 	}
@@ -124,8 +133,27 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 
 		case "q":
-			if m.conversationView.Focused() {
+			if m.state == StateNormal {
 				return m, tea.Quit
+			}
+
+		case "esc":
+			if m.state == StateInput {
+				m.state = StateNormal
+				inputHandled = true
+			}
+
+		case "enter":
+			if m.state == StateInput {
+				cmd := m.submitMessage()
+				cmds = append(cmds, cmd)
+				inputHandled = true
+			}
+
+		case "ctrl+o":
+			if m.state == StateNormal {
+				m.changeToStateInput()
+				inputHandled = true
 			}
 
 		case "ctrl+n":
@@ -136,26 +164,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cancelStreaming()
 			inputHandled = true
 
-		case "enter":
-			if m.input.Focused() {
-				cmd := m.submitMessage()
-				cmds = append(cmds, cmd)
-				inputHandled = true
-			}
-
-		case "esc":
-			if m.input.Focused() {
-				m.input.Blur()
-				m.conversationView.Focus()
-				inputHandled = true
-			}
-
-		case "i":
-			if m.conversationView.Focused() {
-				m.input.Focus()
-				m.conversationView.Blur()
-				inputHandled = true
-			}
 		}
 	}
 
@@ -164,7 +172,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.input.SetWidth(m.width - m.mainPanelWidth)
 
-		if !inputHandled {
+		if m.state == StateInput && !inputHandled {
 			cmd := m.processInputView(msg)
 			cmds = append(cmds, cmd)
 		}
@@ -185,6 +193,12 @@ func (m App) View() string {
 		m.input.View(),
 		m.conversationView.View(),
 	)
+}
+
+func (m *App) changeToStateInput() {
+	m.state = StateInput
+	m.input.Focus()
+	m.conversationView.Blur()
 }
 
 func (m *App) startStreaming() {
@@ -229,8 +243,9 @@ func (m *App) newConversation() {
 
 	m.conversation.SetContext("project", c)
 
-	m.conversationView.Blur()
-	m.input.Focus()
+	m.input.Reset()
+
+	m.changeToStateInput()
 }
 
 func (m *App) submitMessage() tea.Cmd {
