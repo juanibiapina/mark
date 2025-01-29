@@ -3,10 +3,10 @@ package app
 import (
 	"ant/pkg/view"
 
-	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/textarea"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/bubbles/v2/cursor"
+	"github.com/charmbracelet/bubbles/v2/textarea"
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type Input struct {
@@ -27,7 +27,7 @@ func MakeInput() Input {
 	ta.SetHeight(3)
 
 	// Remove cursor line styling
-	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+	ta.Styles.Focused.CursorLine = lipgloss.NewStyle()
 
 	ta.ShowLineNumbers = false
 
@@ -39,8 +39,8 @@ func MakeInput() Input {
 	}
 }
 
-func (i Input) Init() tea.Cmd {
-	return nil
+func (i Input) Init() (Input, tea.Cmd) {
+	return i, nil
 }
 
 func (i Input) Update(msg tea.Msg) (Input, tea.Cmd) {
