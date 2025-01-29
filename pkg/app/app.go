@@ -261,20 +261,20 @@ func (m *App) submitMessage() tea.Cmd {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		rs := llm.ResponseSchema{
-			Name: "replace_line",
-			Description: "Replace a line in a file",
-			Schema: ReplaceLineResponseSchema,
-		}
+		//rs := llm.ResponseSchema{
+		//	Name: "replace_line",
+		//	Description: "Replace a line in a file",
+		//	Schema: ReplaceLineResponseSchema,
+		//}
 
-		replaceLine := ReplaceLine{}
+		//replaceLine := ReplaceLine{}
 
-		err := m.ai.CompleteStructured(&m.conversation, rs, &replaceLine)
+		err := m.ai.CompleteStreaming(&m.conversation, m.stream)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return replaceLine
+		return nil
 	}
 }
 
