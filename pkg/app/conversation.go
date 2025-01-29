@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"ant/pkg/llm"
-	"ant/pkg/view"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/glamour"
@@ -13,8 +12,6 @@ import (
 )
 
 type Conversation struct {
-	view.Focusable
-
 	viewport viewport.Model
 }
 
@@ -74,16 +71,16 @@ func (c *Conversation) render(con *llm.Conversation, streaming bool, partialMess
 }
 
 func (c Conversation) View() string {
-	return c.BorderStyle().Render(c.viewport.View())
+	return c.viewport.View()
 }
 
 func (c *Conversation) SetSize(w int, h int) {
-	c.viewport.Width = w - c.BorderStyle().GetVerticalFrameSize()
-	c.viewport.Height = h - c.BorderStyle().GetHorizontalFrameSize()
+	c.viewport.Width = w
+	c.viewport.Height = h
 }
 
 func (c *Conversation) Height() int {
-	return c.viewport.Height + c.BorderStyle().GetHorizontalFrameSize()
+	return c.viewport.Height
 }
 
 func (c *Conversation) LineDown() {

@@ -19,12 +19,25 @@ const (
 	StateNormal
 )
 
+type Focused int
+
+const (
+	FocusedInput Focused = iota
+	FocusedEmptyPanel
+)
+
+var (
+	borderStyle        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+	focusedBorderStyle = borderStyle.BorderForeground(lipgloss.Color("2"))
+)
+
 type App struct {
 	// app state
 	uiReady        bool
 	width, height  int
 	mainPanelWidth int
 	state          State
+	focused        Focused
 
 	// models
 	conversation llm.Conversation
@@ -48,9 +61,10 @@ type App struct {
 
 func MakeApp() App {
 	app := App{
-		state: StateInput,
-		input: MakeInput(),
-		ai:    llmopenai.NewOpenAIClient(),
+		state:   StateInput,
+		focused: FocusedInput,
+		input:   MakeInput(),
+		ai:      llmopenai.NewOpenAIClient(),
 	}
 
 	app.project = NewProject()
@@ -139,7 +153,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "esc":
 			if m.state == StateInput {
-				m.state = StateNormal
+				m.changeToStateNormal()
 				inputHandled = true
 			}
 
@@ -180,9 +194,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.uiReady {
-		m.conversationView.SetSize(m.mainPanelWidth, m.height)
+		m.conversationView.SetSize(m.mainPanelWidth-2, m.height-2)
 
-		m.input.SetWidth(m.width - m.mainPanelWidth)
+		m.input.SetWidth(m.width - m.mainPanelWidth - 2)
 
 		if m.state == StateInput && !inputHandled {
 			cmd := m.processInputView(msg)
@@ -200,10 +214,13 @@ func (m App) View() string {
 		return "Initializing UI..."
 	}
 
-	box := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(m.input.Width() - 2).Height(m.conversationView.Height() - lipgloss.Height(m.input.View()) - 2).Render("")
+	inputView := m.input.View()
 
-	leftPanel := lipgloss.JoinVertical(lipgloss.Left, m.input.View(), box)
-	rightPanel := m.conversationView.View()
+	inputBox := m.borderInput().Render(inputView)
+	emptyBox := m.borderEmptyPanel().Render(lipgloss.NewStyle().Width(lipgloss.Width(inputView)).Height(m.height - lipgloss.Height(inputView) - 4).Render(""))
+
+	leftPanel := lipgloss.JoinVertical(lipgloss.Left, inputBox, emptyBox)
+	rightPanel := borderStyle.Render(m.conversationView.View())
 
 	return lipgloss.JoinHorizontal(lipgloss.Top,
 		leftPanel,
@@ -211,10 +228,28 @@ func (m App) View() string {
 	)
 }
 
+func (m *App) borderInput() lipgloss.Style {
+	if m.focused == FocusedInput {
+		return focusedBorderStyle
+	}
+	return borderStyle
+}
+
+func (m *App) borderEmptyPanel() lipgloss.Style {
+	if m.focused == FocusedEmptyPanel {
+		return focusedBorderStyle
+	}
+	return borderStyle
+}
+
 func (m *App) changeToStateInput() {
 	m.state = StateInput
-	m.input.Focus()
-	m.conversationView.Blur()
+	m.focused = FocusedInput
+}
+
+func (m *App) changeToStateNormal() {
+	m.state = StateNormal
+	m.focused = FocusedEmptyPanel
 }
 
 func (m *App) startStreaming() {

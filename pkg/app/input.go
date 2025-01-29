@@ -1,8 +1,6 @@
 package app
 
 import (
-	"ant/pkg/view"
-
 	"github.com/charmbracelet/bubbles/v2/cursor"
 	"github.com/charmbracelet/bubbles/v2/textarea"
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -10,15 +8,13 @@ import (
 )
 
 type Input struct {
-	view.Focusable
-
 	textarea textarea.Model
 }
 
 func MakeInput() Input {
 	ta := textarea.New()
 	ta.Placeholder = "Message Assistant"
-	ta.Focus()
+	ta.Focus() // focus is actually handled by the app
 
 	ta.Cursor.SetMode(cursor.CursorStatic)
 
@@ -34,8 +30,7 @@ func MakeInput() Input {
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 
 	return Input{
-		Focusable: view.MakeFocusable(),
-		textarea:  ta,
+		textarea: ta,
 	}
 }
 
@@ -44,21 +39,17 @@ func (i Input) Init() (Input, tea.Cmd) {
 }
 
 func (i Input) Update(msg tea.Msg) (Input, tea.Cmd) {
-	if !i.Focused() {
-		return i, nil
-	}
-
 	var cmd tea.Cmd
 	i.textarea, cmd = i.textarea.Update(msg)
 	return i, cmd
 }
 
 func (i Input) View() string {
-	return i.BorderStyle().Render(i.textarea.View())
+	return i.textarea.View()
 }
 
 func (i *Input) SetWidth(w int) {
-	i.textarea.SetWidth(w - i.BorderStyle().GetVerticalFrameSize())
+	i.textarea.SetWidth(w)
 }
 
 func (i *Input) Value() string {
@@ -70,5 +61,5 @@ func (i *Input) Reset() {
 }
 
 func (i *Input) Width() int {
-	return i.textarea.Width() + i.BorderStyle().GetVerticalFrameSize()
+	return i.textarea.Width()
 }
