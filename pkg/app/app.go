@@ -164,6 +164,18 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cancelStreaming()
 			inputHandled = true
 
+		case "shift+j":
+			if m.state == StateNormal {
+				m.conversationView.LineDown()
+				inputHandled = true
+			}
+
+		case "shift+k":
+			if m.state == StateNormal {
+				m.conversationView.LineUp()
+				inputHandled = true
+			}
+
 		}
 	}
 
@@ -178,7 +190,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.conversationView.render(&m.conversation, m.streaming, m.partialMessage)
-		m.conversationView.ScrollToBottom()
 	}
 
 	return m, tea.Batch(cmds...)
