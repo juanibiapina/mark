@@ -68,3 +68,7 @@ func (i *Input) Value() string {
 func (i *Input) Reset() {
 	i.textarea.Reset()
 }
+
+func (i *Input) Width() int {
+	return i.textarea.Width() + i.BorderStyle().GetVerticalFrameSize()
+}

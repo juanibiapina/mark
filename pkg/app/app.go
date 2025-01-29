@@ -200,9 +200,14 @@ func (m App) View() string {
 		return "Initializing UI..."
 	}
 
+	box := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(m.input.Width() - 2).Height(m.conversationView.Height() - lipgloss.Height(m.input.View()) - 2).Render("")
+
+	leftPanel := lipgloss.JoinVertical(lipgloss.Left, m.input.View(), box)
+	rightPanel := m.conversationView.View()
+
 	return lipgloss.JoinHorizontal(lipgloss.Top,
-		m.input.View(),
-		m.conversationView.View(),
+		leftPanel,
+		rightPanel,
 	)
 }
 

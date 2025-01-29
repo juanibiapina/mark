@@ -82,6 +82,10 @@ func (c *Conversation) SetSize(w int, h int) {
 	c.viewport.Height = h - c.BorderStyle().GetHorizontalFrameSize()
 }
 
+func (c *Conversation) Height() int {
+	return c.viewport.Height + c.BorderStyle().GetHorizontalFrameSize()
+}
+
 func (c *Conversation) LineDown() {
 	c.viewport.LineDown(1)
 }
