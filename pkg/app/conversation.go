@@ -18,10 +18,6 @@ type Conversation struct {
 	viewport viewport.Model
 }
 
-func (c *Conversation) Initialize(w int, h int) {
-	c.viewport = viewport.New(w-c.BorderStyle().GetVerticalFrameSize(), h-c.BorderStyle().GetHorizontalFrameSize())
-}
-
 func (c *Conversation) ScrollToBottom() {
 	c.viewport.GotoBottom()
 }

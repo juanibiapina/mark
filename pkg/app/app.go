@@ -15,7 +15,8 @@ import (
 
 type App struct {
 	// app state
-	uiReady bool
+	uiReady       bool
+	width, height int
 
 	// models
 	conversation llm.Conversation
@@ -73,16 +74,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
-		inputHeight := lipgloss.Height(m.input.View())
+		m.width = msg.Width
+		m.height = msg.Height
 
 		if !m.uiReady {
-			m.conversationView.Initialize(msg.Width, msg.Height-inputHeight)
 			m.uiReady = true
-		} else {
-			m.conversationView.SetSize(msg.Width, msg.Height-inputHeight)
 		}
-
-		m.input.SetWidth(msg.Width)
 
 	case ReplaceLine:
 		// replace the line in the file
@@ -161,13 +158,21 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	if !handled {
-		cmd := m.processInputView(msg)
-		cmds = append(cmds, cmd)
-	}
+	if m.uiReady {
+		inputHeight := lipgloss.Height(m.input.View())
 
-	m.conversationView.render(&m.conversation, m.streaming, m.partialMessage)
-	m.conversationView.ScrollToBottom()
+		m.conversationView.SetSize(m.width, m.height-inputHeight)
+
+		m.input.SetWidth(m.width)
+
+		if !handled {
+			cmd := m.processInputView(msg)
+			cmds = append(cmds, cmd)
+		}
+
+		m.conversationView.render(&m.conversation, m.streaming, m.partialMessage)
+		m.conversationView.ScrollToBottom()
+	}
 
 	return m, tea.Batch(cmds...)
 }
@@ -267,7 +272,7 @@ func complete(m *App) tea.Cmd {
 		//	Schema: ReplaceLineResponseSchema,
 		//}
 
-		//replaceLine := ReplaceLine{}
+		// replaceLine := ReplaceLine{}
 
 		err := m.ai.CompleteStreaming(&m.conversation, m.stream)
 		if err != nil {
