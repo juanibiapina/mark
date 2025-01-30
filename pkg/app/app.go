@@ -184,16 +184,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.uiReady {
-		m.conversationView.SetSize(m.mainPanelWidth-2, m.height-2)
-
-		m.input.SetWidth(m.width - m.mainPanelWidth - 2)
-
 		if m.state == StateInput && !inputHandled {
 			cmd := m.processInputView(msg)
 			cmds = append(cmds, cmd)
 		}
-
-		m.conversationView.render(&m.conversation, m.streaming, m.partialMessage)
 	}
 
 	return m, tea.Batch(cmds...)
@@ -203,6 +197,11 @@ func (m App) View() string {
 	if !m.uiReady {
 		return "Initializing UI..."
 	}
+
+	m.input.SetWidth(m.width - m.mainPanelWidth - 2)
+
+	m.conversationView.SetSize(m.mainPanelWidth-2, m.height-2)
+	m.conversationView.Render(&m.conversation, m.streaming, m.partialMessage)
 
 	inputView := m.input.View()
 	inputPane := view.NewPane(inputView, m.borderInput())

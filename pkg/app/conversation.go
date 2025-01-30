@@ -19,7 +19,7 @@ func (c *Conversation) ScrollToBottom() {
 	c.viewport.GotoBottom()
 }
 
-func (c *Conversation) render(con *llm.Conversation, streaming bool, partialMessage string) {
+func (c *Conversation) Render(con *llm.Conversation, streaming bool, partialMessage string) {
 	messages := con.Messages()
 
 	// create a new glamour renderer
