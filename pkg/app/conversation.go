@@ -25,6 +25,7 @@ func (c *Conversation) render(con *llm.Conversation, streaming bool, partialMess
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(c.viewport.Width - 2), // 2 is the glamour internal gutter
 	)
 	if err != nil {
 		log.Fatal(err)
