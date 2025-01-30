@@ -7,6 +7,7 @@ import (
 
 	"ant/pkg/llm"
 	"ant/pkg/llmopenai"
+	"ant/pkg/view"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss"
@@ -204,16 +205,18 @@ func (m App) View() string {
 	}
 
 	inputView := m.input.View()
+	inputPane := view.NewPane(inputView, m.borderInput())
 
-	inputBox := m.borderInput().Render(inputView)
-	emptyBox := m.borderEmptyPanel().Render(lipgloss.NewStyle().Width(lipgloss.Width(inputView)).Height(m.height - lipgloss.Height(inputView) - 4).Render(""))
+	emptyView := lipgloss.NewStyle().Width(lipgloss.Width(inputView)).Height(m.height - lipgloss.Height(inputPane.Render()) - 2).Render("")
+	emptyPane := view.NewPane(emptyView, m.borderEmptyPanel())
 
-	leftPanel := lipgloss.JoinVertical(lipgloss.Left, inputBox, emptyBox)
-	rightPanel := borderStyle.Render(m.conversationView.View())
+	conversationPane := view.NewPane(m.conversationView.View(), borderStyle)
+
+	leftSide := lipgloss.JoinVertical(lipgloss.Left, inputPane.Render(), emptyPane.Render())
 
 	return lipgloss.JoinHorizontal(lipgloss.Top,
-		leftPanel,
-		rightPanel,
+		leftSide,
+		conversationPane.Render(),
 	)
 }
 
