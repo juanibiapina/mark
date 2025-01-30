@@ -132,17 +132,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.partialMessage = ""
 		m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
 
-		// Write the assistant message to message.md
-		messageContent := string(msg)
-		f, err := os.OpenFile("message.md", os.O_CREATE|os.O_WRONLY, 0o644)
-		if err != nil {
-			log.Printf("error opening file: %v", err)
-		}
-		defer f.Close()
-		if _, err := f.WriteString(messageContent); err != nil {
-			log.Printf("error writing to file: %v", err)
-		}
-
 	case tea.KeyPressMsg:
 		switch msg.String() {
 
