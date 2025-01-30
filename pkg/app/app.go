@@ -201,10 +201,10 @@ func (m App) View() string {
 
 	main := view.Main{
 		Left: view.Sidebar{
-			Input: view.NewPane(m.input, m.borderInput()),
-			Empty: view.NewPane(view.Space{}, m.borderEmptyPanel()),
+			Input: view.NewPane(m.input, m.borderInput(), "Message Assistant"),
+			Empty: view.NewPane(view.Space{}, m.borderEmptyPanel(), ""),
 		},
-		Right: view.NewPane(m.conversationView, borderStyle),
+		Right: view.NewPane(m.conversationView, borderStyle, "Conversation"),
 		Ratio: 0.67,
 	}
 

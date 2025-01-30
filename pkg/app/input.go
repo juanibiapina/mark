@@ -13,7 +13,6 @@ type Input struct {
 
 func MakeInput() Input {
 	ta := textarea.New()
-	ta.Placeholder = "Message Assistant"
 	ta.Focus() // focus is actually handled by the app
 
 	ta.Cursor.SetMode(cursor.CursorStatic)

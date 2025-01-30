@@ -1,20 +1,29 @@
 package view
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/lipgloss"
+)
 
 // Pane is a container with a border
 type Pane struct {
 	c           Container
 	borderStyle lipgloss.Style
+	title       string
 }
 
-func NewPane(c Container, borderStyle lipgloss.Style) Pane {
+func NewPane(c Container, borderStyle lipgloss.Style, title string) Pane {
 	return Pane{
 		c:           c,
 		borderStyle: borderStyle,
+		title:       title,
 	}
 }
 
 func (p Pane) Render(width, height int) string {
-	return p.borderStyle.Render(p.c.Render(width-p.borderStyle.GetVerticalFrameSize(), height-p.borderStyle.GetHorizontalFrameSize()))
+	body := p.c.Render(width-p.borderStyle.GetVerticalFrameSize(), height-p.borderStyle.GetHorizontalFrameSize())
+	r := p.borderStyle.Render(body)
+	if p.title != "" && len(p.title) < width - 2 {
+		r = PlaceOverlay(2, 0, p.title, r)
+	}
+	return r
 }
