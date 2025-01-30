@@ -13,19 +13,25 @@ import (
 
 type Conversation struct {
 	viewport viewport.Model
+
+	con            *llm.Conversation
+	streaming      bool
+	partialMessage string
 }
 
-func (c *Conversation) ScrollToBottom() {
-	c.viewport.GotoBottom()
+func (c *Conversation) Set(con *llm.Conversation, streaming bool, partialMessage string) {
+	c.con = con
+	c.streaming = streaming
+	c.partialMessage = partialMessage
 }
 
-func (c *Conversation) Render(con *llm.Conversation, streaming bool, partialMessage string) {
-	messages := con.Messages()
+func (c *Conversation) renderMessages() {
+	messages := c.con.Messages()
 
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
-		glamour.WithWordWrap(c.viewport.Width - 2), // 2 is the glamour internal gutter
+		glamour.WithWordWrap(c.viewport.Width-2), // 2 is the glamour internal gutter
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -33,7 +39,7 @@ func (c *Conversation) Render(con *llm.Conversation, streaming bool, partialMess
 
 	// calculate number of messages to render
 	var n int
-	if !streaming {
+	if !c.streaming {
 		n = 2
 	} else {
 		n = 1
@@ -59,8 +65,8 @@ func (c *Conversation) Render(con *llm.Conversation, streaming bool, partialMess
 		content += m
 	}
 
-	if streaming {
-		c, err := renderer.Render(partialMessage)
+	if c.streaming {
+		c, err := renderer.Render(c.partialMessage)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -71,17 +77,13 @@ func (c *Conversation) Render(con *llm.Conversation, streaming bool, partialMess
 	c.viewport.SetContent(content)
 }
 
-func (c Conversation) View() string {
+func (c Conversation) Render(width, height int) string {
+	c.viewport.Width = width
+	c.viewport.Height = height
+
+	c.renderMessages()
+
 	return c.viewport.View()
-}
-
-func (c *Conversation) SetSize(w int, h int) {
-	c.viewport.Width = w
-	c.viewport.Height = h
-}
-
-func (c *Conversation) Height() int {
-	return c.viewport.Height
 }
 
 func (c *Conversation) LineDown() {

@@ -36,7 +36,6 @@ type App struct {
 	// app state
 	uiReady        bool
 	width, height  int
-	mainPanelWidth int
 	state          State
 	focused        Focused
 
@@ -100,7 +99,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.mainPanelWidth = int(float64(msg.Width) * float64(0.67))
 
 		if !m.uiReady {
 			m.uiReady = true
@@ -198,25 +196,19 @@ func (m App) View() string {
 		return "Initializing UI..."
 	}
 
-	m.input.SetWidth(m.width - m.mainPanelWidth - 2)
+	// TODO still weird that I need to do this in a view method
+	m.conversationView.Set(&m.conversation, m.streaming, m.partialMessage)
 
-	m.conversationView.SetSize(m.mainPanelWidth-2, m.height-2)
-	m.conversationView.Render(&m.conversation, m.streaming, m.partialMessage)
+	main := view.Main{
+		Left: view.Sidebar{
+			Input: view.NewPane(m.input, m.borderInput()),
+			Empty: view.NewPane(view.Space{}, m.borderEmptyPanel()),
+		},
+		Right: view.NewPane(m.conversationView, borderStyle),
+		Ratio: 0.67,
+	}
 
-	inputView := m.input.View()
-	inputPane := view.NewPane(inputView, m.borderInput())
-
-	emptyView := lipgloss.NewStyle().Width(lipgloss.Width(inputView)).Height(m.height - lipgloss.Height(inputPane.Render()) - 2).Render("")
-	emptyPane := view.NewPane(emptyView, m.borderEmptyPanel())
-
-	conversationPane := view.NewPane(m.conversationView.View(), borderStyle)
-
-	leftSide := lipgloss.JoinVertical(lipgloss.Left, inputPane.Render(), emptyPane.Render())
-
-	return lipgloss.JoinHorizontal(lipgloss.Top,
-		leftSide,
-		conversationPane.Render(),
-	)
+	return main.Render(m.width, m.height)
 }
 
 func (m *App) borderInput() lipgloss.Style {

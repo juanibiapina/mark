@@ -48,6 +48,12 @@ func (i Input) View() string {
 	return i.textarea.View()
 }
 
+func (i Input) Render(width, height int) string {
+	i.textarea.SetWidth(width)
+	i.textarea.SetHeight(height)
+	return i.textarea.View()
+}
+
 func (i *Input) SetWidth(w int) {
 	i.textarea.SetWidth(w)
 }
