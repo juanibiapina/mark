@@ -17,7 +17,6 @@ type Project struct {
 func NewProject() *Project {
 	entries := []PromptEntry{
 		&FilePromptEntry{Filename: "README.md"},
-		&ShellCommandPromptEntry{Command: "tree"},
 	}
 
 	if isGitRepo() {
@@ -34,7 +33,6 @@ func NewProject() *Project {
 		panic(err) // TODO handle error
 	}
 
-	// TODO: find the correct socket path automatically (default place for current directory)
 	entries = append(entries, &PromptEntryNeovimBuffers{Socket: socket})
 
 	return &Project{entries: entries}
@@ -121,7 +119,7 @@ type PromptEntryNeovimBuffers struct {
 func (p *PromptEntryNeovimBuffers) Prompt() (string, error) {
 	nvim, err := nvim.Dial(p.Socket)
 	if err != nil {
-		return "", err
+		return "", nil // TODO ignore when neovim is not running
 	}
 	defer nvim.Close()
 
