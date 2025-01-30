@@ -31,7 +31,7 @@ func (c *Conversation) renderMessages() {
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
-		glamour.WithWordWrap(c.viewport.Width-2), // 2 is the glamour internal gutter
+		glamour.WithWordWrap(c.viewport.Width-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
 	)
 	if err != nil {
 		log.Fatal(err)
