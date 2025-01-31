@@ -5,9 +5,9 @@ import (
 	"os"
 	"reflect"
 
-	"ant/pkg/llm"
-	"ant/pkg/llmopenai"
-	"ant/pkg/view"
+	"mark/pkg/llm"
+	"mark/pkg/llmopenai"
+	"mark/pkg/view"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss"
@@ -29,9 +29,9 @@ var (
 
 type App struct {
 	// app state
-	uiReady        bool
-	width, height  int
-	focused        Focused
+	uiReady       bool
+	width, height int
+	focused       Focused
 
 	// models
 	conversation llm.Conversation

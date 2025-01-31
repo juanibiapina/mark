@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"ant/pkg/app"
+	"mark/pkg/app"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/spf13/cobra"

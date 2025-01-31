@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"ant/pkg/llm"
+	"mark/pkg/llm"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/glamour"
