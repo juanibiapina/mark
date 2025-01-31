@@ -18,6 +18,7 @@ type Focused int
 const (
 	FocusedInput Focused = iota
 	FocusedEmptyPanel
+	FocusedConversation
 	FocusedEndMarker // used to determine the number of focused items
 )
 
@@ -174,7 +175,7 @@ func (m App) View() string {
 			Input: view.NewPane(m.input, m.borderInput(), "Message Assistant"),
 			Empty: view.NewPane(view.Space{}, m.borderEmptyPanel(), ""),
 		},
-		Right: view.NewPane(m.conversationView, borderStyle, "Conversation"),
+		Right: view.NewPane(m.conversationView, m.borderConversation(), "Conversation"),
 		Ratio: 0.67,
 	}
 
@@ -197,6 +198,13 @@ func (m *App) borderInput() lipgloss.Style {
 
 func (m *App) borderEmptyPanel() lipgloss.Style {
 	if m.focused == FocusedEmptyPanel {
+		return focusedBorderStyle
+	}
+	return borderStyle
+}
+
+func (m *App) borderConversation() lipgloss.Style {
+	if m.focused == FocusedConversation {
 		return focusedBorderStyle
 	}
 	return borderStyle
