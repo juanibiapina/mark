@@ -13,18 +13,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type State int
-
-const (
-	StateInput State = iota
-	StateNormal
-)
-
 type Focused int
 
 const (
 	FocusedInput Focused = iota
 	FocusedEmptyPanel
+	FocusedEndMarker // used to determine the number of focused items
 )
 
 var (
@@ -36,7 +30,6 @@ type App struct {
 	// app state
 	uiReady        bool
 	width, height  int
-	state          State
 	focused        Focused
 
 	// models
@@ -61,7 +54,6 @@ type App struct {
 
 func MakeApp() App {
 	app := App{
-		state:   StateInput,
 		focused: FocusedInput,
 		input:   MakeInput(),
 		ai:      llmopenai.NewOpenAIClient(),
@@ -134,27 +126,17 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 
-		case "q":
-			if m.state == StateNormal {
-				return m, tea.Quit
-			}
-
 		case "esc":
-			if m.state == StateInput {
-				m.changeToStateNormal()
-				inputHandled = true
-			}
+			return m, tea.Quit
+
+		case "tab":
+			m.focusNext()
+			inputHandled = true
 
 		case "enter":
-			if m.state == StateInput {
+			if m.focused == FocusedInput {
 				cmd := m.submitMessage()
 				cmds = append(cmds, cmd)
-				inputHandled = true
-			}
-
-		case "ctrl+o":
-			if m.state == StateNormal {
-				m.changeToStateInput()
 				inputHandled = true
 			}
 
@@ -166,23 +148,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cancelStreaming()
 			inputHandled = true
 
-		case "shift+j":
-			if m.state == StateNormal {
-				m.conversationView.LineDown()
-				inputHandled = true
-			}
-
-		case "shift+k":
-			if m.state == StateNormal {
-				m.conversationView.LineUp()
-				inputHandled = true
-			}
-
 		}
 	}
 
 	if m.uiReady {
-		if m.state == StateInput && !inputHandled {
+		if m.focused == FocusedInput && !inputHandled {
 			cmd := m.processInputView(msg)
 			cmds = append(cmds, cmd)
 		}
@@ -211,6 +181,13 @@ func (m App) View() string {
 	return main.Render(m.width, m.height)
 }
 
+func (m *App) focusNext() {
+	m.focused += 1
+	if m.focused == FocusedEndMarker {
+		m.focused = FocusedInput
+	}
+}
+
 func (m *App) borderInput() lipgloss.Style {
 	if m.focused == FocusedInput {
 		return focusedBorderStyle
@@ -223,16 +200,6 @@ func (m *App) borderEmptyPanel() lipgloss.Style {
 		return focusedBorderStyle
 	}
 	return borderStyle
-}
-
-func (m *App) changeToStateInput() {
-	m.state = StateInput
-	m.focused = FocusedInput
-}
-
-func (m *App) changeToStateNormal() {
-	m.state = StateNormal
-	m.focused = FocusedEmptyPanel
 }
 
 func (m *App) startStreaming() {
@@ -279,7 +246,7 @@ func (m *App) newConversation() {
 
 	m.input.Reset()
 
-	m.changeToStateInput()
+	m.focused = FocusedInput
 }
 
 func (m *App) submitMessage() tea.Cmd {
