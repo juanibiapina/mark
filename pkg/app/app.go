@@ -134,6 +134,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusNext()
 			inputHandled = true
 
+		case "shift+tab":
+			m.focusPrev()
+			inputHandled = true
+
 		case "enter":
 			if m.focused == FocusedInput {
 				cmd := m.submitMessage()
@@ -184,6 +188,13 @@ func (m App) View() string {
 
 func (m *App) focusNext() {
 	m.focused += 1
+	if m.focused == FocusedEndMarker {
+		m.focused = FocusedInput
+	}
+}
+
+func (m *App) focusPrev() {
+	m.focused -= 1
 	if m.focused == FocusedEndMarker {
 		m.focused = FocusedInput
 	}
