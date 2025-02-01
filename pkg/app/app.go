@@ -194,9 +194,10 @@ func (m *App) focusNext() {
 }
 
 func (m *App) focusPrev() {
-	m.focused -= 1
-	if m.focused == FocusedEndMarker {
-		m.focused = FocusedInput
+	if m.focused == FocusedInput {
+		m.focused = FocusedConversation
+	} else {
+		m.focused -= 1
 	}
 }
 
