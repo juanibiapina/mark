@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"mark/pkg/llm"
+	"mark/pkg/model"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/glamour"
@@ -14,12 +14,12 @@ import (
 type Conversation struct {
 	viewport viewport.Model
 
-	con            *llm.Conversation
+	con            *model.Conversation
 	streaming      bool
 	partialMessage string
 }
 
-func (c *Conversation) Set(con *llm.Conversation, streaming bool, partialMessage string) {
+func (c *Conversation) Set(con *model.Conversation, streaming bool, partialMessage string) {
 	c.con = con
 	c.streaming = streaming
 	c.partialMessage = partialMessage
@@ -53,7 +53,7 @@ func (c *Conversation) renderMessages() {
 		}
 
 		var m string
-		if messages[i].Role == llm.RoleUser {
+		if messages[i].Role == model.RoleUser {
 			m = lipgloss.NewStyle().Width(c.viewport.Width).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", messages[i].Content))
 		} else {
 			m, err = renderer.Render(messages[i].Content)

@@ -5,8 +5,8 @@ import (
 	"os"
 	"reflect"
 
-	"mark/pkg/llm"
-	"mark/pkg/llmopenai"
+	"mark/pkg/model"
+	"mark/pkg/openai"
 	"mark/pkg/view"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -34,13 +34,13 @@ type App struct {
 	focused       Focused
 
 	// models
-	prompts      map[string]Prompt
-	conversation llm.Conversation
-	project      *PromptGitRepository
+	prompts      map[string]model.Prompt
+	conversation model.Conversation
+	project      *model.PromptGitRepository
 
 	// streaming
 	streaming      bool
-	stream         *llm.StreamingMessage
+	stream         *model.StreamingMessage
 	partialMessage string
 
 	// view models
@@ -49,17 +49,18 @@ type App struct {
 	promptListView   PromptList
 
 	// llm
-	ai llm.Llm
+	ai model.Llm
 
 	// error
 	err error
 }
 
 func MakeApp() (App, error) {
-	prompts := map[string]Prompt{
-		"file:README.md": PromptFile{Filename: "README.md"},
-		"neovim:buffers": NewPromptNeovimBuffers(),
-		"gitrepository": NewPromptGitRepository(),
+	// load prompts
+	prompts := map[string]model.Prompt{
+		"file:README.md": model.PromptFile{Filename: "README.md"},
+		"neovim:buffers": model.NewPromptNeovimBuffers(),
+		"gitrepository":  model.NewPromptGitRepository(),
 	}
 
 	// Load prompts from files
@@ -75,11 +76,11 @@ func MakeApp() (App, error) {
 	app := App{
 		focused: FocusedInput,
 		input:   MakeInput(),
-		ai:      llmopenai.NewOpenAIClient(),
+		ai:      openai.NewOpenAIClient(),
 		prompts: prompts,
 	}
 
-	app.project = NewPromptGitRepository()
+	app.project = model.NewPromptGitRepository()
 	app.newConversation()
 
 	return app, nil
@@ -141,7 +142,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.streaming = false
 		m.partialMessage = ""
-		m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: string(msg)})
+		m.conversation.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -196,7 +197,7 @@ func (m App) View() string {
 
 	main := view.Main{
 		Left: view.Sidebar{
-			Input: view.NewPane(m.input, m.borderInput(), "Message Assistant"),
+			Input:   view.NewPane(m.input, m.borderInput(), "Message Assistant"),
 			Prompts: view.NewPane(m.promptListView, m.borderEmptyPanel(), "Prompts"),
 		},
 		Right: view.NewPane(m.conversationView, m.borderConversation(), "Conversation"),
@@ -242,7 +243,7 @@ func (m *App) borderConversation() lipgloss.Style {
 }
 
 func (m *App) startStreaming() {
-	m.stream = llm.NewStreamingMessage()
+	m.stream = model.NewStreamingMessage()
 	m.streaming = true
 }
 
@@ -255,7 +256,7 @@ func (m *App) cancelStreaming() {
 	m.streaming = false
 
 	// Add the partial message to the chat history
-	m.conversation.AddMessage(llm.Message{Role: llm.RoleAssistant, Content: m.partialMessage})
+	m.conversation.AddMessage(model.Message{Role: model.RoleAssistant, Content: m.partialMessage})
 
 	m.partialMessage = ""
 }
@@ -269,7 +270,7 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 func (m *App) newConversation() {
 	m.cancelStreaming()
 
-	m.conversation = llm.MakeConversation()
+	m.conversation = model.MakeConversation()
 
 	// Add prompts to conversation as context
 	for key, prompt := range m.prompts {
@@ -297,7 +298,7 @@ func (m *App) submitMessage() tea.Cmd {
 	m.cancelStreaming()
 
 	// Add user message to chat history
-	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
+	m.conversation.AddMessage(model.Message{Role: model.RoleUser, Content: v})
 
 	// Reload prompts in conversation context
 	for key, prompt := range m.prompts {
@@ -348,8 +349,8 @@ func processStream(m *App) tea.Cmd {
 	}
 }
 
-func loadPrompts() (map[string]Prompt, error) {
-	prompts := make(map[string]Prompt)
+func loadPrompts() (map[string]model.Prompt, error) {
+	prompts := make(map[string]model.Prompt)
 
 	// list .md files in the "./mark/prompts" directory
 	files, err := os.ReadDir("./mark/prompts")

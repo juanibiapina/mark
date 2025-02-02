@@ -1,4 +1,4 @@
-package llm
+package model
 
 type ResponseSchema struct {
 	Name        string

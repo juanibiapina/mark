@@ -1,4 +1,4 @@
-package llm
+package model
 
 type Conversation struct {
 	context          map[string]string

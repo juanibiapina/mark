@@ -1,4 +1,4 @@
-package llm
+package model
 
 type Llm interface {
 	CompleteStreaming(c *Conversation, s *StreamingMessage) error

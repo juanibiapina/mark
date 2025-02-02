@@ -1,10 +1,10 @@
-package llmopenai
+package openai
 
 import (
 	"context"
 	"encoding/json"
 
-	"mark/pkg/llm"
+	"mark/pkg/model"
 
 	"github.com/openai/openai-go"
 )
@@ -20,7 +20,7 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // CompleteStreaming sends a list of messages to the OpenAI API and streams the response
-func (a *OpenAI) CompleteStreaming(c *llm.Conversation, s *llm.StreamingMessage) error {
+func (a *OpenAI) CompleteStreaming(c *model.Conversation, s *model.StreamingMessage) error {
 	ctx := s.Ctx
 	pch := s.Chunks
 	ch := s.Reply
@@ -43,7 +43,7 @@ func (a *OpenAI) CompleteStreaming(c *llm.Conversation, s *llm.StreamingMessage)
 
 	// Add the actual conversation messages
 	for _, msg := range c.Messages() {
-		if msg.Role == llm.RoleUser {
+		if msg.Role == model.RoleUser {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 		} else {
 			chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))
@@ -88,7 +88,7 @@ func (a *OpenAI) CompleteStreaming(c *llm.Conversation, s *llm.StreamingMessage)
 	return nil
 }
 
-func (a *OpenAI) CompleteStructured(c *llm.Conversation, rs llm.ResponseSchema, v interface{}) error {
+func (a *OpenAI) CompleteStructured(c *model.Conversation, rs model.ResponseSchema, v interface{}) error {
 	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
 		Name:        openai.F(rs.Name),
 		Description: openai.F(rs.Description),
@@ -111,7 +111,7 @@ func (a *OpenAI) CompleteStructured(c *llm.Conversation, rs llm.ResponseSchema, 
 
 	// Add the actual conversation messages
 	for _, msg := range c.Messages() {
-		if msg.Role == llm.RoleUser {
+		if msg.Role == model.RoleUser {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 		} else {
 			chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))
