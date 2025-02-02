@@ -27,11 +27,6 @@ var (
 	focusedBorderStyle = borderStyle.BorderForeground(lipgloss.Color("2"))
 )
 
-type Prompt struct {
-	Key   string
-	Value string
-}
-
 type App struct {
 	// app state
 	uiReady       bool
@@ -61,18 +56,9 @@ type App struct {
 
 func MakeApp() App {
 	prompts := []Prompt{
-		{
-			Key: "ai",
-			Value: "You're a TUI companion app called Mark (repo: https://github.com/juanibiapina/mark). You are direct and to the point. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested.",
-		},
-		{
-			Key: "user",
-			Value: "My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS.",
-		},
-		{
-			Key: "project",
-			Value: "We're currently working on a software project together. You're running in the project's root directory.",
-		},
+		MakePromptStatic("ai", "You're a TUI companion app called Mark (repo: https://github.com/juanibiapina/mark). You are direct and to the point. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested."),
+		MakePromptStatic("user", "My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS."),
+		MakePromptStatic("project", "We're currently working on a software project together. You're running in the project's root directory."),
 	}
 
 	app := App{
@@ -275,7 +261,7 @@ func (m *App) newConversation() {
 
 	// Add prompts to conversation as context
 	for _, p := range m.prompts {
-		m.conversation.SetContext(p.Key, p.Value)
+		m.conversation.SetContext(p.Key(), p.Value())
 	}
 
 	// add project context to conversation
