@@ -11,33 +11,19 @@ import (
 )
 
 type Prompt interface {
+	Name() string
 	Value() (string, error)
 }
-
-type PromptStatic struct {
-	key   string
-	value string
-}
-
-func MakePromptStatic(value string) PromptStatic {
-	return PromptStatic{
-		value: value,
-	}
-}
-
-// startinterface: Prompt
-
-func (p PromptStatic) Value() (string, error) {
-	return p.value, nil
-}
-
-// endinterface: Prompt
 
 type PromptFile struct {
 	Filename string
 }
 
 // startinterface: Prompt
+
+func (f PromptFile) Name() string {
+	return f.Filename
+}
 
 func (f PromptFile) Value() (string, error) {
 	var output string
@@ -75,6 +61,10 @@ type PromptShellCommand struct {
 
 // startinterface: Prompt
 
+func (s *PromptShellCommand) Name() string {
+	return fmt.Sprintf("%s %v", s.Command, s.Args)
+}
+
 func (s *PromptShellCommand) Value() (string, error) {
 	output, err := runShellCommand(s.Command, s.Args...)
 	if err != nil {
@@ -95,6 +85,7 @@ func runShellCommand(command string, args ...string) (string, error) {
 }
 
 // endinterface: Prompt
+
 type PromptNeovimBuffers struct {
 	Socket string
 }
@@ -111,6 +102,10 @@ func NewPromptNeovimBuffers() *PromptNeovimBuffers {
 }
 
 // startinterface: Prompt
+
+func (p *PromptNeovimBuffers) Name() string {
+	return "Neovim Buffers: " + p.Socket
+}
 
 func (p *PromptNeovimBuffers) Value() (string, error) {
 	nvim, err := nvim.Dial(p.Socket)

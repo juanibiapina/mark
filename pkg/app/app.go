@@ -46,6 +46,7 @@ type App struct {
 	// view models
 	conversationView Conversation
 	input            Input
+	promptListView   PromptList
 
 	// llm
 	ai llm.Llm
@@ -56,7 +57,6 @@ type App struct {
 
 func MakeApp() (App, error) {
 	prompts := map[string]Prompt{
-		"project:header": MakePromptStatic("We're currently working on a software project together. You're running in the project's root directory."),
 		"file:README.md": PromptFile{Filename: "README.md"},
 		"neovim:buffers": NewPromptNeovimBuffers(),
 		"gitrepository": NewPromptGitRepository(),
@@ -192,11 +192,12 @@ func (m App) View() string {
 
 	// TODO still weird that I need to do this in a view method
 	m.conversationView.Set(&m.conversation, m.streaming, m.partialMessage)
+	m.promptListView.prompts = m.prompts
 
 	main := view.Main{
 		Left: view.Sidebar{
 			Input: view.NewPane(m.input, m.borderInput(), "Message Assistant"),
-			Empty: view.NewPane(view.Space{}, m.borderEmptyPanel(), ""),
+			Prompts: view.NewPane(m.promptListView, m.borderEmptyPanel(), "Prompts"),
 		},
 		Right: view.NewPane(m.conversationView, m.borderConversation(), "Conversation"),
 		Ratio: 0.67,

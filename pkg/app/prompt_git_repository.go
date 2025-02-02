@@ -31,6 +31,10 @@ func isGitRepo() bool {
 
 // startinterface: Prompt
 
+func (p *PromptGitRepository) Name() string {
+	return "Git Repository"
+}
+
 func (p *PromptGitRepository) Value() (string, error) {
 	var c string
 	var tmp string

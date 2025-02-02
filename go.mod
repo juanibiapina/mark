@@ -14,6 +14,7 @@ require (
 	github.com/muesli/reflow v0.3.0
 	github.com/neovim/go-client v1.2.1
 	github.com/openai/openai-go v0.1.0-alpha.45
+	github.com/samber/lo v1.49.1
 	github.com/spf13/cobra v1.8.1
 )
 
@@ -54,9 +55,9 @@ require (
 	github.com/yuin/goldmark v1.7.4 // indirect
 	github.com/yuin/goldmark-emoji v1.0.3 // indirect
 	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/term v0.22.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
