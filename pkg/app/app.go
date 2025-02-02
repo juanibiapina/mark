@@ -17,7 +17,7 @@ type Focused int
 
 const (
 	FocusedInput Focused = iota
-	FocusedEmptyPanel
+	FocusedPromptList
 	FocusedConversation
 	FocusedEndMarker // used to determine the number of focusable items for cycling
 )
@@ -200,7 +200,7 @@ func (m App) View() string {
 	main := view.Main{
 		Left: view.Sidebar{
 			Input:   view.NewPane(m.input, m.borderInput(), "Message Assistant"),
-			Prompts: view.NewPane(m.promptListView, m.borderEmptyPanel(), "Prompts"),
+			Prompts: view.NewPane(m.promptListView, m.borderPromptList(), "Prompts"),
 		},
 		Right: view.NewPane(m.conversationView, m.borderConversation(), "Conversation"),
 		Ratio: 0.67,
@@ -230,8 +230,8 @@ func (m *App) borderInput() lipgloss.Style {
 	return borderStyle
 }
 
-func (m *App) borderEmptyPanel() lipgloss.Style {
-	if m.focused == FocusedEmptyPanel {
+func (m *App) borderPromptList() lipgloss.Style {
+	if m.focused == FocusedPromptList {
 		return focusedBorderStyle
 	}
 	return borderStyle
