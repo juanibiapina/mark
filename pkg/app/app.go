@@ -360,7 +360,7 @@ func loadPrompts() (map[string]model.Prompt, error) {
 			continue
 		}
 
-		prompt := model.PromptFromFile{Filename: "./mark/prompts/" + filename}
+		prompt := model.MakePromptFromFile(filename, "./mark/prompts/" + filename)
 		prompts["file:"+filename] = prompt
 	}
 

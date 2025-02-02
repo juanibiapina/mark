@@ -3,11 +3,13 @@ package model
 import "os"
 
 type PromptFromFile struct {
+	name     string
 	Filename string
 }
 
-func MakePromptFromFile(filename string) PromptFromFile {
+func MakePromptFromFile(name, filename string) PromptFromFile {
 	return PromptFromFile{
+		name:     name,
 		Filename: filename,
 	}
 }
@@ -15,7 +17,7 @@ func MakePromptFromFile(filename string) PromptFromFile {
 // startinterface: Prompt
 
 func (f PromptFromFile) Name() string {
-	return f.Filename
+	return f.name
 }
 
 func (f PromptFromFile) Value() (string, error) {
