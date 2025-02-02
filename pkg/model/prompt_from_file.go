@@ -14,6 +14,10 @@ func MakePromptFromFile(filename string) PromptFromFile {
 
 // startinterface: Prompt
 
+func (f PromptFromFile) Name() string {
+	return f.Filename
+}
+
 func (f PromptFromFile) Value() (string, error) {
 	// Read file content
 	content, err := os.ReadFile(f.Filename)

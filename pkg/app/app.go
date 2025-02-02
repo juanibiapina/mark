@@ -337,8 +337,8 @@ func processStream(m *App) tea.Cmd {
 func loadPrompts() (map[string]model.Prompt, error) {
 	prompts := make(map[string]model.Prompt)
 
-	// list .md files in the "./mark/prompts" directory
-	files, err := os.ReadDir("./mark/prompts")
+	// list .md files in the "./.mark/prompts" directory
+	files, err := os.ReadDir("./.mark/prompts")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return prompts, nil
@@ -359,6 +359,9 @@ func loadPrompts() (map[string]model.Prompt, error) {
 			// skip non-markdown files
 			continue
 		}
+
+		prompt := model.PromptFromFile{Filename: "./mark/prompts/" + filename}
+		prompts["file:"+filename] = prompt
 	}
 
 	return prompts, nil
