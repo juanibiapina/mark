@@ -19,7 +19,7 @@ const (
 	FocusedInput Focused = iota
 	FocusedEmptyPanel
 	FocusedConversation
-	FocusedEndMarker // used to determine the number of focused items
+	FocusedEndMarker // used to determine the number of focusable items for cycling
 )
 
 var (
@@ -189,15 +189,14 @@ func (m App) View() string {
 func (m *App) focusNext() {
 	m.focused += 1
 	if m.focused == FocusedEndMarker {
-		m.focused = FocusedInput
+		m.focused = 0
 	}
 }
 
 func (m *App) focusPrev() {
-	if m.focused == FocusedInput {
-		m.focused = FocusedConversation
-	} else {
-		m.focused -= 1
+	m.focused -= 1
+	if m.focused < 0 {
+		m.focused = FocusedEndMarker - 1
 	}
 }
 
