@@ -36,7 +36,6 @@ type App struct {
 	// models
 	prompts      map[string]model.Prompt
 	conversation model.Conversation
-	project      *model.PromptGitRepository
 
 	// streaming
 	streaming      bool
@@ -49,14 +48,14 @@ type App struct {
 	promptListView   PromptList
 
 	// llm
-	ai model.Llm
+	ai *openai.OpenAI
 
 	// error
 	err error
 }
 
 func MakeApp() (App, error) {
-	// load prompts
+	// load hardcoded prompts
 	prompts := map[string]model.Prompt{
 		"file:README.md": model.PromptFile{Filename: "README.md"},
 		"neovim:buffers": model.NewPromptNeovimBuffers(),
@@ -80,8 +79,11 @@ func MakeApp() (App, error) {
 		prompts: prompts,
 	}
 
-	app.project = model.NewPromptGitRepository()
+	// start a new conversation
 	app.newConversation()
+
+	// activate the default prompt
+	app.conversation.SetPrompt(prompts["file:README.md"])
 
 	return app, nil
 }
@@ -267,20 +269,11 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	return cmd
 }
 
+// newConversation starts a new conversation without a prompt
 func (m *App) newConversation() {
 	m.cancelStreaming()
 
 	m.conversation = model.MakeConversation()
-
-	// Add prompts to conversation as context
-	for key, prompt := range m.prompts {
-		value, err := prompt.Value()
-		if err != nil {
-			m.err = err
-			log.Panic(err)
-		}
-		m.conversation.SetContext(key, value)
-	}
 
 	m.input.Reset()
 
@@ -300,15 +293,7 @@ func (m *App) submitMessage() tea.Cmd {
 	// Add user message to chat history
 	m.conversation.AddMessage(model.Message{Role: model.RoleUser, Content: v})
 
-	// Reload prompts in conversation context
-	for key, prompt := range m.prompts {
-		value, err := prompt.Value()
-		if err != nil {
-			m.err = err
-			log.Panic(err)
-		}
-		m.conversation.SetContext(key, value)
-	}
+	// maybe update the prompt here
 
 	m.startStreaming()
 

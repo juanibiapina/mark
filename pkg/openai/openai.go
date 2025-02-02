@@ -1,9 +1,6 @@
 package openai
 
 import (
-	"context"
-	"encoding/json"
-
 	"mark/pkg/model"
 
 	"github.com/openai/openai-go"
@@ -31,14 +28,14 @@ func (a *OpenAI) CompleteStreaming(c *model.Conversation, s *model.StreamingMess
 	// Initialize the chat messages
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 
-	// Add a user message containing context
-	context := c.Context()
-	if len(context) != 0 {
-		con := "Context:\n"
-		for _, v := range context {
-			con += v + "\n"
+	// Add the prompt as user message containing context
+	prompt := c.Prompt()
+	if prompt != nil {
+		v, err := prompt.Value()
+		if err != nil {
+			return err
 		}
-		chatMessages = append(chatMessages, openai.UserMessage(con))
+		chatMessages = append(chatMessages, openai.UserMessage(v))
 	}
 
 	// Add the actual conversation messages
@@ -85,58 +82,5 @@ func (a *OpenAI) CompleteStreaming(c *model.Conversation, s *model.StreamingMess
 
 	response := acc.Choices[0].Message.Content
 	ch <- response
-	return nil
-}
-
-func (a *OpenAI) CompleteStructured(c *model.Conversation, rs model.ResponseSchema, v interface{}) error {
-	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
-		Name:        openai.F(rs.Name),
-		Description: openai.F(rs.Description),
-		Schema:      openai.F(rs.Schema),
-		Strict:      openai.Bool(true),
-	}
-
-	// Initialize the chat messages
-	var chatMessages []openai.ChatCompletionMessageParamUnion
-
-	// Add a user message containing convContext
-	convContext := c.Context()
-	if len(convContext) != 0 {
-		con := "Context:\n"
-		for _, v := range convContext {
-			con += v + "\n"
-		}
-		chatMessages = append(chatMessages, openai.UserMessage(con))
-	}
-
-	// Add the actual conversation messages
-	for _, msg := range c.Messages() {
-		if msg.Role == model.RoleUser {
-			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
-		} else {
-			chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))
-		}
-	}
-
-	chat, err := a.client.Chat.Completions.New(context.Background(), openai.ChatCompletionNewParams{
-		Messages: openai.F(chatMessages),
-		ResponseFormat: openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](
-			openai.ResponseFormatJSONSchemaParam{
-				Type:       openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
-				JSONSchema: openai.F(schemaParam),
-			},
-		),
-		Model: openai.F(openai.ChatModelGPT4o),
-	})
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// The model responds with a JSON string, so parse it into a struct
-	err = json.Unmarshal([]byte(chat.Choices[0].Message.Content), v)
-	if err != nil {
-		panic(err.Error())
-	}
-
 	return nil
 }
