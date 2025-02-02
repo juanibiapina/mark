@@ -34,9 +34,9 @@ type App struct {
 	focused       Focused
 
 	// models
-	prompts      []Prompt
+	prompts      map[string]Prompt
 	conversation llm.Conversation
-	project      *Project
+	project      *PromptGitRepository
 
 	// streaming
 	streaming      bool
@@ -55,10 +55,14 @@ type App struct {
 }
 
 func MakeApp() App {
-	prompts := []Prompt{
-		MakePromptStatic("ai", "You're a TUI companion app called Mark (repo: https://github.com/juanibiapina/mark). You are direct and to the point. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested."),
-		MakePromptStatic("user", "My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS."),
-		MakePromptStatic("project", "We're currently working on a software project together. You're running in the project's root directory."),
+	prompts := map[string]Prompt{
+		"ai": MakePromptStatic("You're a TUI companion app called Mark (repo: https://github.com/juanibiapina/mark). You are direct and to the point. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested."),
+		"user": MakePromptStatic("My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS."),
+
+		"project:header": MakePromptStatic("We're currently working on a software project together. You're running in the project's root directory."),
+		"file:README.md": PromptFile{Filename: "README.md"},
+		"neovim:buffers": NewPromptNeovimBuffers(),
+		"gitrepository": NewPromptGitRepository(),
 	}
 
 	app := App{
@@ -68,7 +72,7 @@ func MakeApp() App {
 		prompts: prompts,
 	}
 
-	app.project = NewProject()
+	app.project = NewPromptGitRepository()
 	app.newConversation()
 
 	return app
@@ -260,18 +264,14 @@ func (m *App) newConversation() {
 	m.conversation = llm.MakeConversation()
 
 	// Add prompts to conversation as context
-	for _, p := range m.prompts {
-		m.conversation.SetContext(p.Key(), p.Value())
+	for key, prompt := range m.prompts {
+		value, err := prompt.Value()
+		if err != nil {
+			m.err = err
+			log.Panic(err)
+		}
+		m.conversation.SetContext(key, value)
 	}
-
-	// add project context to conversation
-	c, err := m.project.Context()
-	if err != nil {
-		m.err = err
-		log.Panic(err)
-	}
-
-	m.conversation.SetContext("project", c)
 
 	m.input.Reset()
 
@@ -291,15 +291,17 @@ func (m *App) submitMessage() tea.Cmd {
 	// Add user message to chat history
 	m.conversation.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
 
-	m.startStreaming()
-
-	c, err := m.project.Context()
-	if err != nil {
-		m.err = err
-		log.Panic(err)
+	// Reload prompts in conversation context
+	for key, prompt := range m.prompts {
+		value, err := prompt.Value()
+		if err != nil {
+			m.err = err
+			log.Panic(err)
+		}
+		m.conversation.SetContext(key, value)
 	}
 
-	m.conversation.SetContext("project", c)
+	m.startStreaming()
 
 	cmds := []tea.Cmd{
 		complete(m),      // call completions API
