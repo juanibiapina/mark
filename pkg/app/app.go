@@ -56,13 +56,20 @@ type App struct {
 
 func MakeApp() (App, error) {
 	prompts := map[string]Prompt{
-		"ai": MakePromptStatic("You're a TUI companion app called Mark (repo: https://github.com/juanibiapina/mark). You are direct and to the point. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested."),
-		"user": MakePromptStatic("My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS."),
-
 		"project:header": MakePromptStatic("We're currently working on a software project together. You're running in the project's root directory."),
 		"file:README.md": PromptFile{Filename: "README.md"},
 		"neovim:buffers": NewPromptNeovimBuffers(),
 		"gitrepository": NewPromptGitRepository(),
+	}
+
+	// Load prompts from files
+	filePrompts, err := loadPrompts()
+	if err != nil {
+		return App{}, err
+	}
+
+	for name, prompt := range filePrompts {
+		prompts[name] = prompt
 	}
 
 	app := App{
@@ -338,4 +345,34 @@ func processStream(m *App) tea.Cmd {
 			return partialMessage(v)
 		}
 	}
+}
+
+func loadPrompts() (map[string]Prompt, error) {
+	prompts := make(map[string]Prompt)
+
+	// list .md files in the "./mark/prompts" directory
+	files, err := os.ReadDir("./mark/prompts")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return prompts, nil
+		}
+
+		return nil, err
+	}
+
+	// add each .md file as a prompt
+	for _, file := range files {
+		if file.IsDir() {
+			// skip directories
+			continue
+		}
+
+		filename := file.Name()
+		if filename[len(filename)-3:] != ".md" {
+			// skip non-markdown files
+			continue
+		}
+	}
+
+	return prompts, nil
 }
