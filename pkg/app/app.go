@@ -54,7 +54,7 @@ type App struct {
 	err error
 }
 
-func MakeApp() App {
+func MakeApp() (App, error) {
 	prompts := map[string]Prompt{
 		"ai": MakePromptStatic("You're a TUI companion app called Mark (repo: https://github.com/juanibiapina/mark). You are direct and to the point. Do not offer any assistance, suggestions, or follow-up questions. Only provide information that is directly requested."),
 		"user": MakePromptStatic("My name is Juan. Refer to me by name. I'm a software developer with a Computer Science degree. Assume I know advanced computer science concepts and programming languages. DO NOT EXPLAIN BASIC CONCEPTS."),
@@ -75,7 +75,7 @@ func MakeApp() App {
 	app.project = NewPromptGitRepository()
 	app.newConversation()
 
-	return app
+	return app, nil
 }
 
 // Init Init is required by the bubbletea interface. It is called once when the

@@ -24,7 +24,13 @@ func main() {
 				defer f.Close()
 			}
 
-			p := tea.NewProgram(app.MakeApp(), tea.WithAltScreen(), tea.WithKeyboardEnhancements())
+			app, err := app.MakeApp()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+
+			p := tea.NewProgram(app, tea.WithAltScreen(), tea.WithKeyboardEnhancements())
 			if _, err := p.Run(); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			}
