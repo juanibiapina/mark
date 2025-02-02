@@ -71,7 +71,7 @@ func MakeApp() App {
 		},
 		{
 			Key: "project",
-			Value: "I'm currently working on a software project. I'm in the project's root directory. If there are changes, explain the git diff.",
+			Value: "We're currently working on a software project together. You're running in the project's root directory.",
 		},
 	}
 
