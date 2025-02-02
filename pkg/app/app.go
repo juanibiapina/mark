@@ -75,6 +75,9 @@ func MakeApp() (App, error) {
 	app := App{
 		focused: FocusedInput,
 		input:   MakeInput(),
+		promptListView: PromptList{
+			prompts: prompts,
+		},
 		ai:      openai.NewOpenAIClient(),
 		prompts: prompts,
 	}
@@ -167,6 +170,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				inputHandled = true
 			}
 
+			if m.focused == FocusedPromptList {
+				prompt := m.promptListView.SelectedIndex()
+				m.conversation.SetPrompt(m.prompts[prompt])
+				inputHandled = true
+			}
+
 		case "ctrl+n":
 			m.newConversation()
 			inputHandled = true
@@ -183,6 +192,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.processInputView(msg)
 			cmds = append(cmds, cmd)
 		}
+
+		if m.focused == FocusedPromptList {
+			cmd := m.processPromptListView(msg)
+			cmds = append(cmds, cmd)
+		}
 	}
 
 	return m, tea.Batch(cmds...)
@@ -195,7 +209,6 @@ func (m App) View() string {
 
 	// TODO still weird that I need to do this in a view method
 	m.conversationView.Set(&m.conversation, m.streaming, m.partialMessage)
-	m.promptListView.prompts = m.prompts
 
 	main := view.Main{
 		Left: view.Sidebar{
@@ -269,6 +282,12 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	return cmd
 }
 
+func (m *App) processPromptListView(msg tea.Msg) tea.Cmd {
+	var cmd tea.Cmd
+	m.promptListView, cmd = m.promptListView.Update(msg)
+	return cmd
+}
+
 // newConversation starts a new conversation without a prompt
 func (m *App) newConversation() {
 	m.cancelStreaming()
@@ -338,7 +357,9 @@ func loadPrompts() ([]model.Prompt, error) {
 	prompts := []model.Prompt{}
 
 	// list .md files in the "./.mark/prompts" directory
-	files, err := os.ReadDir("./.mark/prompts")
+	dir := "./.mark/prompts"
+
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return prompts, nil
@@ -360,7 +381,7 @@ func loadPrompts() ([]model.Prompt, error) {
 			continue
 		}
 
-		prompt := model.MakePromptFromFile(filename, "./mark/prompts/" + filename)
+		prompt := model.MakePromptFromFile(filename, dir+"/"+filename)
 		prompts = append(prompts, prompt)
 	}
 

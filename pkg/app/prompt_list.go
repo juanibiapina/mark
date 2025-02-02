@@ -1,21 +1,22 @@
 package app
 
 import (
-	"slices"
-	"strings"
-
 	"mark/pkg/model"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/samber/lo"
+	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type PromptList struct {
 	viewport viewport.Model
 
-	selected *string
-	prompts  []model.Prompt
+	prompts       []model.Prompt
+	selectedIndex int
+}
+
+func (i *PromptList) SelectedIndex() int {
+	return i.selectedIndex
 }
 
 // startinterface: tea.Model
@@ -25,6 +26,17 @@ func (i PromptList) Init() (PromptList, tea.Cmd) {
 }
 
 func (i PromptList) Update(msg tea.Msg) (PromptList, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "j", "down":
+			i.incSelectedIndex()
+
+		case "k", "up":
+			i.decSelectedIndex()
+		}
+	}
+
 	return i, nil
 }
 
@@ -33,6 +45,21 @@ func (i PromptList) View() string {
 }
 
 // endinterface: tea.Model
+
+func (i *PromptList) incSelectedIndex() {
+	i.selectedIndex++
+	if i.selectedIndex >= len(i.prompts) {
+		i.selectedIndex = 0
+	}
+
+}
+
+func (i *PromptList) decSelectedIndex() {
+	i.selectedIndex--
+	if i.selectedIndex < 0 {
+		i.selectedIndex = len(i.prompts) - 1
+	}
+}
 
 // startinterface: Container
 
@@ -47,14 +74,20 @@ func (i PromptList) Render(width, height int) string {
 
 // endinterface: Container
 
-func (i *PromptList) renderPrompts() {
-	names := lo.Map(i.prompts, func(p model.Prompt, _ int) string {
-		return p.Name()
-	})
+func (pl *PromptList) renderPrompts() {
+	var content string
+	selectedStyle := lipgloss.NewStyle().Bold(true).Background(lipgloss.Color("4"))
 
-	slices.Sort(names)
+	for index, prompt := range pl.prompts {
+		name := prompt.Name()
 
-	content := strings.Join(names, "\n")
+		if index == pl.selectedIndex {
+			content += selectedStyle.Render(name) + "\n"
+		} else {
+			content += name + "\n"
+		}
 
-	i.viewport.SetContent(content)
+	}
+
+	pl.viewport.SetContent(content)
 }
