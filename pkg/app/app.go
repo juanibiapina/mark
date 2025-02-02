@@ -34,7 +34,7 @@ type App struct {
 	focused       Focused
 
 	// models
-	prompts      map[string]model.Prompt
+	prompts      []model.Prompt
 	conversation model.Conversation
 
 	// streaming
@@ -56,10 +56,10 @@ type App struct {
 
 func MakeApp() (App, error) {
 	// load hardcoded prompts
-	prompts := map[string]model.Prompt{
-		"file:README.md": model.PromptFile{Filename: "README.md"},
-		"neovim:buffers": model.NewPromptNeovimBuffers(),
-		"gitrepository":  model.NewPromptGitRepository(),
+	prompts := []model.Prompt{
+		model.PromptFile{Filename: "README.md"},
+		model.NewPromptNeovimBuffers(),
+		model.NewPromptGitRepository(),
 	}
 
 	// Load prompts from files
@@ -68,8 +68,8 @@ func MakeApp() (App, error) {
 		return App{}, err
 	}
 
-	for name, prompt := range filePrompts {
-		prompts[name] = prompt
+	for _, prompt := range filePrompts {
+		prompts = append(prompts, prompt)
 	}
 
 	app := App{
@@ -82,8 +82,8 @@ func MakeApp() (App, error) {
 	// start a new conversation
 	app.newConversation()
 
-	// activate the default prompt
-	app.conversation.SetPrompt(prompts["file:README.md"])
+	// activate the first prompt
+	app.conversation.SetPrompt(prompts[0])
 
 	return app, nil
 }
@@ -334,8 +334,8 @@ func processStream(m *App) tea.Cmd {
 	}
 }
 
-func loadPrompts() (map[string]model.Prompt, error) {
-	prompts := make(map[string]model.Prompt)
+func loadPrompts() ([]model.Prompt, error) {
+	prompts := []model.Prompt{}
 
 	// list .md files in the "./.mark/prompts" directory
 	files, err := os.ReadDir("./.mark/prompts")
@@ -361,7 +361,7 @@ func loadPrompts() (map[string]model.Prompt, error) {
 		}
 
 		prompt := model.MakePromptFromFile(filename, "./mark/prompts/" + filename)
-		prompts["file:"+filename] = prompt
+		prompts = append(prompts, prompt)
 	}
 
 	return prompts, nil

@@ -1,9 +1,10 @@
 package app
 
 import (
-	"mark/pkg/model"
 	"slices"
 	"strings"
+
+	"mark/pkg/model"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -13,7 +14,8 @@ import (
 type PromptList struct {
 	viewport viewport.Model
 
-	prompts map[string]model.Prompt
+	selected *string
+	prompts  []model.Prompt
 }
 
 // startinterface: tea.Model
@@ -46,7 +48,7 @@ func (i PromptList) Render(width, height int) string {
 // endinterface: Container
 
 func (i *PromptList) renderPrompts() {
-	names := lo.MapToSlice(i.prompts, func(_ string, p model.Prompt) string {
+	names := lo.Map(i.prompts, func(p model.Prompt, _ int) string {
 		return p.Name()
 	})
 
