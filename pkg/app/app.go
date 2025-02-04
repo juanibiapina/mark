@@ -300,17 +300,13 @@ func (m *App) newConversation() {
 }
 
 func (m *App) submitMessage() tea.Cmd {
-	v := m.input.Value()
-	if v == "" {
-		return nil
-	}
-
-	m.input.Reset()
-
 	m.cancelStreaming()
 
-	// Add user message to chat history
-	m.conversation.AddMessage(model.Message{Role: model.RoleUser, Content: v})
+	v := m.input.Value()
+	if v != "" {
+		m.conversation.AddMessage(model.Message{Role: model.RoleUser, Content: v})
+		m.input.Reset()
+	}
 
 	// maybe update the prompt here
 
