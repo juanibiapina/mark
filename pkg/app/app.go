@@ -55,21 +55,10 @@ type App struct {
 }
 
 func MakeApp() (App, error) {
-	// load hardcoded prompts
-	prompts := []model.Prompt{
-		model.PromptFile{Filename: "README.md"},
-		model.NewPromptNeovimBuffers(),
-		model.NewPromptGitRepository(),
-	}
-
 	// Load prompts from files
-	filePrompts, err := loadPrompts()
+	prompts, err := loadPrompts()
 	if err != nil {
 		return App{}, err
-	}
-
-	for _, prompt := range filePrompts {
-		prompts = append(prompts, prompt)
 	}
 
 	app := App{
