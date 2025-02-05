@@ -13,6 +13,7 @@ type PromptList struct {
 
 	prompts       []model.Prompt
 	selectedIndex int
+	focus         bool
 }
 
 func (i *PromptList) SelectedIndex() int {
@@ -51,7 +52,6 @@ func (i *PromptList) incSelectedIndex() {
 	if i.selectedIndex >= len(i.prompts) {
 		i.selectedIndex = 0
 	}
-
 }
 
 func (i *PromptList) decSelectedIndex() {
@@ -74,6 +74,14 @@ func (i PromptList) Render(width, height int) string {
 
 // endinterface: Container
 
+func (pl *PromptList) Focus() {
+	pl.focus = true
+}
+
+func (pl *PromptList) Blur() {
+	pl.focus = false
+}
+
 func (pl *PromptList) renderPrompts() {
 	var content string
 	selectedStyle := lipgloss.NewStyle().Bold(true).Background(lipgloss.Color("4"))
@@ -81,7 +89,7 @@ func (pl *PromptList) renderPrompts() {
 	for index, prompt := range pl.prompts {
 		name := prompt.Name()
 
-		if index == pl.selectedIndex {
+		if pl.focus && index == pl.selectedIndex {
 			content += selectedStyle.Render(name) + "\n"
 		} else {
 			content += name + "\n"

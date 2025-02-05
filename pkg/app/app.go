@@ -229,12 +229,28 @@ func (m *App) focusNext() {
 	if m.focused == FocusedEndMarker {
 		m.focused = 0
 	}
+
+	m.updateFocus()
 }
 
 func (m *App) focusPrev() {
 	m.focused -= 1
 	if m.focused < 0 {
 		m.focused = FocusedEndMarker - 1
+	}
+
+	m.updateFocus()
+}
+
+// updateFocus update focus on each individual view based on the current focus
+func (m *App) updateFocus() {
+	switch m.focused {
+	case FocusedInput:
+		m.promptListView.Blur()
+	case FocusedPromptList:
+		m.promptListView.Focus()
+	case FocusedConversation:
+		m.promptListView.Blur()
 	}
 }
 
