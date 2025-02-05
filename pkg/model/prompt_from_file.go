@@ -4,13 +4,13 @@ import "os"
 
 type PromptFromFile struct {
 	name     string
-	Filename string
+	filename string
 }
 
 func MakePromptFromFile(name, filename string) PromptFromFile {
 	return PromptFromFile{
 		name:     name,
-		Filename: filename,
+		filename: filename,
 	}
 }
 
@@ -22,7 +22,7 @@ func (f PromptFromFile) Name() string {
 
 func (f PromptFromFile) Value() (string, error) {
 	// Read file content
-	content, err := os.ReadFile(f.Filename)
+	content, err := os.ReadFile(f.filename)
 	if err != nil {
 		return "", err
 	}
