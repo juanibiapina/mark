@@ -8,13 +8,13 @@ import (
 	"mark/pkg/util"
 )
 
-type PromptFromFile struct {
+type PromptMarkdown struct {
 	name     string
 	filename string
 }
 
-func MakePromptFromFile(name, filename string) PromptFromFile {
-	return PromptFromFile{
+func MakePromptFromFile(name, filename string) PromptMarkdown {
+	return PromptMarkdown{
 		name:     name,
 		filename: filename,
 	}
@@ -32,11 +32,11 @@ func (p PromptContext) ShellCommand(cmd string, args ...string) (string, error) 
 
 // startinterface: Prompt
 
-func (f PromptFromFile) Name() string {
+func (f PromptMarkdown) Name() string {
 	return f.name
 }
 
-func (f PromptFromFile) Value() (string, error) {
+func (f PromptMarkdown) Value() (string, error) {
 	promptContext := PromptContext{}
 
 	// Read file content
