@@ -20,8 +20,10 @@ func MakePromptFromFile(name, filename string) PromptMarkdown {
 	}
 }
 
+// PromptContext contains functions that can be called from the template to add context to the prompt.
 type PromptContext struct{}
 
+// ShellCommand runs a shell command and returns the output.
 func (p PromptContext) ShellCommand(cmd string, args ...string) (string, error) {
 	output, err := util.RunShellCommand(cmd, args...)
 	if err != nil {
