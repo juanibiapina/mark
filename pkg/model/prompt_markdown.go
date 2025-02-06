@@ -32,6 +32,15 @@ func (p PromptContext) ShellCommand(cmd string, args ...string) (string, error) 
 	return output, nil
 }
 
+// File reads a file and returns the content.
+func (p PromptContext) File(filename string) (string, error) {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
 // startinterface: Prompt
 
 func (f PromptMarkdown) Name() string {
