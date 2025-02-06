@@ -88,7 +88,7 @@ func (pl *PromptList) renderPrompts() {
 		name := prompt.Name()
 
 		var prefix string
-		if pl.focus && index == pl.selectedIndex {
+		if index == pl.selectedIndex {
 			prefix = " "
 		} else {
 			prefix = "  "
