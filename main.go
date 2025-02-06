@@ -1,44 +1,10 @@
+// Package main is only the entry point for the application.
+// No other source code should be in the main package otherwise it will get
+// mixed with non source code files at the root of the project.
 package main
 
-import (
-	"fmt"
-	"os"
-
-	"mark/pkg/app"
-
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/spf13/cobra"
-)
+import "mark/cmd"
 
 func main() {
-	rootCmd := &cobra.Command{
-		Use:   "mark",
-		Short: "Mark TUI Assistant",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(os.Getenv("DEBUG")) > 0 {
-				f, err := tea.LogToFile("debug.log", "debug")
-				if err != nil {
-					fmt.Println("fatal:", err)
-					os.Exit(1)
-				}
-				defer f.Close()
-			}
-
-			app, err := app.MakeApp()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-				os.Exit(1)
-			}
-
-			p := tea.NewProgram(app, tea.WithAltScreen(), tea.WithKeyboardEnhancements())
-			if _, err := p.Run(); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			}
-		},
-	}
-
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
+	cmd.Execute()
 }
