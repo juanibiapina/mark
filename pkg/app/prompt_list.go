@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type PromptList struct {
@@ -84,16 +83,18 @@ func (pl *PromptList) Blur() {
 
 func (pl *PromptList) renderPrompts() {
 	var content string
-	selectedStyle := lipgloss.NewStyle().Bold(true).Background(lipgloss.Color("4"))
 
 	for index, prompt := range pl.prompts {
 		name := prompt.Name()
 
+		var prefix string
 		if pl.focus && index == pl.selectedIndex {
-			content += selectedStyle.Render(name) + "\n"
+			prefix = " "
 		} else {
-			content += name + "\n"
+			prefix = "  "
 		}
+
+		content += prefix + name + "\n"
 
 	}
 
