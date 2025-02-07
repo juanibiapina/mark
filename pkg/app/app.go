@@ -186,7 +186,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m App) View() string {
 	if !m.uiReady {
-		return "Initializing UI..."
+		return "Initializing..."
 	}
 
 	// TODO still weird that I need to do this in a view method

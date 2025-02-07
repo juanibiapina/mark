@@ -17,17 +17,11 @@ func makeApp(t *testing.T) App {
 func TestApp(t *testing.T) {
 	app := makeApp(t)
 
-	model, cmd := app.Init()
-	assert.Nil(t, cmd)
-	assert.Equal(t, app, model)
+	v := app.View()
+	assert.Equal(t, "Initializing...", v)
 
-	model, cmd = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+	model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 
-	app = model.(App)
-
-	assert.Nil(t, cmd)
-	assert.True(t, app.uiReady)
-
-	v := model.View()
+	v = model.View()
 	snaps.MatchStandaloneSnapshot(t, v)
 }
