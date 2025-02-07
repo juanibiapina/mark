@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,12 +21,13 @@ func TestApp(t *testing.T) {
 	assert.Nil(t, cmd)
 	assert.Equal(t, app, model)
 
-	model, cmd = model.Update(tea.WindowSizeMsg{Width: 160, Height: 90})
+	model, cmd = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 
 	app = model.(App)
 
 	assert.Nil(t, cmd)
-	assert.Equal(t, 160, app.width)
-	assert.Equal(t, 90, app.height)
 	assert.True(t, app.uiReady)
+
+	v := model.View()
+	snaps.MatchStandaloneSnapshot(t, v)
 }
