@@ -15,13 +15,17 @@ func makeApp(t *testing.T) App {
 }
 
 func TestApp(t *testing.T) {
-	app := makeApp(t)
+	t.Parallel()
 
-	v := app.View()
-	assert.Equal(t, "Initializing...", v)
+	t.Run("Initialization", func(t *testing.T) {
+		app := makeApp(t)
 
-	model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+		v := app.View()
+		assert.Equal(t, "Initializing...", v)
 
-	v = model.View()
-	snaps.MatchStandaloneSnapshot(t, v)
+		model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+
+		v = model.View()
+		snaps.MatchStandaloneSnapshot(t, v)
+	})
 }
