@@ -111,13 +111,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.uiReady = true
 		}
 
-	case ReplaceLine:
-		// replace the line in the file
-		err := msg.Invoke()
-		if err != nil {
-			panic(err)
-		}
-
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
 		if !m.streaming {
