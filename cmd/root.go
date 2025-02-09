@@ -27,7 +27,7 @@ var rootCmd = &cobra.Command{
 			defer f.Close()
 		}
 
-		app, err := app.MakeApp()
+		app, err := app.MakeApp(app.NewConfig())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)

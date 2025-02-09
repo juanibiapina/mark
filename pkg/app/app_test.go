@@ -9,8 +9,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func testConfig() Config {
+	return Config{
+		promptsDir: "testdata/prompts",
+	}
+}
+
 func makeApp(t *testing.T) App {
-	app, err := MakeApp()
+	app, err := MakeApp(testConfig())
 	assert.Nil(t, err)
 	return app
 }

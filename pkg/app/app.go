@@ -3,6 +3,7 @@ package app
 import (
 	"log"
 	"os"
+	"path"
 	"reflect"
 
 	"mark/pkg/model"
@@ -54,9 +55,9 @@ type App struct {
 	err error
 }
 
-func MakeApp() (App, error) {
+func MakeApp(c Config) (App, error) {
 	// Load prompts from files
-	prompts, err := loadPrompts()
+	prompts, err := loadPrompts(c.promptsDir)
 	if err != nil {
 		return App{}, err
 	}
@@ -352,11 +353,8 @@ func processStream(m *App) tea.Cmd {
 	}
 }
 
-func loadPrompts() ([]model.Prompt, error) {
+func loadPrompts(dir string) ([]model.Prompt, error) {
 	prompts := []model.Prompt{}
-
-	// list .md files in the "./.mark/prompts" directory
-	dir := "./.mark/prompts"
 
 	files, err := os.ReadDir(dir)
 	if err != nil {
@@ -380,7 +378,7 @@ func loadPrompts() ([]model.Prompt, error) {
 			continue
 		}
 
-		prompt := model.MakePromptFromFile(filename, dir+"/"+filename)
+		prompt := model.MakePromptFromFile(filename, path.Join(dir, filename))
 		prompts = append(prompts, prompt)
 	}
 
