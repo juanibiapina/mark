@@ -75,11 +75,6 @@ func MakeApp(c Config) (App, error) {
 	// start a new conversation
 	app.newConversation()
 
-	// activate the first prompt
-	if len(prompts) > 0 {
-		app.conversation.SetPrompt(prompts[0])
-	}
-
 	return app, nil
 }
 
