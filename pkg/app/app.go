@@ -83,6 +83,10 @@ func MakeApp(c Config) (App, error) {
 	return app, nil
 }
 
+func (m App) Err() error {
+	return m.err
+}
+
 // Init Init is required by the bubbletea interface. It is called once when the
 // program starts. It is used to send an initial command to the update function.
 func (m App) Init() (tea.Model, tea.Cmd) {
@@ -187,12 +191,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m App) View() string {
 	if !m.uiReady {
 		return "Initializing..."
-	}
-
-	// If there is an error, display it.
-	// The application will quit after this because of the Quit command in the Update function.
-	if m.err != nil {
-		return "Error: " + m.err.Error()
 	}
 
 	// TODO still weird that I need to do this in a view method

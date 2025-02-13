@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func testConfig() Config {
@@ -39,11 +40,13 @@ func TestApp(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		app := makeApp(t)
 		model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
-		model, cmd := model.Update(errMsg{err: fmt.Errorf("test error")})
+
+		err := fmt.Errorf("test error")
+
+		model, cmd := model.Update(errMsg{err: err})
 
 		assert.Equal(t, tea.QuitMsg{}, cmd())
-
-		v := model.View()
-		assert.Equal(t, "Error: test error", v)
+		app = model.(App)
+		require.ErrorIs(t, app.Err(), err)
 	})
 }

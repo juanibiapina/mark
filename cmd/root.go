@@ -18,6 +18,7 @@ var rootCmd = &cobra.Command{
 	Use:   "mark",
 	Short: "Mark TUI Assistant",
 	Run: func(cmd *cobra.Command, args []string) {
+		// If the DEBUG environment variable is set, log to a file.
 		if len(os.Getenv("DEBUG")) > 0 {
 			f, err := tea.LogToFile("debug.log", "debug")
 			if err != nil {
@@ -27,14 +28,24 @@ var rootCmd = &cobra.Command{
 			defer f.Close()
 		}
 
-		app, err := app.MakeApp(app.NewConfig())
+		// initialize the App
+		a, err := app.MakeApp(app.NewConfig())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 
-		p := tea.NewProgram(app, tea.WithAltScreen(), tea.WithKeyboardEnhancements())
-		if _, err := p.Run(); err != nil {
+		// run the tea program
+		p := tea.NewProgram(a, tea.WithAltScreen(), tea.WithKeyboardEnhancements())
+		m, err := p.Run()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
+
+		// handle errors in the final model after program exits
+		a = m.(app.App)
+		err = a.Err()
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		}
 	},
