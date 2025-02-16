@@ -142,7 +142,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		cmds = append(cmds, processStream(&m))
 
-		m.renderMessages()
+		m.renderConversation()
 
 	case replyMessage:
 		// Ignore message if streaming has been cancelled
@@ -154,7 +154,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.partialMessage = ""
 		m.conversation.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
 
-		m.renderMessages()
+		m.renderConversation()
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -174,7 +174,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.focused == FocusedInput {
 				cmd := m.submitMessage()
 				cmds = append(cmds, cmd)
-				m.renderMessages()
+				m.renderConversation()
 				inputHandled = true
 			}
 
@@ -186,12 +186,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "ctrl+n":
 			m.newConversation()
-			m.renderMessages()
+			m.renderConversation()
 			inputHandled = true
 
 		case "ctrl+c":
 			m.cancelStreaming()
-			m.renderMessages()
+			m.renderConversation()
 			inputHandled = true
 
 		}
@@ -384,7 +384,7 @@ func processStream(m *App) tea.Cmd {
 	}
 }
 
-func (m *App) renderMessages() {
+func (m *App) renderConversation() {
 	messages := m.conversation.Messages()
 
 	// create a new glamour renderer
