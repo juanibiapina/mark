@@ -2,19 +2,18 @@ package app
 
 import (
 	"mark/pkg/util"
-	"mark/pkg/view"
 
 	"github.com/charmbracelet/lipgloss"
 )
 
 // Pane is a container with a border
 type Pane struct {
-	c           view.Container
+	c           Container
 	borderStyle lipgloss.Style
 	title       string
 }
 
-func NewPane(c view.Container, borderStyle lipgloss.Style, title string) Pane {
+func NewPane(c Container, borderStyle lipgloss.Style, title string) Pane {
 	return Pane{
 		c:           c,
 		borderStyle: borderStyle,
