@@ -1,8 +1,6 @@
 package app
 
 import (
-	"mark/pkg/view"
-
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -11,7 +9,7 @@ const (
 )
 
 func (m *App) renderWindow() string {
-	main := view.NewPane(m.conversationView, m.borderConversation(), "Conversation")
+	main := NewPane(m.conversationView, m.borderConversation(), "Conversation")
 
 	mainPanelWidth := int(float64(m.width) * ratio)
 

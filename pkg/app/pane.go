@@ -1,17 +1,19 @@
-package view
+package app
 
 import (
+	"mark/pkg/view"
+
 	"github.com/charmbracelet/lipgloss"
 )
 
 // Pane is a container with a border
 type Pane struct {
-	c           Container
+	c           view.Container
 	borderStyle lipgloss.Style
 	title       string
 }
 
-func NewPane(c Container, borderStyle lipgloss.Style, title string) Pane {
+func NewPane(c view.Container, borderStyle lipgloss.Style, title string) Pane {
 	return Pane{
 		c:           c,
 		borderStyle: borderStyle,
@@ -23,7 +25,7 @@ func (p Pane) Render(width, height int) string {
 	body := p.c.Render(width-p.borderStyle.GetVerticalFrameSize(), height-p.borderStyle.GetHorizontalFrameSize())
 	r := p.borderStyle.Render(body)
 	if p.title != "" && len(p.title) < width - 2 {
-		r = PlaceOverlay(2, 0, p.title, r)
+		r = view.PlaceOverlay(2, 0, p.title, r)
 	}
 	return r
 }
