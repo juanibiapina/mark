@@ -145,11 +145,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.renderConversation()
 
 	case replyMessage:
-		// Ignore message if streaming has been cancelled
-		if !m.streaming {
-			return m, nil
-		}
-
 		m.streaming = false
 		m.partialMessage = ""
 		m.conversation.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})

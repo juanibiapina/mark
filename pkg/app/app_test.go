@@ -56,4 +56,18 @@ func TestApp(t *testing.T) {
 		app = model.(App)
 		require.ErrorIs(t, app.Err(), err)
 	})
+
+	t.Run("messages", func(t *testing.T) {
+
+		t.Run("replyMessage", func(t *testing.T) {
+			app := initApp(t)
+
+			model, cmd := app.Update(replyMessage("test"))
+			assert.Nil(t, cmd)
+
+			v := model.View()
+			snaps.MatchStandaloneSnapshot(t, v)
+		})
+
+	})
 }
