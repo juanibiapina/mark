@@ -13,5 +13,5 @@ func (m *App) renderWindow(width, height int) string {
 
 	mainPanelWidth := int(float64(width) * ratio)
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, m.renderSidebar(width-mainPanelWidth, height), main.Render(mainPanelWidth, height))
+	return lipgloss.JoinHorizontal(lipgloss.Top, m.renderSidebar(width-mainPanelWidth, height), main.Render(*m, mainPanelWidth, height))
 }

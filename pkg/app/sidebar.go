@@ -14,5 +14,5 @@ func (m *App) renderSidebar(width, height int) string {
 	input := NewPane(m.input, m.borderInput(), "Message Assistant")
 	prompts := NewPane(m.promptListView, m.borderPromptList(), "Prompts")
 
-	return lipgloss.JoinVertical(lipgloss.Left, input.Render(width, inputHeight), prompts.Render(width, promptListHeight))
+	return lipgloss.JoinVertical(lipgloss.Left, input.Render(*m, width, inputHeight), prompts.Render(*m, width, promptListHeight))
 }

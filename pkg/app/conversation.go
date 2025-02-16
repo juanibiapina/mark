@@ -77,7 +77,7 @@ func (c *Conversation) renderMessages() {
 	c.viewport.SetContent(content)
 }
 
-func (c Conversation) Render(width, height int) string {
+func (c Conversation) Render(m App, width, height int) string {
 	c.viewport.Width = width
 	c.viewport.Height = height
 

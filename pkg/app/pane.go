@@ -21,8 +21,8 @@ func NewPane(c Container, borderStyle lipgloss.Style, title string) Pane {
 	}
 }
 
-func (p Pane) Render(width, height int) string {
-	body := p.c.Render(width-p.borderStyle.GetVerticalFrameSize(), height-p.borderStyle.GetHorizontalFrameSize())
+func (p Pane) Render(m App, width, height int) string {
+	body := p.c.Render(m, width-p.borderStyle.GetVerticalFrameSize(), height-p.borderStyle.GetHorizontalFrameSize())
 	r := p.borderStyle.Render(body)
 	if p.title != "" && len(p.title) < width-2 {
 		r = util.PlaceOverlay(2, 0, p.title, r)

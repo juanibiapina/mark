@@ -62,7 +62,7 @@ func (i *PromptList) decSelectedIndex() {
 
 // startinterface: Container
 
-func (i PromptList) Render(width, height int) string {
+func (i PromptList) Render(m App, width, height int) string {
 	i.viewport.Width = width
 	i.viewport.Height = height
 
