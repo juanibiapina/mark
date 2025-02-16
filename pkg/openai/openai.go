@@ -59,10 +59,6 @@ func (a *OpenAI) CompleteStreaming(c *model.Conversation, s *model.StreamingMess
 		chunk := stream.Current()
 		acc.AddChunk(chunk)
 
-		// if using tool calls
-		if _, ok := acc.JustFinishedToolCall(); ok {
-		}
-
 		if refusal, ok := acc.JustFinishedRefusal(); ok {
 			println("Refusal stream finished:", refusal)
 		}
