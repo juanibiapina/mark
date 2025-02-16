@@ -8,7 +8,6 @@ import (
 
 	"mark/pkg/model"
 	"mark/pkg/openai"
-	"mark/pkg/view"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss"
@@ -190,16 +189,7 @@ func (m App) View() string {
 		return "Initializing..."
 	}
 
-	main := view.Main{
-		Left: view.Sidebar{
-			Input:   view.NewPane(m.input, m.borderInput(), "Message Assistant"),
-			Prompts: view.NewPane(m.promptListView, m.borderPromptList(), "Prompts"),
-		},
-		Right: view.NewPane(m.conversationView, m.borderConversation(), "Conversation"),
-		Ratio: 0.67,
-	}
-
-	return main.Render(m.width, m.height)
+	return m.renderWindow()
 }
 
 func (m *App) focusNext() {
