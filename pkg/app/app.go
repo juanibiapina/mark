@@ -189,7 +189,7 @@ func (m App) View() string {
 		return "Initializing..."
 	}
 
-	return m.renderWindow()
+	return m.renderWindow(m.width, m.height)
 }
 
 func (m *App) focusNext() {
