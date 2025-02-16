@@ -22,6 +22,13 @@ func makeApp(t *testing.T) App {
 	return app
 }
 
+func initApp(t *testing.T) App {
+	app := makeApp(t)
+	model, _ := app.Init()
+	model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+	return model.(App)
+}
+
 func TestApp(t *testing.T) {
 	t.Parallel()
 
@@ -39,13 +46,11 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		app := makeApp(t)
-		model, _ := app.Init()
-		model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+		app := initApp(t)
 
 		err := fmt.Errorf("test error")
 
-		model, cmd := model.Update(errMsg{err: err})
+		model, cmd := app.Update(errMsg{err: err})
 
 		assert.Equal(t, tea.QuitMsg{}, cmd())
 		app = model.(App)
