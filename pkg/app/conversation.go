@@ -13,20 +13,10 @@ import (
 
 type Conversation struct {
 	viewport viewport.Model
-
-	con            *model.Conversation
-	streaming      bool
-	partialMessage string
 }
 
-func (c *Conversation) Set(con *model.Conversation, streaming bool, partialMessage string) {
-	c.con = con
-	c.streaming = streaming
-	c.partialMessage = partialMessage
-}
-
-func (c *Conversation) renderMessages() {
-	messages := c.con.Messages()
+func (c *Conversation) renderMessages(m App) {
+	messages := m.conversation.Messages()
 
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
@@ -39,7 +29,7 @@ func (c *Conversation) renderMessages() {
 
 	// calculate number of messages to render
 	var n int
-	if !c.streaming {
+	if !m.streaming {
 		n = 2
 	} else {
 		n = 1
@@ -65,8 +55,8 @@ func (c *Conversation) renderMessages() {
 		content += m
 	}
 
-	if c.streaming {
-		c, err := renderer.Render(c.partialMessage)
+	if m.streaming {
+		c, err := renderer.Render(m.partialMessage)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -81,7 +71,7 @@ func (c Conversation) Render(m App, width, height int) string {
 	c.viewport.Width = width
 	c.viewport.Height = height
 
-	c.renderMessages()
+	c.renderMessages(m)
 
 	return c.viewport.View()
 }

@@ -177,8 +177,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.processPromptListView(msg)
 			cmds = append(cmds, cmd)
 		}
-
-		m.conversationView.Set(&m.conversation, m.streaming, m.partialMessage)
 	}
 
 	return m, tea.Batch(cmds...)
