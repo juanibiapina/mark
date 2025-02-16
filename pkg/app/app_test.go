@@ -31,7 +31,8 @@ func TestApp(t *testing.T) {
 		v := app.View()
 		assert.Equal(t, "Initializing...", v)
 
-		model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+		model, _ := app.Init()
+		model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 
 		v = model.View()
 		snaps.MatchStandaloneSnapshot(t, v)
@@ -39,7 +40,8 @@ func TestApp(t *testing.T) {
 
 	t.Run("Error", func(t *testing.T) {
 		app := makeApp(t)
-		model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+		model, _ := app.Init()
+		model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 
 		err := fmt.Errorf("test error")
 

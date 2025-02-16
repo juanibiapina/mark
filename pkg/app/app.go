@@ -1,15 +1,18 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"os"
-	"path"
 	"reflect"
 
 	"mark/pkg/model"
 	"mark/pkg/openai"
 
+	"github.com/charmbracelet/bubbles/v2/textarea"
+	"github.com/charmbracelet/bubbles/v2/viewport"
 	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -22,16 +25,19 @@ const (
 	FocusedEndMarker // used to determine the number of focusable items for cycling
 )
 
+const (
+	inputHeight = 5
+	ratio       = 0.67
+)
+
 var (
 	borderStyle        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
 	focusedBorderStyle = borderStyle.BorderForeground(lipgloss.Color("2"))
 )
 
 type App struct {
-	// app state
-	uiReady       bool
-	width, height int
-	focused       Focused
+	// config
+	config Config
 
 	// models
 	prompts      []model.Prompt
@@ -42,10 +48,19 @@ type App struct {
 	stream         *model.StreamingMessage
 	partialMessage string
 
-	// view models
-	conversationView Conversation
-	input            Input
-	promptListView   PromptList
+	// ui
+	uiReady              bool
+	focused              Focused
+	mainPanelWidth       int
+	mainPanelHeight      int
+	sideBarWidth         int
+	inputWidth           int
+	promptListWidth      int
+	promptListHeight     int
+	conversationViewport viewport.Model
+	input                textarea.Model
+	promptList           viewport.Model
+	selectedPromptIndex  int
 
 	// llm
 	ai *openai.OpenAI
@@ -54,25 +69,11 @@ type App struct {
 	err error
 }
 
-func MakeApp(c Config) (App, error) {
-	// Load prompts from files
-	prompts, err := loadPrompts(c.promptsDir)
-	if err != nil {
-		return App{}, err
-	}
-
+func MakeApp(config Config) (App, error) {
 	app := App{
-		focused: FocusedInput,
-		input:   MakeInput(),
-		promptListView: PromptList{
-			prompts: prompts,
-		},
-		ai:      openai.NewOpenAIClient(),
-		prompts: prompts,
+		config: config,
+		ai:     openai.NewOpenAIClient(),
 	}
-
-	// start a new conversation
-	app.newConversation()
 
 	return app, nil
 }
@@ -81,9 +82,17 @@ func (m App) Err() error {
 	return m.err
 }
 
-// Init Init is required by the bubbletea interface. It is called once when the
-// program starts. It is used to send an initial command to the update function.
+// Init initializes the App model and possibly returns an initial command.
 func (m App) Init() (tea.Model, tea.Cmd) {
+	err := m.initPrompts()
+	if err != nil {
+		m.err = err
+		return m, tea.Quit
+	}
+
+	m.initInput()
+	m.newConversation()
+
 	return m, nil
 }
 
@@ -102,10 +111,24 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
+		m.mainPanelWidth = int(float64(msg.Width) * ratio)
+		m.mainPanelHeight = msg.Height
+		m.sideBarWidth = msg.Width - m.mainPanelWidth
+
+		m.inputWidth = m.sideBarWidth
+		m.input.SetWidth(m.inputWidth - 2)                   // 2 is the border width
+		m.input.SetHeight(inputHeight - 2)                   // 2 is the border width
+		m.promptList.SetWidth(m.sideBarWidth - 2)            // 2 is the border width
+		m.promptList.SetHeight(msg.Height - inputHeight - 2) // 2 is the border width
+
+		m.promptListWidth = m.sideBarWidth
+		m.promptListHeight = msg.Height - inputHeight
+		m.conversationViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
+		m.conversationViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
 
 		if !m.uiReady {
+			m.renderPrompts()
+
 			m.uiReady = true
 		}
 
@@ -119,6 +142,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		cmds = append(cmds, processStream(&m))
 
+		m.renderMessages()
+
 	case replyMessage:
 		// Ignore message if streaming has been cancelled
 		if !m.streaming {
@@ -128,6 +153,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streaming = false
 		m.partialMessage = ""
 		m.conversation.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
+
+		m.renderMessages()
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -147,21 +174,24 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.focused == FocusedInput {
 				cmd := m.submitMessage()
 				cmds = append(cmds, cmd)
+				m.renderMessages()
 				inputHandled = true
 			}
 
 			if m.focused == FocusedPromptList {
-				prompt := m.promptListView.SelectedIndex()
-				m.conversation.SetPrompt(m.prompts[prompt])
+				cmd := m.selectCurrentPrompt()
+				cmds = append(cmds, cmd)
 				inputHandled = true
 			}
 
 		case "ctrl+n":
 			m.newConversation()
+			m.renderMessages()
 			inputHandled = true
 
 		case "ctrl+c":
 			m.cancelStreaming()
+			m.renderMessages()
 			inputHandled = true
 
 		}
@@ -187,7 +217,7 @@ func (m App) View() string {
 		return "Initializing..."
 	}
 
-	return m.renderWindow(m.width, m.height)
+	return m.windowView()
 }
 
 func (m *App) focusNext() {
@@ -195,28 +225,12 @@ func (m *App) focusNext() {
 	if m.focused == FocusedEndMarker {
 		m.focused = 0
 	}
-
-	m.updateFocus()
 }
 
 func (m *App) focusPrev() {
 	m.focused -= 1
 	if m.focused < 0 {
 		m.focused = FocusedEndMarker - 1
-	}
-
-	m.updateFocus()
-}
-
-// updateFocus update focus on each individual view based on the current focus
-func (m *App) updateFocus() {
-	switch m.focused {
-	case FocusedInput:
-		m.promptListView.Blur()
-	case FocusedPromptList:
-		m.promptListView.Focus()
-	case FocusedConversation:
-		m.promptListView.Blur()
 	}
 }
 
@@ -267,9 +281,41 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 }
 
 func (m *App) processPromptListView(msg tea.Msg) tea.Cmd {
-	var cmd tea.Cmd
-	m.promptListView, cmd = m.promptListView.Update(msg)
-	return cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "j":
+			m.selectNextPrompt()
+			m.renderPrompts()
+		case "k":
+			m.selectPrevPrompt()
+			m.renderPrompts()
+		}
+	}
+
+	return nil
+}
+
+func (m *App) selectNextPrompt() {
+	if len(m.prompts) == 0 {
+		return
+	}
+
+	m.selectedPromptIndex += 1
+	if m.selectedPromptIndex >= len(m.prompts) {
+		m.selectedPromptIndex = 0
+	}
+}
+
+func (m *App) selectPrevPrompt() {
+	if len(m.prompts) == 0 {
+		return
+	}
+
+	m.selectedPromptIndex -= 1
+	if m.selectedPromptIndex < 0 {
+		m.selectedPromptIndex = len(m.prompts) - 1
+	}
 }
 
 // newConversation starts a new conversation without a prompt
@@ -281,6 +327,11 @@ func (m *App) newConversation() {
 	m.input.Reset()
 
 	m.focused = FocusedInput
+}
+
+func (m *App) selectCurrentPrompt() tea.Cmd {
+	m.conversation.SetPrompt(m.prompts[m.selectedPromptIndex])
+	return nil
 }
 
 func (m *App) submitMessage() tea.Cmd {
@@ -333,34 +384,74 @@ func processStream(m *App) tea.Cmd {
 	}
 }
 
-func loadPrompts(dir string) ([]model.Prompt, error) {
-	prompts := []model.Prompt{}
+func (m *App) renderMessages() {
+	messages := m.conversation.Messages()
 
-	files, err := os.ReadDir(dir)
+	// create a new glamour renderer
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(m.conversationViewport.Width()-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
+	)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return prompts, nil
-		}
-
-		return nil, err
+		log.Fatal(err)
 	}
 
-	// add each .md file as a prompt
-	for _, file := range files {
-		if file.IsDir() {
-			// skip directories
+	// calculate number of messages to render
+	var n int
+	if !m.streaming {
+		n = 2
+	} else {
+		n = 1
+	}
+
+	var content string
+
+	for i := len(messages) - n; i < len(messages); i++ {
+		if i < 0 {
 			continue
 		}
 
-		filename := file.Name()
-		if filename[len(filename)-3:] != ".md" {
-			// skip non-markdown files
-			continue
+		var msg string
+		if messages[i].Role == model.RoleUser {
+			msg = lipgloss.NewStyle().Width(m.conversationViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", messages[i].Content))
+		} else {
+			msg, err = renderer.Render(messages[i].Content)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
-		prompt := model.MakePromptFromFile(filename, path.Join(dir, filename))
-		prompts = append(prompts, prompt)
+		content += msg
 	}
 
-	return prompts, nil
+	if m.streaming {
+		c, err := renderer.Render(m.partialMessage)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		content += c
+	}
+
+	m.conversationViewport.SetContent(content)
+}
+
+func (m *App) renderPrompts() {
+	var content string
+
+	for index, prompt := range m.prompts {
+		name := prompt.Name()
+
+		var prefix string
+		if index == m.selectedPromptIndex {
+			prefix = " "
+		} else {
+			prefix = "  "
+		}
+
+		content += prefix + name + "\n"
+
+	}
+
+	m.promptList.SetContent(content)
 }
