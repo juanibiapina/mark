@@ -207,6 +207,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.processPromptListView(msg)
 			cmds = append(cmds, cmd)
 		}
+
+		if m.focused == FocusedConversation {
+			cmd := m.processConversationView(msg)
+			cmds = append(cmds, cmd)
+		}
 	}
 
 	return m, tea.Batch(cmds...)
@@ -294,6 +299,12 @@ func (m *App) processPromptListView(msg tea.Msg) tea.Cmd {
 	}
 
 	return nil
+}
+
+func (m *App) processConversationView(msg tea.Msg) tea.Cmd {
+	var cmd tea.Cmd
+	m.conversationViewport, cmd = m.conversationViewport.Update(msg)
+	return cmd
 }
 
 func (m *App) selectNextPrompt() {
@@ -397,21 +408,10 @@ func (m *App) renderConversation() {
 		return
 	}
 
-	// calculate number of messages to render
-	var n int
-	if !m.streaming {
-		n = 2
-	} else {
-		n = 1
-	}
 
 	var content string
 
-	for i := len(messages) - n; i < len(messages); i++ {
-		if i < 0 {
-			continue
-		}
-
+	for i := 0; i < len(messages); i++ {
 		var msg string
 		if messages[i].Role == model.RoleUser {
 			msg = lipgloss.NewStyle().Width(m.conversationViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", messages[i].Content))
