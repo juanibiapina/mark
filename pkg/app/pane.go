@@ -1,6 +1,7 @@
 package app
 
 import (
+	"mark/pkg/util"
 	"mark/pkg/view"
 
 	"github.com/charmbracelet/lipgloss"
@@ -24,8 +25,8 @@ func NewPane(c view.Container, borderStyle lipgloss.Style, title string) Pane {
 func (p Pane) Render(width, height int) string {
 	body := p.c.Render(width-p.borderStyle.GetVerticalFrameSize(), height-p.borderStyle.GetHorizontalFrameSize())
 	r := p.borderStyle.Render(body)
-	if p.title != "" && len(p.title) < width - 2 {
-		r = view.PlaceOverlay(2, 0, p.title, r)
+	if p.title != "" && len(p.title) < width-2 {
+		r = util.PlaceOverlay(2, 0, p.title, r)
 	}
 	return r
 }

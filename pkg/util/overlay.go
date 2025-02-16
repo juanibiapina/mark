@@ -1,4 +1,4 @@
-package view
+package util
 
 // source: https://github.com/charmbracelet/lipgloss/pull/102/files
 // adapted to not use whitespace internals from lipgloss
