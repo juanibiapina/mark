@@ -393,7 +393,8 @@ func (m *App) renderConversation() {
 		glamour.WithWordWrap(m.conversationViewport.Width()-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
 	)
 	if err != nil {
-		log.Fatal(err)
+		m.err = err
+		return
 	}
 
 	// calculate number of messages to render
