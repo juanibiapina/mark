@@ -178,6 +178,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.processPromptListView(msg)
 			cmds = append(cmds, cmd)
 		}
+
+		m.conversationView.Set(&m.conversation, m.streaming, m.partialMessage)
 	}
 
 	return m, tea.Batch(cmds...)
@@ -187,9 +189,6 @@ func (m App) View() string {
 	if !m.uiReady {
 		return "Initializing..."
 	}
-
-	// TODO still weird that I need to do this in a view method
-	m.conversationView.Set(&m.conversation, m.streaming, m.partialMessage)
 
 	main := view.Main{
 		Left: view.Sidebar{
