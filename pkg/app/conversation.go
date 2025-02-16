@@ -85,11 +85,3 @@ func (c Conversation) Render(width, height int) string {
 
 	return c.viewport.View()
 }
-
-func (c *Conversation) LineDown() {
-	c.viewport.LineDown(1)
-}
-
-func (c *Conversation) LineUp() {
-	c.viewport.LineUp(1)
-}
