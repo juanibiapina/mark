@@ -29,7 +29,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// initialize the App
-		a, err := app.MakeApp(app.NewConfig())
+		a, err := app.MakeApp()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)

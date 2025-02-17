@@ -4,7 +4,6 @@ import "time"
 
 type Conversation struct {
 	ID       string    `json:"id"`
-	Prompt   Prompt    `json:"prompt"`
 	Messages []Message `json:"messages"`
 }
 

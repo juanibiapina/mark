@@ -11,7 +11,7 @@ func (m *App) windowView() string {
 }
 
 func (m *App) sidebarView() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.promptListView())
+	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.conversationListView())
 }
 
 func (m *App) mainView() string {
@@ -30,11 +30,11 @@ func (m *App) inputView() string {
 	)
 }
 
-func (m *App) promptListView() string {
+func (m *App) conversationListView() string {
 	return util.RenderBorderWithTitle(
-		m.promptList.View(),
-		m.borderPromptList(),
-		"Prompts",
+		m.conversationList.View(),
+		m.borderConversationList(),
+		"Conversations",
 	)
 }
 

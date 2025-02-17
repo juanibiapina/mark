@@ -21,7 +21,7 @@ type Focused int
 
 const (
 	FocusedInput Focused = iota
-	FocusedPromptList
+	FocusedConversationList
 	FocusedConversation
 	FocusedEndMarker // used to determine the number of focusable items for cycling
 )
@@ -37,12 +37,7 @@ var (
 )
 
 type App struct {
-	// config
-	config Config
-	db     Database
-
 	// models
-	prompts      []model.Prompt
 	conversation model.Conversation
 
 	// streaming
@@ -51,27 +46,30 @@ type App struct {
 	partialMessage string
 
 	// ui
-	uiReady              bool
-	focused              Focused
-	mainPanelWidth       int
-	mainPanelHeight      int
-	sideBarWidth         int
-	inputWidth           int
-	promptListWidth      int
-	promptListHeight     int
-	conversationViewport viewport.Model
-	input                textarea.Model
-	promptList           viewport.Model
-	selectedPromptIndex  int
+	uiReady                bool
+	focused                Focused
+	mainPanelWidth         int
+	mainPanelHeight        int
+	sideBarWidth           int
 
-	// llm
+	input                  textarea.Model
+	inputWidth             int
+
+	conversationListWidth  int
+	conversationListHeight int
+	conversationList       viewport.Model
+
+	conversationViewport   viewport.Model
+
+	// clients
 	ai *openai.OpenAI
+	db Database
 
 	// error
 	err error
 }
 
-func MakeApp(config Config) (App, error) {
+func MakeApp() (App, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return App{}, err
@@ -80,9 +78,8 @@ func MakeApp(config Config) (App, error) {
 	dbdir := path.Join(cwd, ".mark")
 
 	app := App{
-		config: config,
-		db:     MakeFilesystemDatabase(dbdir),
-		ai:     openai.NewOpenAIClient(),
+		db: MakeFilesystemDatabase(dbdir),
+		ai: openai.NewOpenAIClient(),
 	}
 
 	return app, nil
@@ -94,12 +91,6 @@ func (m App) Err() error {
 
 // Init initializes the App model and possibly returns an initial command.
 func (m App) Init() (tea.Model, tea.Cmd) {
-	err := m.initPrompts()
-	if err != nil {
-		m.err = err
-		return m, tea.Quit
-	}
-
 	m.initInput()
 	m.newConversation()
 
@@ -126,19 +117,17 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.sideBarWidth = msg.Width - m.mainPanelWidth
 
 		m.inputWidth = m.sideBarWidth
-		m.input.SetWidth(m.inputWidth - 2)                   // 2 is the border width
-		m.input.SetHeight(inputHeight - 2)                   // 2 is the border width
-		m.promptList.SetWidth(m.sideBarWidth - 2)            // 2 is the border width
-		m.promptList.SetHeight(msg.Height - inputHeight - 2) // 2 is the border width
+		m.input.SetWidth(m.inputWidth - 2)                         // 2 is the border width
+		m.input.SetHeight(inputHeight - 2)                         // 2 is the border width
+		m.conversationList.SetWidth(m.sideBarWidth - 2)            // 2 is the border width
+		m.conversationList.SetHeight(msg.Height - inputHeight - 2) // 2 is the border width
 
-		m.promptListWidth = m.sideBarWidth
-		m.promptListHeight = msg.Height - inputHeight
+		m.conversationListWidth = m.sideBarWidth
+		m.conversationListHeight = msg.Height - inputHeight
 		m.conversationViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
 		m.conversationViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
 
 		if !m.uiReady {
-			m.renderPrompts()
-
 			m.uiReady = true
 		}
 
@@ -178,18 +167,18 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 			if m.focused == FocusedInput {
+				inputHandled = true
+
+				v := m.input.Value()
+				if v == "" {
+					break
+				}
+
 				cmd := m.submitMessage()
 				cmds = append(cmds, cmd)
 				cmd = m.saveConversation()
 				cmds = append(cmds, cmd)
 				m.renderConversation()
-				inputHandled = true
-			}
-
-			if m.focused == FocusedPromptList {
-				cmd := m.selectCurrentPrompt()
-				cmds = append(cmds, cmd)
-				inputHandled = true
 			}
 
 		case "ctrl+n":
@@ -208,11 +197,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.uiReady {
 		if m.focused == FocusedInput && !inputHandled {
 			cmd := m.processInputView(msg)
-			cmds = append(cmds, cmd)
-		}
-
-		if m.focused == FocusedPromptList {
-			cmd := m.processPromptListView(msg)
 			cmds = append(cmds, cmd)
 		}
 
@@ -254,8 +238,8 @@ func (m *App) borderInput() lipgloss.Style {
 	return borderStyle
 }
 
-func (m *App) borderPromptList() lipgloss.Style {
-	if m.focused == FocusedPromptList {
+func (m *App) borderConversationList() lipgloss.Style {
+	if m.focused == FocusedConversationList {
 		return focusedBorderStyle
 	}
 	return borderStyle
@@ -293,51 +277,13 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	return cmd
 }
 
-func (m *App) processPromptListView(msg tea.Msg) tea.Cmd {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "j":
-			m.selectNextPrompt()
-			m.renderPrompts()
-		case "k":
-			m.selectPrevPrompt()
-			m.renderPrompts()
-		}
-	}
-
-	return nil
-}
-
 func (m *App) processConversationView(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	m.conversationViewport, cmd = m.conversationViewport.Update(msg)
 	return cmd
 }
 
-func (m *App) selectNextPrompt() {
-	if len(m.prompts) == 0 {
-		return
-	}
-
-	m.selectedPromptIndex += 1
-	if m.selectedPromptIndex >= len(m.prompts) {
-		m.selectedPromptIndex = 0
-	}
-}
-
-func (m *App) selectPrevPrompt() {
-	if len(m.prompts) == 0 {
-		return
-	}
-
-	m.selectedPromptIndex -= 1
-	if m.selectedPromptIndex < 0 {
-		m.selectedPromptIndex = len(m.prompts) - 1
-	}
-}
-
-// newConversation starts a new conversation without a prompt
+// newConversation starts a new conversation
 func (m *App) newConversation() {
 	m.cancelStreaming()
 
@@ -346,11 +292,6 @@ func (m *App) newConversation() {
 	m.input.Reset()
 
 	m.focused = FocusedInput
-}
-
-func (m *App) selectCurrentPrompt() tea.Cmd {
-	m.conversation.Prompt = m.prompts[m.selectedPromptIndex]
-	return nil
 }
 
 func (m *App) submitMessage() tea.Cmd {
@@ -445,24 +386,4 @@ func (m *App) renderConversation() {
 	}
 
 	m.conversationViewport.SetContent(content)
-}
-
-func (m *App) renderPrompts() {
-	var content string
-
-	for index, prompt := range m.prompts {
-		name := prompt.Name()
-
-		var prefix string
-		if index == m.selectedPromptIndex {
-			prefix = " "
-		} else {
-			prefix = "  "
-		}
-
-		content += prefix + name + "\n"
-
-	}
-
-	m.promptList.SetContent(content)
 }

@@ -3,7 +3,6 @@ module mark
 go 1.23.4
 
 require (
-	github.com/adrg/xdg v0.5.3
 	github.com/charmbracelet/bubbles/v2 v2.0.0-alpha.2
 	github.com/charmbracelet/bubbletea/v2 v2.0.0-alpha.2
 	github.com/charmbracelet/glamour v0.8.0

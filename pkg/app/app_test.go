@@ -10,14 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testConfig() Config {
-	return Config{
-		promptsDir: "testdata/prompts",
-	}
-}
-
 func makeApp(t *testing.T) App {
-	app, err := MakeApp(testConfig())
+	app, err := MakeApp()
 	assert.Nil(t, err)
 	return app
 }
