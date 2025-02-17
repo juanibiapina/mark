@@ -63,7 +63,7 @@ func TestApp(t *testing.T) {
 			app := initApp(t)
 
 			model, cmd := app.Update(replyMessage("test"))
-			assert.Nil(t, cmd)
+			assert.NotNil(t, cmd)
 
 			v := model.View()
 			snaps.MatchStandaloneSnapshot(t, v)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"reflect"
 
 	"mark/pkg/model"
@@ -38,6 +39,7 @@ var (
 type App struct {
 	// config
 	config Config
+	db     Database
 
 	// models
 	prompts      []model.Prompt
@@ -70,8 +72,16 @@ type App struct {
 }
 
 func MakeApp(config Config) (App, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return App{}, err
+	}
+
+	dbdir := path.Join(cwd, ".mark")
+
 	app := App{
 		config: config,
+		db:     MakeFilesystemDatabase(dbdir),
 		ai:     openai.NewOpenAIClient(),
 	}
 
@@ -148,6 +158,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streaming = false
 		m.partialMessage = ""
 		m.conversation.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
+		cmd := m.saveConversation()
+		cmds = append(cmds, cmd)
 		m.renderConversation()
 
 	case tea.KeyPressMsg:
@@ -167,6 +179,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.focused == FocusedInput {
 				cmd := m.submitMessage()
+				cmds = append(cmds, cmd)
+				cmd = m.saveConversation()
 				cmds = append(cmds, cmd)
 				m.renderConversation()
 				inputHandled = true
@@ -381,6 +395,17 @@ func processStream(m *App) tea.Cmd {
 	}
 }
 
+func (m *App) saveConversation() tea.Cmd {
+	return func() tea.Msg {
+		err := m.db.SaveConversation(m.conversation)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return nil
+	}
+}
+
 func (m *App) renderConversation() {
 	messages := m.conversation.Messages
 
@@ -393,7 +418,6 @@ func (m *App) renderConversation() {
 		m.err = err
 		return
 	}
-
 
 	var content string
 

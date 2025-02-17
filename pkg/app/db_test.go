@@ -1,13 +1,11 @@
 package app
 
 import (
-	"os"
-	"path"
 	"testing"
 
 	"mark/pkg/model"
 
-	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,11 +23,8 @@ func TestFilesystemDatabase(t *testing.T) {
 		require.Nil(t, err)
 
 		// then
-		filename := c.ID + ".json"
-		file := path.Join(dir, filename)
-		content, err := os.ReadFile(file)
+		actual, err := db.LoadConversation(c.ID)
 		require.Nil(t, err)
-
-		snaps.MatchSnapshot(t, string(content))
+		assert.Equal(t, c, actual)
 	})
 }
