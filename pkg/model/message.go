@@ -8,6 +8,6 @@ const (
 )
 
 type Message struct {
-	Role    Role
-	Content string
+	Role    Role   `json:"role"`
+	Content string `json:"content"`
 }

@@ -1,26 +1,19 @@
 package model
 
+import "time"
+
 type Conversation struct {
-	prompt   Prompt
-	messages []Message
+	ID       string    `json:"id"`
+	Prompt   Prompt    `json:"prompt"`
+	Messages []Message `json:"messages"`
 }
 
 func MakeConversation() Conversation {
-	return Conversation{}
+	return Conversation{
+		ID: time.Now().Format(time.RFC3339Nano),
+	}
 }
 
 func (c *Conversation) AddMessage(m Message) {
-	c.messages = append(c.messages, m)
-}
-
-func (c *Conversation) Messages() []Message {
-	return c.messages
-}
-
-func (c *Conversation) SetPrompt(p Prompt) {
-	c.prompt = p
-}
-
-func (c *Conversation) Prompt() Prompt {
-	return c.prompt
+	c.Messages = append(c.Messages, m)
 }

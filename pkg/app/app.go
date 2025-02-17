@@ -148,7 +148,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streaming = false
 		m.partialMessage = ""
 		m.conversation.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
-
 		m.renderConversation()
 
 	case tea.KeyPressMsg:
@@ -336,7 +335,7 @@ func (m *App) newConversation() {
 }
 
 func (m *App) selectCurrentPrompt() tea.Cmd {
-	m.conversation.SetPrompt(m.prompts[m.selectedPromptIndex])
+	m.conversation.Prompt = m.prompts[m.selectedPromptIndex]
 	return nil
 }
 
@@ -383,7 +382,7 @@ func processStream(m *App) tea.Cmd {
 }
 
 func (m *App) renderConversation() {
-	messages := m.conversation.Messages()
+	messages := m.conversation.Messages
 
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(

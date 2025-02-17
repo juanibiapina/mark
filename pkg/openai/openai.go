@@ -29,9 +29,8 @@ func (a *OpenAI) CompleteStreaming(c *model.Conversation, s *model.StreamingMess
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 
 	// Add the prompt as user message containing context
-	prompt := c.Prompt()
-	if prompt != nil {
-		v, err := prompt.Value()
+	if c.Prompt != nil {
+		v, err := c.Prompt.Value()
 		if err != nil {
 			return err
 		}
@@ -39,7 +38,7 @@ func (a *OpenAI) CompleteStreaming(c *model.Conversation, s *model.StreamingMess
 	}
 
 	// Add the actual conversation messages
-	for _, msg := range c.Messages() {
+	for _, msg := range c.Messages {
 		if msg.Role == model.RoleUser {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 		} else {
