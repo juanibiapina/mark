@@ -33,8 +33,8 @@ func TestFilesystemDatabase(t *testing.T) {
 		dir := t.TempDir()
 		db := MakeFilesystemDatabase(dir)
 		conversations := []model.Conversation{
-			model.MakeConversation(),
-			model.MakeConversation(),
+			{ID: "1"},
+			{ID: "2"},
 		}
 
 		for _, c := range conversations {
