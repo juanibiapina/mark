@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"path"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -10,15 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func makeApp(t *testing.T) App {
-	cwd := t.TempDir()
+func makeApp(t *testing.T, cwd string) App {
 	app, err := MakeApp(cwd)
 	assert.Nil(t, err)
 	return app
 }
 
 func initApp(t *testing.T) App {
-	app := makeApp(t)
+	cwd := t.TempDir()
+	app := makeApp(t, cwd)
 	model, _ := app.Init()
 	model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 	return model.(App)
@@ -28,13 +29,20 @@ func TestApp(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Initialization", func(t *testing.T) {
-		app := makeApp(t)
+		cwd := path.Join("testdata", "cwd")
+		app := makeApp(t, cwd)
 
 		v := app.View()
 		assert.Equal(t, "Initializing...", v)
 
-		model, _ := app.Init()
+		model, cmd := app.Init()
+		assert.NotNil(t, cmd)
+
 		model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+
+		msg := cmd()
+		assert.NotNil(t, msg)
+		model, _ = model.Update(msg)
 
 		v = model.View()
 		snaps.MatchStandaloneSnapshot(t, v)
@@ -53,7 +61,6 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("messages", func(t *testing.T) {
-
 		t.Run("replyMessage", func(t *testing.T) {
 			app := initApp(t)
 
@@ -63,6 +70,5 @@ func TestApp(t *testing.T) {
 			v := model.View()
 			snaps.MatchStandaloneSnapshot(t, v)
 		})
-
 	})
 }
