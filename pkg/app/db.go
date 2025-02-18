@@ -2,13 +2,15 @@ package app
 
 import (
 	"encoding/json"
-	"mark/pkg/model"
 	"os"
 	"path"
+
+	"mark/pkg/model"
 )
 
 type Database interface {
 	SaveConversation(model.Conversation) error
+	ListConversations() ([]model.ConversationEntry, error)
 }
 
 type FilesystemDatabase struct {
@@ -32,7 +34,7 @@ func (self FilesystemDatabase) SaveConversation(c model.Conversation) error {
 
 	filename := c.ID + ".json"
 
-	err = os.WriteFile(path.Join(dir, filename), json, 0644)
+	err = os.WriteFile(path.Join(dir, filename), json, 0o644)
 	if err != nil {
 		return err
 	}
@@ -62,9 +64,33 @@ func (self FilesystemDatabase) LoadConversation(id string) (model.Conversation, 
 	return c, nil
 }
 
+func (self FilesystemDatabase) ListConversations() ([]model.ConversationEntry, error) {
+	dir, err := self.ensureDirectory("conversations")
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := []model.ConversationEntry{}
+
+	for _, file := range files {
+		c := model.ConversationEntry{
+			ID: file.Name()[:len(file.Name())-5], // remove ".json"
+		}
+
+		entries = append(entries, c)
+	}
+
+	return entries, nil
+}
+
 func (self FilesystemDatabase) ensureDirectory(name string) (string, error) {
 	dir := path.Join(self.directory, name)
-	err := os.MkdirAll(dir, 0755)
+	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return "", err
 	}

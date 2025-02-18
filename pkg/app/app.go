@@ -38,7 +38,8 @@ var (
 
 type App struct {
 	// models
-	conversation model.Conversation
+	conversation        model.Conversation
+	conversationEntries []model.ConversationEntry
 
 	// streaming
 	streaming      bool
@@ -108,7 +109,7 @@ func (m App) Err() error {
 
 // Init returns an initial command.
 func (m App) Init() (tea.Model, tea.Cmd) {
-	return m, nil
+	return m, m.loadConversations()
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -162,6 +163,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd := m.saveConversation()
 		cmds = append(cmds, cmd)
 		m.renderConversation()
+
+	case conversationEntriesMsg:
+		m.conversationEntries = msg
+		m.renderConversationList()
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -398,4 +403,14 @@ func (m *App) renderConversation() {
 	}
 
 	m.conversationViewport.SetContent(content)
+}
+
+func (m *App) renderConversationList() {
+	var content string
+
+	for i := 0; i < len(m.conversationEntries); i++ {
+		content += fmt.Sprintf("%s\n", m.conversationEntries[i].ID)
+	}
+
+	m.conversationList.SetContent(content)
 }

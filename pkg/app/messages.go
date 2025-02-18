@@ -1,8 +1,13 @@
 package app
 
+import (
+	"mark/pkg/model"
+)
+
 type (
-	replyMessage   string
-	partialMessage string
+	replyMessage           string
+	partialMessage         string
+	conversationEntriesMsg []model.ConversationEntry
 )
 
 type errMsg struct{ err error }
