@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/v2"
 )
 
 func RenderBorderWithTitle(v string, borderStyle lipgloss.Style, title string) string {

@@ -9,11 +9,12 @@ import (
 	"mark/pkg/model"
 	"mark/pkg/openai"
 
+	"github.com/charmbracelet/bubbles/v2/cursor"
 	"github.com/charmbracelet/bubbles/v2/textarea"
 	"github.com/charmbracelet/bubbles/v2/viewport"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type Focused int
@@ -45,20 +46,20 @@ type App struct {
 	partialMessage string
 
 	// ui
-	uiReady                bool
-	focused                Focused
-	mainPanelWidth         int
-	mainPanelHeight        int
-	sideBarWidth           int
+	uiReady         bool
+	focused         Focused
+	mainPanelWidth  int
+	mainPanelHeight int
+	sideBarWidth    int
 
-	input                  textarea.Model
-	inputWidth             int
+	input      textarea.Model
+	inputWidth int
 
 	conversationListWidth  int
 	conversationListHeight int
 	conversationList       viewport.Model
 
-	conversationViewport   viewport.Model
+	conversationViewport viewport.Model
 
 	// clients
 	ai *openai.OpenAI
@@ -69,16 +70,33 @@ type App struct {
 }
 
 func MakeApp() (App, error) {
+	// get current working directory
 	cwd, err := os.Getwd()
 	if err != nil {
 		return App{}, err
 	}
 
+	// determine database directory
 	dbdir := path.Join(cwd, ".mark")
 
+	// init input
+	input := textarea.New()
+	input.Focus() // focus is actually handled by the app
+	input.Cursor.SetMode(cursor.CursorStatic)
+	input.Prompt = ""
+	input.Styles.Focused.CursorLine = lipgloss.NewStyle() // Remove cursor line styling
+	input.ShowLineNumbers = false
+	input.KeyMap.InsertNewline.SetEnabled(false)
+
+	// init conversation
+	conversation := model.MakeConversation()
+
+	// init app
 	app := App{
-		db: MakeFilesystemDatabase(dbdir),
-		ai: openai.NewOpenAIClient(),
+		db:           MakeFilesystemDatabase(dbdir),
+		ai:           openai.NewOpenAIClient(),
+		input:        input,
+		conversation: conversation,
 	}
 
 	return app, nil
@@ -88,11 +106,8 @@ func (m App) Err() error {
 	return m.err
 }
 
-// Init initializes the App model and possibly returns an initial command.
+// Init returns an initial command.
 func (m App) Init() (tea.Model, tea.Cmd) {
-	m.initInput()
-	m.newConversation()
-
 	return m, nil
 }
 

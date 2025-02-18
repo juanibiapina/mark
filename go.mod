@@ -6,7 +6,6 @@ require (
 	github.com/charmbracelet/bubbles/v2 v2.0.0-alpha.2
 	github.com/charmbracelet/bubbletea/v2 v2.0.0-alpha.2
 	github.com/charmbracelet/glamour v0.8.0
-	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/charmbracelet/lipgloss/v2 v2.0.0-alpha.2
 	github.com/gkampitakis/go-snaps v0.5.9
 	github.com/invopop/jsonschema v0.13.0
@@ -25,6 +24,7 @@ require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/charmbracelet/colorprofile v0.1.6 // indirect
+	github.com/charmbracelet/lipgloss v1.0.0 // indirect
 	github.com/charmbracelet/x/ansi v0.4.5 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.3 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect

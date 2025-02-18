@@ -3,7 +3,7 @@ package app
 import (
 	"mark/pkg/util"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/v2"
 )
 
 func (m *App) windowView() string {
