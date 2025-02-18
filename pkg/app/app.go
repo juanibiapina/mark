@@ -122,15 +122,17 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
+		borderSize := 2 // 2 times the border width
+
 		m.mainPanelWidth = int(float64(msg.Width) * ratio)
 		m.mainPanelHeight = msg.Height
 		m.sideBarWidth = msg.Width - m.mainPanelWidth
 
 		m.inputWidth = m.sideBarWidth
-		m.input.SetWidth(m.inputWidth - 2)                         // 2 is the border width
-		m.input.SetHeight(inputHeight - 2)                         // 2 is the border width
-		m.conversationList.SetWidth(m.sideBarWidth - 2)            // 2 is the border width
-		m.conversationList.SetHeight(msg.Height - inputHeight - 2) // 2 is the border width
+		m.input.SetWidth(m.inputWidth - borderSize)
+		m.input.SetHeight(inputHeight - borderSize)
+		m.conversationList.SetWidth(m.sideBarWidth - borderSize)
+		m.conversationList.SetHeight(msg.Height - inputHeight - borderSize)
 
 		m.conversationListWidth = m.sideBarWidth
 		m.conversationListHeight = msg.Height - inputHeight
