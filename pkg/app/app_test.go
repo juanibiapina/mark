@@ -20,8 +20,7 @@ func makeApp(t *testing.T, cwd string) App {
 func initApp(t *testing.T) App {
 	cwd := t.TempDir()
 	app := makeApp(t, cwd)
-	model, _ := app.Init()
-	model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+	model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 	return model.(App)
 }
 
