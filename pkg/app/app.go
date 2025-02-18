@@ -53,13 +53,8 @@ type App struct {
 	mainPanelHeight int
 	sideBarWidth    int
 
-	input      textarea.Model
-	inputWidth int
-
-	conversationListWidth  int
-	conversationListHeight int
-	conversationList       viewport.Model
-
+	input                textarea.Model
+	conversationList     viewport.Model
 	conversationViewport viewport.Model
 
 	// clients
@@ -129,14 +124,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mainPanelHeight = msg.Height
 		m.sideBarWidth = msg.Width - m.mainPanelWidth
 
-		m.inputWidth = m.sideBarWidth
-		m.input.SetWidth(m.inputWidth - borderSize)
+		m.input.SetWidth(m.sideBarWidth - borderSize)
 		m.input.SetHeight(inputHeight - borderSize)
 		m.conversationList.SetWidth(m.sideBarWidth - borderSize)
 		m.conversationList.SetHeight(msg.Height - inputHeight - borderSize)
 
-		m.conversationListWidth = m.sideBarWidth
-		m.conversationListHeight = msg.Height - inputHeight
 		m.conversationViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
 		m.conversationViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
 
