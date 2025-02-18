@@ -11,7 +11,8 @@ import (
 )
 
 func makeApp(t *testing.T) App {
-	app, err := MakeApp()
+	cwd := t.TempDir()
+	app, err := MakeApp(cwd)
 	assert.Nil(t, err)
 	return app
 }

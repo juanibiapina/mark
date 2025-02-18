@@ -18,8 +18,15 @@ var rootCmd = &cobra.Command{
 	Use:   "mark",
 	Short: "Mark TUI Assistant",
 	Run: func(cmd *cobra.Command, args []string) {
+		// determine the current working directory
+		cwd, err := os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
 		// initialize the App
-		a, err := app.MakeApp()
+		a, err := app.MakeApp(cwd)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)

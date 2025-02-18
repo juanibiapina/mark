@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"log"
-	"os"
 	"path"
 
 	"mark/pkg/model"
@@ -65,13 +64,7 @@ type App struct {
 	err error
 }
 
-func MakeApp() (App, error) {
-	// get current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		return App{}, err
-	}
-
+func MakeApp(cwd string) (App, error) {
 	// determine database directory
 	dbdir := path.Join(cwd, ".mark")
 
