@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"reflect"
 
 	"mark/pkg/model"
 	"mark/pkg/openai"
@@ -98,10 +97,6 @@ func (m App) Init() (tea.Model, tea.Cmd) {
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if len(os.Getenv("DEBUG")) > 0 {
-		log.Print("msg: ", reflect.TypeOf(msg), msg)
-	}
-
 	var cmds []tea.Cmd
 	var inputHandled bool // whether the key event was handled and shouldn't be passed to the input view
 

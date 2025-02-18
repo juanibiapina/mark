@@ -18,16 +18,6 @@ var rootCmd = &cobra.Command{
 	Use:   "mark",
 	Short: "Mark TUI Assistant",
 	Run: func(cmd *cobra.Command, args []string) {
-		// If the DEBUG environment variable is set, log to a file.
-		if len(os.Getenv("DEBUG")) > 0 {
-			f, err := tea.LogToFile("debug.log", "debug")
-			if err != nil {
-				fmt.Println("fatal:", err)
-				os.Exit(1)
-			}
-			defer f.Close()
-		}
-
 		// initialize the App
 		a, err := app.MakeApp()
 		if err != nil {
