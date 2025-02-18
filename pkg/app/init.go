@@ -14,8 +14,6 @@ func (m *App) initInput() {
 
 	m.input.Prompt = ""
 
-	m.input.SetHeight(3)
-
 	// Remove cursor line styling
 	m.input.Styles.Focused.CursorLine = lipgloss.NewStyle()
 
