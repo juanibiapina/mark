@@ -17,7 +17,7 @@ func makeApp(t *testing.T, cwd string) App {
 	return app
 }
 
-func initApp(t *testing.T) App {
+func bareApp(t *testing.T) App {
 	cwd := t.TempDir()
 	app := makeApp(t, cwd)
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
@@ -48,7 +48,7 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		app := initApp(t)
+		app := bareApp(t)
 
 		err := fmt.Errorf("test error")
 
@@ -61,7 +61,7 @@ func TestApp(t *testing.T) {
 
 	t.Run("messages", func(t *testing.T) {
 		t.Run("replyMessage", func(t *testing.T) {
-			app := initApp(t)
+			app := bareApp(t)
 
 			model, cmd := app.Update(replyMessage("test"))
 			assert.NotNil(t, cmd)
@@ -69,5 +69,35 @@ func TestApp(t *testing.T) {
 			v := model.View()
 			snaps.MatchStandaloneSnapshot(t, v)
 		})
+	})
+
+	t.Run("focus", func(t *testing.T) {
+		app := bareApp(t)
+
+		// default focus
+		require.Equal(t, FocusedInput, app.focused)
+		v := app.View()
+		snaps.MatchSnapshot(t, v)
+
+		// tab once
+		model, _ := app.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+		app = model.(App)
+		require.Equal(t, FocusedConversationList, app.focused)
+		v = model.View()
+		snaps.MatchSnapshot(t, v)
+
+		// tab twice
+		model, _ = app.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+		app = model.(App)
+		require.Equal(t, FocusedConversation, app.focused)
+		v = model.View()
+		snaps.MatchSnapshot(t, v)
+
+		// tab thrice (back to input)
+		model, _ = app.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+		app = model.(App)
+		require.Equal(t, FocusedInput, app.focused)
+		v = model.View()
+		snaps.MatchSnapshot(t, v)
 	})
 }
