@@ -106,4 +106,19 @@ func TestApp(t *testing.T) {
 		v = app.View()
 		snaps.MatchSnapshot(t, v)
 	})
+
+	t.Run("input", func(t *testing.T) {
+		app := bareApp(t)
+
+		app = update(app, key('h'))
+		app = update(app, key('e'))
+		app = update(app, key('y'))
+
+		v := app.View()
+		snaps.MatchSnapshot(t, v)
+
+		app = update(app, key(tea.KeyEnter))
+		v = app.View()
+		snaps.MatchSnapshot(t, v)
+	})
 }
