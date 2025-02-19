@@ -24,6 +24,18 @@ func bareApp(t *testing.T) App {
 	return model.(App)
 }
 
+func update(app App, msg tea.Msg) App {
+	model, cmd := app.Update(msg)
+	for cmd != nil {
+		model, cmd = model.Update(cmd())
+	}
+	return model.(App)
+}
+
+func key(code rune) tea.Msg {
+	return tea.KeyPressMsg{Code: code}
+}
+
 func TestApp(t *testing.T) {
 	t.Parallel()
 
@@ -80,24 +92,21 @@ func TestApp(t *testing.T) {
 		snaps.MatchSnapshot(t, v)
 
 		// tab once
-		model, _ := app.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-		app = model.(App)
+		app = update(app, key(tea.KeyTab))
 		require.Equal(t, FocusedConversationList, app.focused)
-		v = model.View()
+		v = app.View()
 		snaps.MatchSnapshot(t, v)
 
 		// tab twice
-		model, _ = app.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-		app = model.(App)
+		app = update(app, key(tea.KeyTab))
 		require.Equal(t, FocusedConversation, app.focused)
-		v = model.View()
+		v = app.View()
 		snaps.MatchSnapshot(t, v)
 
 		// tab thrice (back to input)
-		model, _ = app.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-		app = model.(App)
+		app = update(app, key(tea.KeyTab))
 		require.Equal(t, FocusedInput, app.focused)
-		v = model.View()
+		v = app.View()
 		snaps.MatchSnapshot(t, v)
 	})
 }
