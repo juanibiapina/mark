@@ -33,7 +33,7 @@ func update(app App, msg tea.Msg) App {
 }
 
 func key(code rune) tea.Msg {
-	return tea.KeyPressMsg{Code: code}
+	return tea.KeyPressMsg{Code: code, Text: string(code)}
 }
 
 func TestApp(t *testing.T) {
