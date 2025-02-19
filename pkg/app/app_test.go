@@ -25,10 +25,7 @@ func bareApp(t *testing.T) App {
 }
 
 func update(app App, msg tea.Msg) App {
-	model, cmd := app.Update(msg)
-	for cmd != nil {
-		model, cmd = model.Update(cmd())
-	}
+	model, _ := app.Update(msg)
 	return model.(App)
 }
 
