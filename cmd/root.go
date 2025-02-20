@@ -8,42 +8,26 @@ import (
 
 	"mark/pkg/app"
 
-	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/spf13/cobra"
 )
 
 // rootCmd runs when the cli is invoked without any subcommands.
-// It initializes and runs the bubbletea program.
+// It initializes and runs the Program, printing errors to stderr and exiting
+// with a non-zero status code when an error occurs.
 var rootCmd = &cobra.Command{
 	Use:   "mark",
 	Short: "Mark TUI Assistant",
 	Run: func(cmd *cobra.Command, args []string) {
-		// determine the current working directory
-		cwd, err := os.Getwd()
+		program, err := app.NewProgram()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 
-		// initialize the App
-		a, err := app.MakeApp(cwd)
+		err = program.Run()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
-		}
-
-		// run the tea program
-		p := tea.NewProgram(a, tea.WithAltScreen(), tea.WithKeyboardEnhancements())
-		m, err := p.Run()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		}
-
-		// handle errors in the final model after program exits
-		a = m.(app.App)
-		err = a.Err()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		}
 	},
 }
