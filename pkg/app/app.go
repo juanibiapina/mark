@@ -160,6 +160,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case conversationMsg:
 		m.conversation = msg.conversation
 		m.renderConversation()
+		m.renderConversationList()
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
