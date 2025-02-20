@@ -157,6 +157,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.conversationEntries = msg
 		m.renderConversationList()
 
+	case conversationMsg:
+		m.conversation = msg.conversation
+		m.renderConversation()
+
 	case tea.KeyPressMsg:
 		switch msg.String() {
 
@@ -185,6 +189,13 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = m.saveConversation()
 				cmds = append(cmds, cmd)
 				m.renderConversation()
+			}
+
+			if m.focused == FocusedConversationList {
+				inputHandled = true
+
+				cmd := m.loadSelectedConversation()
+				cmds = append(cmds, cmd)
 			}
 
 		case "ctrl+n":

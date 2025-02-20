@@ -10,6 +10,7 @@ import (
 
 type Database interface {
 	SaveConversation(model.Conversation) error
+	LoadConversation(string) (model.Conversation, error)
 	ListConversations() ([]model.ConversationEntry, error)
 }
 

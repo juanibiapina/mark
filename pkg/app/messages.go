@@ -5,9 +5,10 @@ import (
 )
 
 type (
-	replyMessage           string
-	partialMessage         string
 	conversationEntriesMsg []model.ConversationEntry
+	partialMessage         string
+	replyMessage           string
+	conversationMsg        struct{ conversation model.Conversation }
 )
 
 type errMsg struct{ err error }

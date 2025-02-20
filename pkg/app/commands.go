@@ -17,6 +17,23 @@ func (m *App) saveConversation() tea.Cmd {
 	}
 }
 
+func (m *App) loadSelectedConversation() tea.Cmd {
+	if len(m.conversationEntries) == 0 {
+		return nil
+	}
+
+	selectedEntry := m.conversationEntries[m.cursorEntries]
+
+	return func() tea.Msg {
+		conversation, err := m.db.LoadConversation(selectedEntry.ID)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return conversationMsg{conversation}
+	}
+}
+
 func (m *App) loadConversations() tea.Cmd {
 	return func() tea.Msg {
 		conversations, err := m.db.ListConversations()
