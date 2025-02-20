@@ -362,6 +362,7 @@ func (m *App) newConversation() {
 	m.cancelStreaming()
 
 	m.conversation = model.MakeConversation()
+	m.conversationEntries = append([]model.ConversationEntry{{ID: m.conversation.ID}}, m.conversationEntries...)
 
 	m.input.Reset()
 
