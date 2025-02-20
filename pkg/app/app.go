@@ -197,14 +197,16 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.uiReady {
-		if m.focused == FocusedInput && !inputHandled {
-			cmd := m.processInputView(msg)
-			cmds = append(cmds, cmd)
-		}
+		if !inputHandled {
+			if m.focused == FocusedInput {
+				cmd := m.processInputView(msg)
+				cmds = append(cmds, cmd)
+			}
 
-		if m.focused == FocusedConversation {
-			cmd := m.processConversationView(msg)
-			cmds = append(cmds, cmd)
+			if m.focused == FocusedConversation {
+				cmd := m.processConversationView(msg)
+				cmds = append(cmds, cmd)
+			}
 		}
 	}
 
