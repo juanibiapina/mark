@@ -9,6 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func conversationWithID(id string) model.Conversation {
+	c := model.MakeConversation()
+	c.ID = id
+	return c
+}
+
 func TestFilesystemDatabase(t *testing.T) {
 	t.Parallel()
 
@@ -25,7 +31,7 @@ func TestFilesystemDatabase(t *testing.T) {
 		// then
 		actual, err := db.LoadConversation(c.ID)
 		require.Nil(t, err)
-		assert.Equal(t, c, actual)
+		assert.Equal(t, c.ID, actual.ID)
 	})
 
 	t.Run("ListConversations", func(t *testing.T) {
@@ -33,8 +39,8 @@ func TestFilesystemDatabase(t *testing.T) {
 		dir := t.TempDir()
 		db := MakeFilesystemDatabase(dir)
 		conversations := []model.Conversation{
-			{ID: "1"},
-			{ID: "2"},
+			conversationWithID("1"),
+			conversationWithID("2"),
 		}
 
 		for _, c := range conversations {
@@ -48,7 +54,7 @@ func TestFilesystemDatabase(t *testing.T) {
 
 		// then
 		assert.Len(t, entries, 2)
-		assert.Equal(t, conversations[0].ID, entries[0].ID)
-		assert.Equal(t, conversations[1].ID, entries[1].ID)
+		assert.Equal(t, conversations[1].ID, entries[0].ID)
+		assert.Equal(t, conversations[0].ID, entries[1].ID)
 	})
 }

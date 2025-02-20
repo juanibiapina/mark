@@ -8,13 +8,17 @@ type ConversationEntry struct {
 }
 
 type Conversation struct {
-	ID       string    `json:"id"`
-	Messages []Message `json:"messages"`
+	ID        string    `json:"id"`
+	Messages  []Message `json:"messages"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func MakeConversation() Conversation {
+	t := time.Now()
+
 	return Conversation{
-		ID: time.Now().Format(time.RFC3339Nano),
+		ID:        t.Format(time.RFC3339Nano),
+		CreatedAt: t,
 	}
 }
 

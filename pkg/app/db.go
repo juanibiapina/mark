@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path"
+	"slices"
 
 	"mark/pkg/model"
 )
@@ -85,6 +86,9 @@ func (self FilesystemDatabase) ListConversations() ([]model.ConversationEntry, e
 
 		entries = append(entries, c)
 	}
+
+	// reverse the order so the most recent conversations are at the top
+	slices.Reverse(entries)
 
 	return entries, nil
 }
