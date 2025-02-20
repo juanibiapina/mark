@@ -9,6 +9,7 @@ type (
 	partialMessage         string
 	replyMessage           string
 	conversationMsg        struct{ conversation model.Conversation }
+	removeConversationMsg  string
 )
 
 type errMsg struct{ err error }

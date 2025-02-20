@@ -13,6 +13,24 @@ type Database interface {
 	SaveConversation(model.Conversation) error
 	LoadConversation(string) (model.Conversation, error)
 	ListConversations() ([]model.ConversationEntry, error)
+	DeleteConversation(string) error
+}
+
+func (self FilesystemDatabase) DeleteConversation(id string) error {
+	dir, err := self.ensureDirectory("conversations")
+	if err != nil {
+		return err
+	}
+
+	filename := id + ".json"
+	filePath := path.Join(dir, filename)
+
+	err = os.Remove(filePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type FilesystemDatabase struct {

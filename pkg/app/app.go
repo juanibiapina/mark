@@ -162,6 +162,33 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.renderConversation()
 		m.renderConversationList()
 
+	case removeConversationMsg:
+		// If the current conversation is the one being deleted, start a new conversation
+		if m.conversation.ID == string(msg) {
+			m.newConversation()
+			m.renderConversation()
+		}
+
+		// Remove the conversation from the list of entries
+		for i, entry := range m.conversationEntries {
+			if entry.ID == string(msg) {
+				m.conversationEntries = append(m.conversationEntries[:i], m.conversationEntries[i+1:]...)
+				break
+			}
+		}
+
+		// Ensure the cursor is in a valid position
+		if m.cursorEntries >= len(m.conversationEntries) {
+			m.cursorEntries = len(m.conversationEntries) - 1
+		}
+
+		// If we deleted the last message, focus on the input
+		if len(m.conversationEntries) == 0 {
+			m.focused = FocusedInput
+		}
+
+		m.renderConversationList()
+
 	case tea.KeyPressMsg:
 		switch msg.String() {
 
@@ -342,6 +369,8 @@ func (m *App) processConversationList(msg tea.Msg) tea.Cmd {
 			m.selectNextConversation()
 		case "k":
 			m.selectPrevConversation()
+		case "d":
+			return m.deleteSelectedConversation()
 		default:
 			var cmd tea.Cmd
 			m.conversationList, cmd = m.conversationList.Update(msg)

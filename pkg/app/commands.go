@@ -65,6 +65,23 @@ func (m *App) submitMessage() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
+func (m *App) deleteSelectedConversation() tea.Cmd {
+	if len(m.conversationEntries) == 0 {
+		return nil
+	}
+
+	selectedEntryID := m.conversationEntries[m.cursorEntries].ID
+
+	return func() tea.Msg {
+		err := m.db.DeleteConversation(selectedEntryID)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return removeConversationMsg(selectedEntryID)
+	}
+}
+
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
 		err := m.ai.CompleteStreaming(&m.conversation, m.stream)
