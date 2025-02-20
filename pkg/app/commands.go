@@ -13,7 +13,7 @@ func (m *App) saveConversation() tea.Cmd {
 			return errMsg{err}
 		}
 
-		return nil
+		return m.loadConversations()()
 	}
 }
 
