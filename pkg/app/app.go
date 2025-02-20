@@ -414,7 +414,11 @@ func (m *App) renderConversationList() {
 	var content string
 
 	for i := 0; i < len(m.conversationEntries); i++ {
-		entryContent := "  " + m.conversationEntries[i].ID
+		prefix := "  "
+		if m.conversationEntries[i].ID == m.conversation.ID {
+			prefix = "* "
+		}
+		entryContent := prefix + m.conversationEntries[i].ID
 
 		if i == m.cursorEntries {
 			if m.focused == FocusedConversationList {
