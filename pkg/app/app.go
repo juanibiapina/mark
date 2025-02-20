@@ -229,6 +229,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+n":
 			m.newConversation()
 			m.renderConversation()
+			m.renderConversationList()
 			inputHandled = true
 
 		case "ctrl+c":
