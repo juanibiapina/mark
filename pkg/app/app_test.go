@@ -24,6 +24,22 @@ func bareApp(t *testing.T) App {
 	return model.(App)
 }
 
+func appWithFixture(t *testing.T, dir string) App {
+	cwd := path.Join("testdata", dir)
+	app := makeApp(t, cwd)
+
+	model, cmd := app.Init()
+	assert.NotNil(t, cmd)
+
+	model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+
+	msg := cmd()
+	assert.NotNil(t, msg)
+	model, _ = model.Update(msg)
+
+	return model.(App)
+}
+
 func update(app App, msg tea.Msg) App {
 	model, _ := app.Update(msg)
 	return model.(App)
@@ -81,7 +97,7 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("focus", func(t *testing.T) {
-		app := bareApp(t)
+		app := appWithFixture(t, "cwd")
 
 		// default focus
 		require.Equal(t, FocusedInput, app.focused)

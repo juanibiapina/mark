@@ -31,8 +31,9 @@ const (
 )
 
 var (
-	borderStyle        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
-	focusedBorderStyle = borderStyle.BorderForeground(lipgloss.Color("2"))
+	borderStyle           = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+	focusedBorderStyle    = borderStyle.BorderForeground(lipgloss.Color("2"))
+	highlightedEntryStyle = lipgloss.NewStyle().Background(lipgloss.Color("4"))
 )
 
 type App struct {
@@ -53,8 +54,10 @@ type App struct {
 	sideBarWidth    int
 
 	input                textarea.Model
-	conversationList     viewport.Model
 	conversationViewport viewport.Model
+
+	conversationList viewport.Model
+	cursorEntries    int
 
 	// clients
 	ai *openai.OpenAI
@@ -121,6 +124,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.input.SetHeight(inputHeight - borderSize)
 		m.conversationList.SetWidth(m.sideBarWidth - borderSize)
 		m.conversationList.SetHeight(msg.Height - inputHeight - borderSize)
+		highlightedEntryStyle = highlightedEntryStyle.Width(m.sideBarWidth - borderSize)
 
 		m.conversationViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
 		m.conversationViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
@@ -203,6 +207,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 
+			if m.focused == FocusedConversationList {
+				cmd := m.processConversationList(msg)
+				cmds = append(cmds, cmd)
+			}
+
 			if m.focused == FocusedConversation {
 				cmd := m.processConversationView(msg)
 				cmds = append(cmds, cmd)
@@ -226,6 +235,8 @@ func (m *App) focusNext() {
 	if m.focused == FocusedEndMarker {
 		m.focused = 0
 	}
+
+	m.renderConversationList()
 }
 
 func (m *App) focusPrev() {
@@ -233,6 +244,8 @@ func (m *App) focusPrev() {
 	if m.focused < 0 {
 		m.focused = FocusedEndMarker - 1
 	}
+
+	m.renderConversationList()
 }
 
 func (m *App) borderInput() lipgloss.Style {
@@ -279,6 +292,52 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	return cmd
+}
+
+func (m *App) selectNextConversation() {
+	if len(m.conversationEntries) == 0 {
+		return
+	}
+
+	m.cursorEntries++
+
+	if m.cursorEntries >= len(m.conversationEntries) {
+		m.cursorEntries = 0
+	}
+
+	m.renderConversationList()
+}
+
+func (m *App) selectPrevConversation() {
+	if len(m.conversationEntries) == 0 {
+		return
+	}
+
+	m.cursorEntries--
+
+	if m.cursorEntries < 0 {
+		m.cursorEntries = len(m.conversationEntries) - 1
+	}
+
+	m.renderConversationList()
+}
+
+func (m *App) processConversationList(msg tea.Msg) tea.Cmd {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "j":
+			m.selectNextConversation()
+		case "k":
+			m.selectPrevConversation()
+		default:
+			var cmd tea.Cmd
+			m.conversationList, cmd = m.conversationList.Update(msg)
+			return cmd
+		}
+	}
+
+	return nil
 }
 
 func (m *App) processConversationView(msg tea.Msg) tea.Cmd {
@@ -343,7 +402,15 @@ func (m *App) renderConversationList() {
 	var content string
 
 	for i := 0; i < len(m.conversationEntries); i++ {
-		content += fmt.Sprintf("%s\n", m.conversationEntries[i].ID)
+		entryContent := m.conversationEntries[i].ID
+
+		if i == m.cursorEntries {
+			if m.focused == FocusedConversationList {
+				entryContent = highlightedEntryStyle.Render(entryContent)
+			}
+		}
+
+		content += entryContent + "\n"
 	}
 
 	m.conversationList.SetContent(content)
