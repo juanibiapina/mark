@@ -87,7 +87,7 @@ func (m *App) deleteSelectedThread() tea.Cmd {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		err := m.ai.CompleteStreaming(&m.thread, m.stream)
+		err := m.ai.CompleteStreaming(&m.thread, m.stream, m.project)
 		if err != nil {
 			return errMsg{err}
 		}

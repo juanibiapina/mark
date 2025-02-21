@@ -39,6 +39,7 @@ var (
 
 type App struct {
 	// models
+	project           model.Project
 	thread            model.Thread
 	threadListEntries []model.ThreadEntry
 
@@ -88,12 +89,19 @@ func MakeApp(cwd string) (App, error) {
 	// init active thread
 	activeThread := model.MakeThread()
 
+	// init project
+	project, err := model.MakeProject(cwd)
+	if err != nil {
+		return App{}, err
+	}
+
 	// init app
 	app := App{
-		db:     MakeFilesystemDatabase(dbdir),
-		ai:     openai.NewOpenAIClient(),
-		input:  input,
-		thread: activeThread,
+		project: project,
+		db:      MakeFilesystemDatabase(dbdir),
+		ai:      openai.NewOpenAIClient(),
+		input:   input,
+		thread:  activeThread,
 	}
 
 	return app, nil

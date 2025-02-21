@@ -17,7 +17,7 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // CompleteStreaming sends a list of messages to the OpenAI API and streams the response
-func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage) error {
+func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage, p model.Project) error {
 	ctx := s.Ctx
 	pch := s.Chunks
 	ch := s.Reply
@@ -27,6 +27,14 @@ func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage) e
 
 	// Initialize the chat messages
 	var chatMessages []openai.ChatCompletionMessageParamUnion
+
+	// Add project information if it's present
+	if p.Cwd != "" {
+		content := "You are working on the following project:\n"
+		content += "```\n" + p.Cwd + "\n```\n"
+
+		chatMessages = append(chatMessages, openai.AssistantMessage(content))
+	}
 
 	// Add the Pull Request description if it's present
 	if c.PullRequest.Description != "" {
