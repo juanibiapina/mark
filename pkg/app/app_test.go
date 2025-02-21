@@ -106,17 +106,23 @@ func TestApp(t *testing.T) {
 
 		// tab once
 		app = update(app, key(tea.KeyTab))
-		require.Equal(t, FocusedThreadList, app.focused)
+		require.Equal(t, FocusedPullRequest, app.focused)
 		v = app.View()
 		snaps.MatchSnapshot(t, v)
 
 		// tab twice
 		app = update(app, key(tea.KeyTab))
+		require.Equal(t, FocusedThreadList, app.focused)
+		v = app.View()
+		snaps.MatchSnapshot(t, v)
+
+		// tab thrice
+		app = update(app, key(tea.KeyTab))
 		require.Equal(t, FocusedThread, app.focused)
 		v = app.View()
 		snaps.MatchSnapshot(t, v)
 
-		// tab thrice (back to input)
+		// tab four times (back to input)
 		app = update(app, key(tea.KeyTab))
 		require.Equal(t, FocusedInput, app.focused)
 		v = app.View()

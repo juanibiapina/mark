@@ -11,3 +11,10 @@ func MakeProject(cwd string) (Project, error) {
 
 	return project, nil
 }
+
+func (self Project) Prompt() string {
+		content := "You are working on the following project:\n"
+		content += "```\n" + self.Cwd + "\n```\n"
+
+		return content
+}

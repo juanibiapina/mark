@@ -28,20 +28,16 @@ func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage, p
 	// Initialize the chat messages
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 
-	// Add project information if it's present
-	if p.Cwd != "" {
-		content := "You are working on the following project:\n"
-		content += "```\n" + p.Cwd + "\n```\n"
-
-		chatMessages = append(chatMessages, openai.AssistantMessage(content))
+	// Add project prompt
+	tmp := p.Prompt()
+	if tmp != "" {
+		chatMessages = append(chatMessages, openai.UserMessage(tmp))
 	}
 
-	// Add the Pull Request description if it's present
-	if c.PullRequest.Description != "" {
-		content := "You are working on the following Pull Request:\n"
-		content += "```\n" + c.PullRequest.Description + "\n```\n"
-
-		chatMessages = append(chatMessages, openai.AssistantMessage(content))
+	// Add Pull Request prompt
+	tmp = c.PullRequest.Prompt()
+	if tmp != "" {
+		chatMessages = append(chatMessages, openai.UserMessage(tmp))
 	}
 
 	// Add the messages
