@@ -10,14 +10,14 @@ import (
 )
 
 type Database interface {
-	SaveConversation(model.Conversation) error
-	LoadConversation(string) (model.Conversation, error)
-	ListConversations() ([]model.ConversationEntry, error)
-	DeleteConversation(string) error
+	SaveThread(model.Thread) error
+	LoadThread(string) (model.Thread, error)
+	ListThreads() ([]model.ThreadEntry, error)
+	DeleteThread(string) error
 }
 
-func (self FilesystemDatabase) DeleteConversation(id string) error {
-	dir, err := self.ensureDirectory("conversations")
+func (self FilesystemDatabase) DeleteThread(id string) error {
+	dir, err := self.ensureDirectory("threads")
 	if err != nil {
 		return err
 	}
@@ -41,8 +41,8 @@ func MakeFilesystemDatabase(directory string) FilesystemDatabase {
 	return FilesystemDatabase{directory: directory}
 }
 
-func (self FilesystemDatabase) SaveConversation(c model.Conversation) error {
-	dir, err := self.ensureDirectory("conversations")
+func (self FilesystemDatabase) SaveThread(c model.Thread) error {
+	dir, err := self.ensureDirectory("threads")
 	if err != nil {
 		return err
 	}
@@ -62,30 +62,30 @@ func (self FilesystemDatabase) SaveConversation(c model.Conversation) error {
 	return nil
 }
 
-func (self FilesystemDatabase) LoadConversation(id string) (model.Conversation, error) {
-	dir, err := self.ensureDirectory("conversations")
+func (self FilesystemDatabase) LoadThread(id string) (model.Thread, error) {
+	dir, err := self.ensureDirectory("threads")
 	if err != nil {
-		return model.Conversation{}, err
+		return model.Thread{}, err
 	}
 
 	filename := id + ".json"
 
 	data, err := os.ReadFile(path.Join(dir, filename))
 	if err != nil {
-		return model.Conversation{}, err
+		return model.Thread{}, err
 	}
 
-	var c model.Conversation
+	var c model.Thread
 	err = json.Unmarshal(data, &c)
 	if err != nil {
-		return model.Conversation{}, err
+		return model.Thread{}, err
 	}
 
 	return c, nil
 }
 
-func (self FilesystemDatabase) ListConversations() ([]model.ConversationEntry, error) {
-	dir, err := self.ensureDirectory("conversations")
+func (self FilesystemDatabase) ListThreads() ([]model.ThreadEntry, error) {
+	dir, err := self.ensureDirectory("threads")
 	if err != nil {
 		return nil, err
 	}
@@ -95,17 +95,17 @@ func (self FilesystemDatabase) ListConversations() ([]model.ConversationEntry, e
 		return nil, err
 	}
 
-	entries := []model.ConversationEntry{}
+	entries := []model.ThreadEntry{}
 
 	for _, file := range files {
-		c := model.ConversationEntry{
+		c := model.ThreadEntry{
 			ID: file.Name()[:len(file.Name())-5], // remove ".json"
 		}
 
 		entries = append(entries, c)
 	}
 
-	// reverse the order so the most recent conversations are at the top
+	// reverse the order so the most recent threads are at the top
 	slices.Reverse(entries)
 
 	return entries, nil

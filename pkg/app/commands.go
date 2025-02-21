@@ -6,42 +6,42 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
 
-func (m *App) saveConversation() tea.Cmd {
+func (m *App) saveThread() tea.Cmd {
 	return func() tea.Msg {
-		err := m.db.SaveConversation(m.conversation)
+		err := m.db.SaveThread(m.thread)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return m.loadConversations()()
+		return m.loadThreads()()
 	}
 }
 
-func (m *App) loadSelectedConversation() tea.Cmd {
-	if len(m.conversationEntries) == 0 {
+func (m *App) loadSelectedThread() tea.Cmd {
+	if len(m.threadListEntries) == 0 {
 		return nil
 	}
 
-	selectedEntry := m.conversationEntries[m.cursorEntries]
+	selectedEntry := m.threadListEntries[m.threadListCursor]
 
 	return func() tea.Msg {
-		conversation, err := m.db.LoadConversation(selectedEntry.ID)
+		thread, err := m.db.LoadThread(selectedEntry.ID)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return conversationMsg{conversation}
+		return threadMsg{thread}
 	}
 }
 
-func (m *App) loadConversations() tea.Cmd {
+func (m *App) loadThreads() tea.Cmd {
 	return func() tea.Msg {
-		conversations, err := m.db.ListConversations()
+		threads, err := m.db.ListThreads()
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return conversationEntriesMsg(conversations)
+		return threadEntriesMsg(threads)
 	}
 }
 
@@ -50,7 +50,7 @@ func (m *App) submitMessage() tea.Cmd {
 
 	v := m.input.Value()
 	if v != "" {
-		m.conversation.AddMessage(model.Message{Role: model.RoleUser, Content: v})
+		m.thread.AddMessage(model.Message{Role: model.RoleUser, Content: v})
 		m.input.Reset()
 	}
 
@@ -65,26 +65,26 @@ func (m *App) submitMessage() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m *App) deleteSelectedConversation() tea.Cmd {
-	if len(m.conversationEntries) == 0 {
+func (m *App) deleteSelectedThread() tea.Cmd {
+	if len(m.threadListEntries) == 0 {
 		return nil
 	}
 
-	selectedEntryID := m.conversationEntries[m.cursorEntries].ID
+	selectedEntryID := m.threadListEntries[m.threadListCursor].ID
 
 	return func() tea.Msg {
-		err := m.db.DeleteConversation(selectedEntryID)
+		err := m.db.DeleteThread(selectedEntryID)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return removeConversationMsg(selectedEntryID)
+		return removeThreadMsg(selectedEntryID)
 	}
 }
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		err := m.ai.CompleteStreaming(&m.conversation, m.stream)
+		err := m.ai.CompleteStreaming(&m.thread, m.stream)
 		if err != nil {
 			return errMsg{err}
 		}

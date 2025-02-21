@@ -11,14 +11,14 @@ func (m *App) windowView() string {
 }
 
 func (m *App) sidebarView() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.conversationListView())
+	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.threadListView())
 }
 
 func (m *App) mainView() string {
 	return util.RenderBorderWithTitle(
-		m.conversationView(),
-		m.borderConversation(),
-		"Conversation",
+		m.threadView(),
+		m.borderThread(),
+		"Thread",
 	)
 }
 
@@ -30,14 +30,14 @@ func (m *App) inputView() string {
 	)
 }
 
-func (m *App) conversationListView() string {
+func (m *App) threadListView() string {
 	return util.RenderBorderWithTitle(
-		m.conversationList.View(),
-		m.borderConversationList(),
-		"Conversations",
+		m.threadList.View(),
+		m.borderThreadList(),
+		"Threads",
 	)
 }
 
-func (m *App) conversationView() string {
-	return m.conversationViewport.View()
+func (m *App) threadView() string {
+	return m.threadViewport.View()
 }

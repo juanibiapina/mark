@@ -5,11 +5,11 @@ import (
 )
 
 type (
-	conversationEntriesMsg []model.ConversationEntry
-	partialMessage         string
-	replyMessage           string
-	conversationMsg        struct{ conversation model.Conversation }
-	removeConversationMsg  string
+	threadEntriesMsg []model.ThreadEntry
+	partialMessage   string
+	replyMessage     string
+	threadMsg        struct{ thread model.Thread }
+	removeThreadMsg  string
 )
 
 type errMsg struct{ err error }

@@ -20,8 +20,8 @@ type Focused int
 
 const (
 	FocusedInput Focused = iota
-	FocusedConversationList
-	FocusedConversation
+	FocusedThreadList
+	FocusedThread
 	FocusedEndMarker // used to determine the number of focusable items for cycling
 )
 
@@ -38,8 +38,8 @@ var (
 
 type App struct {
 	// models
-	conversation        model.Conversation
-	conversationEntries []model.ConversationEntry
+	thread            model.Thread
+	threadListEntries []model.ThreadEntry
 
 	// streaming
 	streaming      bool
@@ -54,10 +54,10 @@ type App struct {
 	sideBarWidth    int
 
 	input                textarea.Model
-	conversationViewport viewport.Model
+	threadViewport viewport.Model
 
-	conversationList viewport.Model
-	cursorEntries    int
+	threadList       viewport.Model
+	threadListCursor int
 
 	// clients
 	ai *openai.OpenAI
@@ -73,7 +73,7 @@ func MakeApp(cwd string) (App, error) {
 
 	// init input
 	input := textarea.New()
-	input.Focus() // focus is actually handled by the app
+	input.Focus()       // focus is actually handled by the app
 	input.CharLimit = 0 // no character limit
 	input.MaxHeight = 0 // no max height
 	input.Cursor.SetMode(cursor.CursorStatic)
@@ -82,15 +82,15 @@ func MakeApp(cwd string) (App, error) {
 	input.ShowLineNumbers = false
 	input.KeyMap.InsertNewline.SetEnabled(false)
 
-	// init conversation
-	conversation := model.MakeConversation()
+	// init active thread
+	activeThread := model.MakeThread()
 
 	// init app
 	app := App{
-		db:           MakeFilesystemDatabase(dbdir),
-		ai:           openai.NewOpenAIClient(),
-		input:        input,
-		conversation: conversation,
+		db:     MakeFilesystemDatabase(dbdir),
+		ai:     openai.NewOpenAIClient(),
+		input:  input,
+		thread: activeThread,
 	}
 
 	return app, nil
@@ -102,7 +102,7 @@ func (m App) Err() error {
 
 // Init returns an initial command.
 func (m App) Init() (tea.Model, tea.Cmd) {
-	return m, m.loadConversations()
+	return m, m.loadThreads()
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -124,12 +124,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.input.SetWidth(m.sideBarWidth - borderSize)
 		m.input.SetHeight(inputHeight - borderSize)
-		m.conversationList.SetWidth(m.sideBarWidth - borderSize)
-		m.conversationList.SetHeight(msg.Height - inputHeight - borderSize)
+		m.threadList.SetWidth(m.sideBarWidth - borderSize)
+		m.threadList.SetHeight(msg.Height - inputHeight - borderSize)
 		highlightedEntryStyle = highlightedEntryStyle.Width(m.sideBarWidth - borderSize)
 
-		m.conversationViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
-		m.conversationViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
+		m.threadViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
+		m.threadViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
 
 		if !m.uiReady {
 			m.uiReady = true
@@ -145,51 +145,51 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		cmds = append(cmds, processStream(&m))
 
-		m.renderConversation()
+		m.renderActiveThread()
 
 	case replyMessage:
 		m.streaming = false
 		m.partialMessage = ""
-		m.conversation.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
-		cmd := m.saveConversation()
+		m.thread.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
+		cmd := m.saveThread()
 		cmds = append(cmds, cmd)
-		m.renderConversation()
+		m.renderActiveThread()
 
-	case conversationEntriesMsg:
-		m.conversationEntries = msg
-		m.renderConversationList()
+	case threadEntriesMsg:
+		m.threadListEntries = msg
+		m.renderThreadList()
 
-	case conversationMsg:
-		m.conversation = msg.conversation
-		m.renderConversation()
-		m.renderConversationList()
+	case threadMsg:
+		m.thread = msg.thread
+		m.renderActiveThread()
+		m.renderThreadList()
 
-	case removeConversationMsg:
-		// If the current conversation is the one being deleted, start a new conversation
-		if m.conversation.ID == string(msg) {
-			m.newConversation()
-			m.renderConversation()
+	case removeThreadMsg:
+		// If the active thread is the one being deleted, start a new thread
+		if m.thread.ID == string(msg) {
+			m.newThread()
+			m.renderActiveThread()
 		}
 
-		// Remove the conversation from the list of entries
-		for i, entry := range m.conversationEntries {
+		// Remove the thread from the list of entries
+		for i, entry := range m.threadListEntries {
 			if entry.ID == string(msg) {
-				m.conversationEntries = append(m.conversationEntries[:i], m.conversationEntries[i+1:]...)
+				m.threadListEntries = append(m.threadListEntries[:i], m.threadListEntries[i+1:]...)
 				break
 			}
 		}
 
 		// Ensure the cursor is in a valid position
-		if m.cursorEntries >= len(m.conversationEntries) {
-			m.cursorEntries = len(m.conversationEntries) - 1
+		if m.threadListCursor >= len(m.threadListEntries) {
+			m.threadListCursor = len(m.threadListEntries) - 1
 		}
 
 		// If we deleted the last message, focus on the input
-		if len(m.conversationEntries) == 0 {
+		if len(m.threadListEntries) == 0 {
 			m.focused = FocusedInput
 		}
 
-		m.renderConversationList()
+		m.renderThreadList()
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -216,27 +216,27 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				cmd := m.submitMessage()
 				cmds = append(cmds, cmd)
-				cmd = m.saveConversation()
+				cmd = m.saveThread()
 				cmds = append(cmds, cmd)
-				m.renderConversation()
+				m.renderActiveThread()
 			}
 
-			if m.focused == FocusedConversationList {
+			if m.focused == FocusedThreadList {
 				inputHandled = true
 
-				cmd := m.loadSelectedConversation()
+				cmd := m.loadSelectedThread()
 				cmds = append(cmds, cmd)
 			}
 
 		case "ctrl+n":
-			m.newConversation()
-			m.renderConversation()
-			m.renderConversationList()
+			m.newThread()
+			m.renderActiveThread()
+			m.renderThreadList()
 			inputHandled = true
 
 		case "ctrl+c":
 			m.cancelStreaming()
-			m.renderConversation()
+			m.renderActiveThread()
 			inputHandled = true
 
 		}
@@ -249,13 +249,13 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 
-			if m.focused == FocusedConversationList {
-				cmd := m.processConversationList(msg)
+			if m.focused == FocusedThreadList {
+				cmd := m.processThreadList(msg)
 				cmds = append(cmds, cmd)
 			}
 
-			if m.focused == FocusedConversation {
-				cmd := m.processConversationView(msg)
+			if m.focused == FocusedThread {
+				cmd := m.processThreadView(msg)
 				cmds = append(cmds, cmd)
 			}
 		}
@@ -278,7 +278,7 @@ func (m *App) focusNext() {
 		m.focused = 0
 	}
 
-	m.renderConversationList()
+	m.renderThreadList()
 }
 
 func (m *App) focusPrev() {
@@ -287,7 +287,7 @@ func (m *App) focusPrev() {
 		m.focused = FocusedEndMarker - 1
 	}
 
-	m.renderConversationList()
+	m.renderThreadList()
 }
 
 func (m *App) borderInput() lipgloss.Style {
@@ -297,15 +297,15 @@ func (m *App) borderInput() lipgloss.Style {
 	return borderStyle
 }
 
-func (m *App) borderConversationList() lipgloss.Style {
-	if m.focused == FocusedConversationList {
+func (m *App) borderThreadList() lipgloss.Style {
+	if m.focused == FocusedThreadList {
 		return focusedBorderStyle
 	}
 	return borderStyle
 }
 
-func (m *App) borderConversation() lipgloss.Style {
-	if m.focused == FocusedConversation {
+func (m *App) borderThread() lipgloss.Style {
+	if m.focused == FocusedThread {
 		return focusedBorderStyle
 	}
 	return borderStyle
@@ -325,7 +325,7 @@ func (m *App) cancelStreaming() {
 	m.streaming = false
 
 	// Add the partial message to the chat history
-	m.conversation.AddMessage(model.Message{Role: model.RoleAssistant, Content: m.partialMessage})
+	m.thread.AddMessage(model.Message{Role: model.RoleAssistant, Content: m.partialMessage})
 
 	m.partialMessage = ""
 }
@@ -336,47 +336,47 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	return cmd
 }
 
-func (m *App) selectNextConversation() {
-	if len(m.conversationEntries) == 0 {
+func (m *App) selectNextThread() {
+	if len(m.threadListEntries) == 0 {
 		return
 	}
 
-	m.cursorEntries++
+	m.threadListCursor++
 
-	if m.cursorEntries >= len(m.conversationEntries) {
-		m.cursorEntries = 0
+	if m.threadListCursor >= len(m.threadListEntries) {
+		m.threadListCursor = 0
 	}
 
-	m.renderConversationList()
+	m.renderThreadList()
 }
 
-func (m *App) selectPrevConversation() {
-	if len(m.conversationEntries) == 0 {
+func (m *App) selectPrevThread() {
+	if len(m.threadListEntries) == 0 {
 		return
 	}
 
-	m.cursorEntries--
+	m.threadListCursor--
 
-	if m.cursorEntries < 0 {
-		m.cursorEntries = len(m.conversationEntries) - 1
+	if m.threadListCursor < 0 {
+		m.threadListCursor = len(m.threadListEntries) - 1
 	}
 
-	m.renderConversationList()
+	m.renderThreadList()
 }
 
-func (m *App) processConversationList(msg tea.Msg) tea.Cmd {
+func (m *App) processThreadList(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "j":
-			m.selectNextConversation()
+			m.selectNextThread()
 		case "k":
-			m.selectPrevConversation()
+			m.selectPrevThread()
 		case "d":
-			return m.deleteSelectedConversation()
+			return m.deleteSelectedThread()
 		default:
 			var cmd tea.Cmd
-			m.conversationList, cmd = m.conversationList.Update(msg)
+			m.threadList, cmd = m.threadList.Update(msg)
 			return cmd
 		}
 	}
@@ -384,30 +384,30 @@ func (m *App) processConversationList(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-func (m *App) processConversationView(msg tea.Msg) tea.Cmd {
+func (m *App) processThreadView(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
-	m.conversationViewport, cmd = m.conversationViewport.Update(msg)
+	m.threadViewport, cmd = m.threadViewport.Update(msg)
 	return cmd
 }
 
-// newConversation starts a new conversation
-func (m *App) newConversation() {
+// newThread starts a new thread
+func (m *App) newThread() {
 	m.cancelStreaming()
 
-	m.conversation = model.MakeConversation()
+	m.thread = model.MakeThread()
 
 	m.input.Reset()
 
 	m.focused = FocusedInput
 }
 
-func (m *App) renderConversation() {
-	messages := m.conversation.Messages
+func (m *App) renderActiveThread() {
+	messages := m.thread.Messages
 
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
-		glamour.WithWordWrap(m.conversationViewport.Width()-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
+		glamour.WithWordWrap(m.threadViewport.Width()-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
 	)
 	if err != nil {
 		m.err = err
@@ -419,7 +419,7 @@ func (m *App) renderConversation() {
 	for i := 0; i < len(messages); i++ {
 		var msg string
 		if messages[i].Role == model.RoleUser {
-			msg = lipgloss.NewStyle().Width(m.conversationViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", messages[i].Content))
+			msg = lipgloss.NewStyle().Width(m.threadViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", messages[i].Content))
 		} else {
 			msg, err = renderer.Render(messages[i].Content)
 			if err != nil {
@@ -439,21 +439,21 @@ func (m *App) renderConversation() {
 		content += c
 	}
 
-	m.conversationViewport.SetContent(content)
+	m.threadViewport.SetContent(content)
 }
 
-func (m *App) renderConversationList() {
+func (m *App) renderThreadList() {
 	var content string
 
-	for i := 0; i < len(m.conversationEntries); i++ {
+	for i := 0; i < len(m.threadListEntries); i++ {
 		prefix := "  "
-		if m.conversationEntries[i].ID == m.conversation.ID {
+		if m.threadListEntries[i].ID == m.thread.ID {
 			prefix = "* "
 		}
-		entryContent := prefix + m.conversationEntries[i].ID
+		entryContent := prefix + m.threadListEntries[i].ID
 
-		if i == m.cursorEntries {
-			if m.focused == FocusedConversationList {
+		if i == m.threadListCursor {
+			if m.focused == FocusedThreadList {
 				entryContent = highlightedEntryStyle.Render(entryContent)
 			}
 		}
@@ -461,5 +461,5 @@ func (m *App) renderConversationList() {
 		content += entryContent + "\n"
 	}
 
-	m.conversationList.SetContent(content)
+	m.threadList.SetContent(content)
 }

@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func conversationWithID(id string) model.Conversation {
-	c := model.MakeConversation()
+func threadWithID(id string) model.Thread {
+	c := model.MakeThread()
 	c.ID = id
 	return c
 }
@@ -18,65 +18,65 @@ func conversationWithID(id string) model.Conversation {
 func TestFilesystemDatabase(t *testing.T) {
 	t.Parallel()
 
-	t.Run("SaveConversation", func(t *testing.T) {
+	t.Run("SaveThread", func(t *testing.T) {
 		// given
 		dir := t.TempDir()
-		c := model.MakeConversation()
+		c := model.MakeThread()
 		db := MakeFilesystemDatabase(dir)
 
 		// when
-		err := db.SaveConversation(c)
+		err := db.SaveThread(c)
 		require.Nil(t, err)
 
 		// then
-		actual, err := db.LoadConversation(c.ID)
+		actual, err := db.LoadThread(c.ID)
 		require.Nil(t, err)
 		assert.Equal(t, c.ID, actual.ID)
 	})
 
-	t.Run("DeleteConversation", func(t *testing.T) {
+	t.Run("DeleteThread", func(t *testing.T) {
 		// given
 		dir := t.TempDir()
 		db := MakeFilesystemDatabase(dir)
-		conversation := conversationWithID("1")
+		thread := threadWithID("1")
 
-		err := db.SaveConversation(conversation)
+		err := db.SaveThread(thread)
 		require.Nil(t, err)
 
 		// when
-		err = db.DeleteConversation(conversation.ID)
+		err = db.DeleteThread(thread.ID)
 		require.Nil(t, err)
 
 		// then
-		_, err = db.LoadConversation(conversation.ID)
+		_, err = db.LoadThread(thread.ID)
 		assert.NotNil(t, err)
 
-		entries, err := db.ListConversations()
+		entries, err := db.ListThreads()
 		require.Nil(t, err)
 		assert.Len(t, entries, 0)
 	})
 
-	t.Run("ListConversations", func(t *testing.T) {
+	t.Run("ListThreads", func(t *testing.T) {
 		// given
 		dir := t.TempDir()
 		db := MakeFilesystemDatabase(dir)
-		conversations := []model.Conversation{
-			conversationWithID("1"),
-			conversationWithID("2"),
+		threads := []model.Thread{
+			threadWithID("1"),
+			threadWithID("2"),
 		}
 
-		for _, c := range conversations {
-			err := db.SaveConversation(c)
+		for _, c := range threads {
+			err := db.SaveThread(c)
 			require.Nil(t, err)
 		}
 
 		// when
-		entries, err := db.ListConversations()
+		entries, err := db.ListThreads()
 		require.Nil(t, err)
 
 		// then
 		assert.Len(t, entries, 2)
-		assert.Equal(t, conversations[1].ID, entries[0].ID)
-		assert.Equal(t, conversations[0].ID, entries[1].ID)
+		assert.Equal(t, threads[1].ID, entries[0].ID)
+		assert.Equal(t, threads[0].ID, entries[1].ID)
 	})
 }

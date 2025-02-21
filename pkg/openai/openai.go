@@ -17,7 +17,7 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // CompleteStreaming sends a list of messages to the OpenAI API and streams the response
-func (a *OpenAI) CompleteStreaming(c *model.Conversation, s *model.StreamingMessage) error {
+func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage) error {
 	ctx := s.Ctx
 	pch := s.Chunks
 	ch := s.Reply
@@ -28,7 +28,7 @@ func (a *OpenAI) CompleteStreaming(c *model.Conversation, s *model.StreamingMess
 	// Initialize the chat messages
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 
-	// Add the actual conversation messages
+	// Add the messages
 	for _, msg := range c.Messages {
 		if msg.Role == model.RoleUser {
 			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
