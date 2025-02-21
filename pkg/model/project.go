@@ -2,6 +2,7 @@ package model
 
 import (
 	"os/exec"
+	"strings"
 )
 
 type Project struct {
@@ -20,38 +21,29 @@ func (self Project) Prompt() (string, error) {
 	content := "You are working on the following project:\n"
 	content += "```\n" + self.Cwd + "\n```\n"
 
-	part, err := gitstatus()
+	part, err := shellCommand("git", "status")
 	if err != nil {
 		return "", err
 	}
 	content += part
 
-	part, err = gitdiff()
+	part, err = shellCommand("git", "diff")
 	if err != nil {
 		return "", err
 	}
-
 	content += part
 
 	return content, nil
 }
 
-func gitstatus() (string, error) {
-	output, err := runShellCommand("git", "status")
+func shellCommand(command string, args ...string) (string, error) {
+	output, err := runShellCommand(command, args...)
 	if err != nil {
 		return "", err
 	}
 
-	return taggedCodeBlock("Git status", output), nil
-}
-
-func gitdiff() (string, error) {
-	output, err := runShellCommand("git", "diff")
-	if err != nil {
-		return "", err
-	}
-
-	return taggedCodeBlock("Git diff", output), nil
+	cmd := "`" + command + " " + strings.Join(args, " ") + "`"
+	return taggedCodeBlock(cmd, output), nil
 }
 
 func taggedCodeBlock(tag string, content string) string {
