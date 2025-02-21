@@ -248,6 +248,13 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 
+		case "ctrl+l":
+			inputHandled = true
+			m.thread.Messages = nil
+			cmd := m.saveThread()
+			cmds = append(cmds, cmd)
+			m.renderActiveThread()
+
 		case "ctrl+n":
 			m.newThread()
 			m.renderActiveThread()
