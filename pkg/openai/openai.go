@@ -29,7 +29,10 @@ func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage, p
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 
 	// Add project prompt
-	tmp := p.Prompt()
+	tmp, err := p.Prompt()
+	if err != nil {
+		return err
+	}
 	if tmp != "" {
 		chatMessages = append(chatMessages, openai.UserMessage(tmp))
 	}
