@@ -9,7 +9,6 @@ type (
 	partialMessage            string
 	replyMessage              string
 	threadMsg                 struct{ thread model.Thread }
-	removeThreadMsg           string
 	pullRequestDescriptionMsg string
 )
 

@@ -1,10 +1,12 @@
 package app
 
 import (
-	"mark/pkg/model"
 	"os"
 	"os/exec"
 	"path"
+
+	"mark/pkg/model"
+	"mark/pkg/util"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
@@ -75,13 +77,31 @@ func (m *App) deleteSelectedThread() tea.Cmd {
 
 	selectedEntryID := m.threadListEntries[m.threadListCursor].ID
 
+	// Remove the thread from the list of entries
+	for i, entry := range m.threadListEntries {
+		if entry.ID == selectedEntryID {
+			m.threadListEntries = append(m.threadListEntries[:i], m.threadListEntries[i+1:]...)
+			break
+		}
+	}
+
+	// Ensure the cursor is in a valid position
+	if len(m.threadListEntries) == 0 {
+		m.threadListCursor = 0
+	} else {
+		m.threadListCursor = util.Clamp(m.threadListCursor, 0, len(m.threadListEntries) - 1)
+	}
+
+	m.renderActiveThread()
+	m.renderThreadList()
+
 	return func() tea.Msg {
 		err := m.db.DeleteThread(selectedEntryID)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return removeThreadMsg(selectedEntryID)
+		return nil
 	}
 }
 
@@ -119,7 +139,7 @@ func (m *App) editPullRequest() (tea.Cmd, error) {
 	}
 
 	tmpFile := path.Join(tmpdir, "mark-pull-request-title")
-	err = os.WriteFile(tmpFile, []byte(m.thread.PullRequest.Description), 0644)
+	err = os.WriteFile(tmpFile, []byte(m.thread.PullRequest.Description), 0o644)
 	if err != nil {
 		return nil, err
 	}

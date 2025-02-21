@@ -179,33 +179,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.renderActiveThread()
 		m.renderThreadList()
 
-	case removeThreadMsg:
-		// If the active thread is the one being deleted, start a new thread
-		if m.thread.ID == string(msg) {
-			m.newThread()
-			m.renderActiveThread()
-		}
-
-		// Remove the thread from the list of entries
-		for i, entry := range m.threadListEntries {
-			if entry.ID == string(msg) {
-				m.threadListEntries = append(m.threadListEntries[:i], m.threadListEntries[i+1:]...)
-				break
-			}
-		}
-
-		// Ensure the cursor is in a valid position
-		if m.threadListCursor >= len(m.threadListEntries) {
-			m.threadListCursor = len(m.threadListEntries) - 1
-		}
-
-		// If we deleted the last message, focus on the input
-		if len(m.threadListEntries) == 0 {
-			m.focused = FocusedInput
-		}
-
-		m.renderThreadList()
-
 	case pullRequestDescriptionMsg:
 		m.thread.PullRequest.Description = string(msg)
 		cmd := m.saveThread()
