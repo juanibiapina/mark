@@ -11,7 +11,7 @@ func (m *App) windowView() string {
 }
 
 func (m *App) sidebarView() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.threadListView())
+	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.pullRequestView(), m.threadListView())
 }
 
 func (m *App) mainView() string {
@@ -27,6 +27,14 @@ func (m *App) inputView() string {
 		m.input.View(),
 		m.borderInput(),
 		"Message Assistant",
+	)
+}
+
+func (m *App) pullRequestView() string {
+	return util.RenderBorderWithTitle(
+		m.pullRequestViewport.View(),
+		m.borderPullRequest(),
+		"Pull Request",
 	)
 }
 

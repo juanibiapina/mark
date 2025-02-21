@@ -20,6 +20,7 @@ type Focused int
 
 const (
 	FocusedInput Focused = iota
+	FocusedPullRequest
 	FocusedThreadList
 	FocusedThread
 	FocusedEndMarker // used to determine the number of focusable items for cycling
@@ -53,8 +54,10 @@ type App struct {
 	mainPanelHeight int
 	sideBarWidth    int
 
-	input                textarea.Model
+	input          textarea.Model
 	threadViewport viewport.Model
+
+	pullRequestViewport viewport.Model
 
 	threadList       viewport.Model
 	threadListCursor int
@@ -124,8 +127,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.input.SetWidth(m.sideBarWidth - borderSize)
 		m.input.SetHeight(inputHeight - borderSize)
+		rest := msg.Height - inputHeight
+		half := rest / 2
+		m.pullRequestViewport.SetWidth(m.sideBarWidth - borderSize)
+		m.pullRequestViewport.SetHeight(half - borderSize)
 		m.threadList.SetWidth(m.sideBarWidth - borderSize)
-		m.threadList.SetHeight(msg.Height - inputHeight - borderSize)
+		m.threadList.SetHeight(half - borderSize)
 		highlightedEntryStyle = highlightedEntryStyle.Width(m.sideBarWidth - borderSize)
 
 		m.threadViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
@@ -191,6 +198,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.renderThreadList()
 
+	case pullRequestDescriptionMsg:
+		m.thread.PullRequest.Description = string(msg)
+		cmd := m.saveThread()
+		cmds = append(cmds, cmd)
+
 	case tea.KeyPressMsg:
 		switch msg.String() {
 
@@ -249,6 +261,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 
+			if m.focused == FocusedPullRequest {
+				cmd := m.processPullRequestView(msg)
+				cmds = append(cmds, cmd)
+			}
+
 			if m.focused == FocusedThreadList {
 				cmd := m.processThreadList(msg)
 				cmds = append(cmds, cmd)
@@ -260,6 +277,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
+
+	m.renderPullRequest()
 
 	return m, tea.Batch(cmds...)
 }
@@ -292,6 +311,13 @@ func (m *App) focusPrev() {
 
 func (m *App) borderInput() lipgloss.Style {
 	if m.focused == FocusedInput {
+		return focusedBorderStyle
+	}
+	return borderStyle
+}
+
+func (m *App) borderPullRequest() lipgloss.Style {
+	if m.focused == FocusedPullRequest {
 		return focusedBorderStyle
 	}
 	return borderStyle
@@ -334,6 +360,28 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	return cmd
+}
+
+func (m *App) processPullRequestView(msg tea.Msg) tea.Cmd {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "e":
+			cmd, err := m.editPullRequest()
+			if err != nil {
+				m.err = err
+				return tea.Quit
+			}
+
+			return cmd
+		default:
+			var cmd tea.Cmd
+			m.pullRequestViewport, cmd = m.pullRequestViewport.Update(msg)
+			return cmd
+		}
+	}
+
+	return nil
 }
 
 func (m *App) selectNextThread() {
@@ -440,6 +488,10 @@ func (m *App) renderActiveThread() {
 	}
 
 	m.threadViewport.SetContent(content)
+}
+
+func (m *App) renderPullRequest() {
+	m.pullRequestViewport.SetContent(m.thread.PullRequest.Description)
 }
 
 func (m *App) renderThreadList() {

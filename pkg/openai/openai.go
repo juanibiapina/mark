@@ -28,6 +28,14 @@ func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage) e
 	// Initialize the chat messages
 	var chatMessages []openai.ChatCompletionMessageParamUnion
 
+	// Add the Pull Request description if it's present
+	if c.PullRequest.Description != "" {
+		content := "You are working on the following Pull Request:\n"
+		content += "```\n" + c.PullRequest.Description + "\n```\n"
+
+		chatMessages = append(chatMessages, openai.AssistantMessage(content))
+	}
+
 	// Add the messages
 	for _, msg := range c.Messages {
 		if msg.Role == model.RoleUser {

@@ -2,6 +2,9 @@ package app
 
 import (
 	"mark/pkg/model"
+	"os"
+	"os/exec"
+	"path"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
@@ -102,4 +105,39 @@ func processStream(m *App) tea.Cmd {
 			return partialMessage(v)
 		}
 	}
+}
+
+func (m *App) editPullRequest() (tea.Cmd, error) {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		return nil, nil
+	}
+
+	tmpdir, err := os.MkdirTemp("", "mark-*")
+	if err != nil {
+		return nil, err
+	}
+
+	tmpFile := path.Join(tmpdir, "mark-pull-request-title")
+	err = os.WriteFile(tmpFile, []byte(m.thread.PullRequest.Description), 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	c := exec.Command(editor, tmpFile)
+
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		defer os.RemoveAll(tmpdir)
+
+		if err != nil {
+			return errMsg{err}
+		}
+
+		contents, err := os.ReadFile(tmpFile)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return pullRequestDescriptionMsg(string(contents))
+	}), nil
 }
