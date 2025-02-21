@@ -75,6 +75,7 @@ func MakeApp(cwd string) (App, error) {
 	input := textarea.New()
 	input.Focus() // focus is actually handled by the app
 	input.CharLimit = 0 // no character limit
+	input.MaxHeight = 0 // no max height
 	input.Cursor.SetMode(cursor.CursorStatic)
 	input.Prompt = ""
 	input.Styles.Focused.CursorLine = lipgloss.NewStyle() // Remove cursor line styling
