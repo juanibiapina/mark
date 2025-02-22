@@ -202,11 +202,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.focused == FocusedInput {
 				inputHandled = true
 
-				v := m.input.Value()
-				if v == "" {
-					break
-				}
-
 				cmd := m.submitMessage()
 				cmds = append(cmds, cmd)
 				cmd = m.saveThread()
