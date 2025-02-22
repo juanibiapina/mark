@@ -9,39 +9,15 @@ import (
 	"mark/pkg/model"
 )
 
-type Database interface {
-	SaveThread(model.Thread) error
-	LoadThread(string) (model.Thread, error)
-	ListThreads() ([]model.ThreadEntry, error)
-	DeleteThread(string) error
-}
-
-func (self FilesystemDatabase) DeleteThread(id string) error {
-	dir, err := self.ensureDirectory("threads")
-	if err != nil {
-		return err
-	}
-
-	filename := id + ".json"
-	filePath := path.Join(dir, filename)
-
-	err = os.Remove(filePath)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-type FilesystemDatabase struct {
+type Database struct {
 	directory string
 }
 
-func MakeFilesystemDatabase(directory string) FilesystemDatabase {
-	return FilesystemDatabase{directory: directory}
+func MakeDatabase(directory string) Database {
+	return Database{directory: directory}
 }
 
-func (self FilesystemDatabase) SaveThread(c model.Thread) error {
+func (self Database) SaveThread(c model.Thread) error {
 	dir, err := self.ensureDirectory("threads")
 	if err != nil {
 		return err
@@ -62,7 +38,7 @@ func (self FilesystemDatabase) SaveThread(c model.Thread) error {
 	return nil
 }
 
-func (self FilesystemDatabase) LoadThread(id string) (model.Thread, error) {
+func (self Database) LoadThread(id string) (model.Thread, error) {
 	dir, err := self.ensureDirectory("threads")
 	if err != nil {
 		return model.Thread{}, err
@@ -84,7 +60,7 @@ func (self FilesystemDatabase) LoadThread(id string) (model.Thread, error) {
 	return c, nil
 }
 
-func (self FilesystemDatabase) ListThreads() ([]model.ThreadEntry, error) {
+func (self Database) ListThreads() ([]model.ThreadEntry, error) {
 	dir, err := self.ensureDirectory("threads")
 	if err != nil {
 		return nil, err
@@ -111,7 +87,24 @@ func (self FilesystemDatabase) ListThreads() ([]model.ThreadEntry, error) {
 	return entries, nil
 }
 
-func (self FilesystemDatabase) ensureDirectory(name string) (string, error) {
+func (self Database) DeleteThread(id string) error {
+	dir, err := self.ensureDirectory("threads")
+	if err != nil {
+		return err
+	}
+
+	filename := id + ".json"
+	filePath := path.Join(dir, filename)
+
+	err = os.Remove(filePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (self Database) ensureDirectory(name string) (string, error) {
 	dir := path.Join(self.directory, name)
 	err := os.MkdirAll(dir, 0o755)
 	if err != nil {

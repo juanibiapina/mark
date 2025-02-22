@@ -98,7 +98,7 @@ func MakeApp(cwd string) (App, error) {
 	// init app
 	app := App{
 		project: project,
-		db:      MakeFilesystemDatabase(dbdir),
+		db:      MakeDatabase(dbdir),
 		ai:      openai.NewOpenAIClient(),
 		input:   input,
 		thread:  activeThread,
