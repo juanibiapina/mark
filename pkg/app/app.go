@@ -198,23 +198,22 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusPrev()
 			inputHandled = true
 
-		case "enter":
-			if m.focused == FocusedInput {
-				inputHandled = true
-
-				cmd := m.submitMessage()
-				cmds = append(cmds, cmd)
-				cmd = m.saveThread()
-				cmds = append(cmds, cmd)
-				m.renderActiveThread()
-			}
-
+		case "space":
 			if m.focused == FocusedThreadList {
 				inputHandled = true
 
 				cmd := m.loadSelectedThread()
 				cmds = append(cmds, cmd)
 			}
+
+		case "enter":
+			inputHandled = true
+
+			cmd := m.submitMessage()
+			cmds = append(cmds, cmd)
+			cmd = m.saveThread()
+			cmds = append(cmds, cmd)
+			m.renderActiveThread()
 
 		case "ctrl+l":
 			inputHandled = true
