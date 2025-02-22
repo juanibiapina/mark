@@ -128,28 +128,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
-		borderSize := 2 // 2 times the border width
-
-		m.mainPanelWidth = int(float64(msg.Width) * ratio)
-		m.mainPanelHeight = msg.Height
-		m.sideBarWidth = msg.Width - m.mainPanelWidth
-
-		m.input.SetWidth(m.sideBarWidth - borderSize)
-		m.input.SetHeight(inputHeight - borderSize)
-		rest := msg.Height - inputHeight
-		half := rest / 2
-		m.pullRequestViewport.SetWidth(m.sideBarWidth - borderSize)
-		m.pullRequestViewport.SetHeight(half - borderSize)
-		m.threadList.SetWidth(m.sideBarWidth - borderSize)
-		m.threadList.SetHeight(half - borderSize)
-		highlightedEntryStyle = highlightedEntryStyle.Width(m.sideBarWidth - borderSize)
-
-		m.threadViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
-		m.threadViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
-
-		if !m.uiReady {
-			m.uiReady = true
-		}
+		m.handleWindowSize(msg.Width, msg.Height)
 
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
