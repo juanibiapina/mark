@@ -416,9 +416,25 @@ func (m *App) processThreadList(msg tea.Msg) tea.Cmd {
 }
 
 func (m *App) processThreadView(msg tea.Msg) tea.Cmd {
-	var cmd tea.Cmd
-	m.threadViewport, cmd = m.threadViewport.Update(msg)
-	return cmd
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "e":
+			cmd, err := m.viewThreadInEditor()
+			if err != nil {
+				m.err = err
+				return tea.Quit
+			}
+
+			return cmd
+		default:
+			var cmd tea.Cmd
+			m.threadViewport, cmd = m.threadViewport.Update(msg)
+			return cmd
+		}
+	}
+
+	return nil
 }
 
 // newThread starts a new thread

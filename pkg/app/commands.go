@@ -161,3 +161,40 @@ func (m *App) editPullRequest() (tea.Cmd, error) {
 		return pullRequestDescriptionMsg(string(contents))
 	}), nil
 }
+
+func (m *App) viewThreadInEditor() (tea.Cmd, error) {
+	// build the content
+	var content string
+	for _, msg := range m.thread.Messages {
+		content += "---\n"
+		content += msg.Content + "\n"
+	}
+
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		return nil, nil
+	}
+
+	tmpdir, err := os.MkdirTemp("", "mark-*")
+	if err != nil {
+		return nil, err
+	}
+
+	tmpFile := path.Join(tmpdir, "mark-thread")
+	err = os.WriteFile(tmpFile, []byte(content), 0o644)
+	if err != nil {
+		return nil, err
+	}
+
+	c := exec.Command(editor, tmpFile)
+
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		defer os.RemoveAll(tmpdir)
+
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return nil
+	}), nil
+}
