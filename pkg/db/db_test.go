@@ -1,4 +1,4 @@
-package app
+package db
 
 import (
 	"testing"
@@ -22,7 +22,7 @@ func TestFilesystemDatabase(t *testing.T) {
 		// given
 		dir := t.TempDir()
 		c := model.MakeThread()
-		db := MakeFilesystemDatabase(dir)
+		db := MakeDatabase(dir)
 
 		// when
 		err := db.SaveThread(c)
@@ -37,7 +37,7 @@ func TestFilesystemDatabase(t *testing.T) {
 	t.Run("DeleteThread", func(t *testing.T) {
 		// given
 		dir := t.TempDir()
-		db := MakeFilesystemDatabase(dir)
+		db := MakeDatabase(dir)
 		thread := threadWithID("1")
 
 		err := db.SaveThread(thread)
@@ -59,7 +59,7 @@ func TestFilesystemDatabase(t *testing.T) {
 	t.Run("ListThreads", func(t *testing.T) {
 		// given
 		dir := t.TempDir()
-		db := MakeFilesystemDatabase(dir)
+		db := MakeDatabase(dir)
 		threads := []model.Thread{
 			threadWithID("1"),
 			threadWithID("2"),

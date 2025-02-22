@@ -5,6 +5,7 @@ import (
 	"log"
 	"path"
 
+	"mark/pkg/db"
 	"mark/pkg/model"
 	"mark/pkg/openai"
 
@@ -65,7 +66,7 @@ type App struct {
 
 	// clients
 	ai *openai.OpenAI
-	db Database
+	db db.Database
 
 	// error
 	err error
@@ -98,7 +99,7 @@ func MakeApp(cwd string) (App, error) {
 	// init app
 	app := App{
 		project: project,
-		db:      MakeDatabase(dbdir),
+		db:      db.MakeDatabase(dbdir),
 		ai:      openai.NewOpenAIClient(),
 		input:   input,
 		thread:  activeThread,
