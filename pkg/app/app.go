@@ -136,24 +136,18 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		cmds = append(cmds, processStream(&m))
 
-		m.renderActiveThread()
-
 	case replyMessage:
 		m.streaming = false
 		m.partialMessage = ""
 		m.thread.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
 		cmd := m.saveThread()
 		cmds = append(cmds, cmd)
-		m.renderActiveThread()
 
 	case threadEntriesMsg:
 		m.threadListEntries = msg
-		m.renderThreadList()
 
 	case threadMsg:
 		m.thread = msg.thread
-		m.renderActiveThread()
-		m.renderThreadList()
 
 	case pullRequestDescriptionMsg:
 		m.thread.PullRequest.Description = string(msg)
@@ -189,24 +183,19 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 			cmd = m.saveThread()
 			cmds = append(cmds, cmd)
-			m.renderActiveThread()
 
 		case "ctrl+l":
 			inputHandled = true
 			m.thread.Messages = nil
 			cmd := m.saveThread()
 			cmds = append(cmds, cmd)
-			m.renderActiveThread()
 
 		case "ctrl+n":
 			m.newThread()
-			m.renderActiveThread()
-			m.renderThreadList()
 			inputHandled = true
 
 		case "ctrl+c":
 			m.cancelStreaming()
-			m.renderActiveThread()
 			inputHandled = true
 
 		}
@@ -237,6 +226,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	m.renderPullRequest()
+	m.renderActiveThread()
+	m.renderThreadList()
 
 	return m, tea.Batch(cmds...)
 }
@@ -254,8 +245,6 @@ func (m *App) focusNext() {
 	if m.focused == FocusedEndMarker {
 		m.focused = 0
 	}
-
-	m.renderThreadList()
 }
 
 func (m *App) focusPrev() {
@@ -263,8 +252,6 @@ func (m *App) focusPrev() {
 	if m.focused < 0 {
 		m.focused = FocusedEndMarker - 1
 	}
-
-	m.renderThreadList()
 }
 
 func (m *App) startStreaming() {
@@ -324,8 +311,6 @@ func (m *App) selectNextThread() {
 	if m.threadListCursor >= len(m.threadListEntries) {
 		m.threadListCursor = 0
 	}
-
-	m.renderThreadList()
 }
 
 func (m *App) selectPrevThread() {
@@ -338,8 +323,6 @@ func (m *App) selectPrevThread() {
 	if m.threadListCursor < 0 {
 		m.threadListCursor = len(m.threadListEntries) - 1
 	}
-
-	m.renderThreadList()
 }
 
 func (m *App) processThreadList(msg tea.Msg) tea.Cmd {
