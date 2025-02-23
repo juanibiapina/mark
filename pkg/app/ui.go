@@ -25,7 +25,7 @@ func (m *App) sidebarView() string {
 func (m *App) mainView() string {
 	return util.RenderBorderWithTitle(
 		m.threadView(),
-		m.borderThread(),
+		m.borderIfFocused(FocusedThread),
 		"Thread",
 		m.colorIfFocused(FocusedThread),
 	)
@@ -34,7 +34,7 @@ func (m *App) mainView() string {
 func (m *App) inputView() string {
 	return util.RenderBorderWithTitle(
 		m.input.View(),
-		m.borderInput(),
+		m.borderIfFocused(FocusedInput),
 		"Message Assistant",
 		m.colorIfFocused(FocusedInput),
 	)
@@ -43,7 +43,7 @@ func (m *App) inputView() string {
 func (m *App) pullRequestView() string {
 	return util.RenderBorderWithTitle(
 		m.pullRequestViewport.View(),
-		m.borderPullRequest(),
+		m.borderIfFocused(FocusedPullRequest),
 		"Pull Request",
 		m.colorIfFocused(FocusedPullRequest),
 	)
@@ -52,7 +52,7 @@ func (m *App) pullRequestView() string {
 func (m *App) threadListView() string {
 	return util.RenderBorderWithTitle(
 		m.threadList.View(),
-		m.borderThreadList(),
+		m.borderIfFocused(FocusedThreadList),
 		"Threads",
 		m.colorIfFocused(FocusedThreadList),
 	)
@@ -63,6 +63,13 @@ func (m *App) colorIfFocused(focused Focused) color.Color {
 		return focusColor
 	}
 	return textColor
+}
+
+func (m *App) borderIfFocused(focused Focused) lipgloss.Style {
+	if m.focused == focused {
+		return focusedBorderStyle
+	}
+	return borderStyle
 }
 
 func (m *App) threadView() string {
@@ -92,32 +99,4 @@ func (m *App) handleWindowSize(width, height int) {
 	if !m.uiReady {
 		m.uiReady = true
 	}
-}
-
-func (m *App) borderInput() lipgloss.Style {
-	if m.focused == FocusedInput {
-		return focusedBorderStyle
-	}
-	return borderStyle
-}
-
-func (m *App) borderPullRequest() lipgloss.Style {
-	if m.focused == FocusedPullRequest {
-		return focusedBorderStyle
-	}
-	return borderStyle
-}
-
-func (m *App) borderThreadList() lipgloss.Style {
-	if m.focused == FocusedThreadList {
-		return focusedBorderStyle
-	}
-	return borderStyle
-}
-
-func (m *App) borderThread() lipgloss.Style {
-	if m.focused == FocusedThread {
-		return focusedBorderStyle
-	}
-	return borderStyle
 }
