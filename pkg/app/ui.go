@@ -22,7 +22,7 @@ func (m *App) windowView() string {
 }
 
 func (m *App) sidebarView() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.pullRequestView(), m.threadListView())
+	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.commitView(), m.threadListView())
 }
 
 func (m *App) mainView() string {
@@ -43,12 +43,12 @@ func (m *App) inputView() string {
 	)
 }
 
-func (m *App) pullRequestView() string {
+func (m *App) commitView() string {
 	return util.RenderBorderWithTitle(
-		m.pullRequestViewport.View(),
-		m.borderIfFocused(FocusedPullRequest),
-		"Pull Request",
-		m.panelTitleStyleIfFocused(FocusedPullRequest),
+		m.commitViewport.View(),
+		m.borderIfFocused(FocusedCommit),
+		"Commit",
+		m.panelTitleStyleIfFocused(FocusedCommit),
 	)
 }
 
@@ -90,8 +90,8 @@ func (m *App) handleWindowSize(width, height int) {
 	m.input.SetHeight(inputHeight - borderSize)
 	rest := height - inputHeight
 	half := rest / 2
-	m.pullRequestViewport.SetWidth(m.sideBarWidth - borderSize)
-	m.pullRequestViewport.SetHeight(half - borderSize)
+	m.commitViewport.SetWidth(m.sideBarWidth - borderSize)
+	m.commitViewport.SetHeight(half - borderSize)
 	m.threadList.SetWidth(m.sideBarWidth - borderSize)
 	m.threadList.SetHeight(half - borderSize)
 	highlightedEntryStyle = highlightedEntryStyle.Width(m.sideBarWidth - borderSize)

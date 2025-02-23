@@ -37,8 +37,8 @@ func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage, p
 		chatMessages = append(chatMessages, openai.UserMessage(tmp))
 	}
 
-	// Add Pull Request prompt
-	tmp = c.PullRequest.Prompt()
+	// Add commit prompt
+	tmp = c.Commit.Prompt()
 	if tmp != "" {
 		chatMessages = append(chatMessages, openai.UserMessage(tmp))
 	}

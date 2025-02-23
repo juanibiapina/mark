@@ -21,7 +21,7 @@ type Focused int
 
 const (
 	FocusedInput Focused = iota
-	FocusedPullRequest
+	FocusedCommit
 	FocusedThreadList
 	FocusedThread
 	FocusedEndMarker // used to determine the number of focusable items for cycling
@@ -55,7 +55,7 @@ type App struct {
 	input          textarea.Model
 	threadViewport viewport.Model
 
-	pullRequestViewport viewport.Model
+	commitViewport viewport.Model
 
 	threadList       viewport.Model
 	threadListCursor int
@@ -150,7 +150,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.thread = msg.thread
 
 	case pullRequestDescriptionMsg:
-		m.thread.PullRequest.Description = string(msg)
+		m.thread.Commit.Description = string(msg)
 		cmd := m.saveThread()
 		cmds = append(cmds, cmd)
 
@@ -208,7 +208,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 
-			if m.focused == FocusedPullRequest {
+			if m.focused == FocusedCommit {
 				cmd := m.processPullRequestView(msg)
 				cmds = append(cmds, cmd)
 			}
@@ -293,7 +293,7 @@ func (m *App) processPullRequestView(msg tea.Msg) tea.Cmd {
 			return cmd
 		default:
 			var cmd tea.Cmd
-			m.pullRequestViewport, cmd = m.pullRequestViewport.Update(msg)
+			m.commitViewport, cmd = m.commitViewport.Update(msg)
 			return cmd
 		}
 	}
@@ -420,7 +420,7 @@ func (m *App) renderActiveThread() {
 }
 
 func (m *App) renderPullRequest() {
-	m.pullRequestViewport.SetContent(m.thread.PullRequest.Description)
+	m.commitViewport.SetContent(m.thread.Commit.Description)
 }
 
 func (m *App) renderThreadList() {

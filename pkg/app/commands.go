@@ -139,7 +139,7 @@ func (m *App) editPullRequest() (tea.Cmd, error) {
 	}
 
 	tmpFile := path.Join(tmpdir, "mark-pull-request-title")
-	err = os.WriteFile(tmpFile, []byte(m.thread.PullRequest.Description), 0o644)
+	err = os.WriteFile(tmpFile, []byte(m.thread.Commit.Description), 0o644)
 	if err != nil {
 		return nil, err
 	}

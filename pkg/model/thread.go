@@ -11,7 +11,7 @@ type Thread struct {
 	ID          string      `json:"id"`
 	Messages    []Message   `json:"messages"`
 	CreatedAt   time.Time   `json:"created_at"`
-	PullRequest PullRequest `json:"pull_request"`
+	Commit Commit `json:"pull_request"`
 }
 
 func MakeThread() Thread {

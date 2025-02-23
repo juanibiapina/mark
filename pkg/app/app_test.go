@@ -106,7 +106,7 @@ func TestApp(t *testing.T) {
 
 		// tab once
 		app = update(app, key(tea.KeyTab))
-		require.Equal(t, FocusedPullRequest, app.focused)
+		require.Equal(t, FocusedCommit, app.focused)
 		v = app.View()
 		snaps.MatchSnapshot(t, v)
 
