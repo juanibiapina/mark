@@ -1,17 +1,20 @@
 package app
 
 import (
-	"image/color"
 	"mark/pkg/util"
 
 	"github.com/charmbracelet/lipgloss/v2"
 )
 
 var (
-	textColor          = lipgloss.NoColor{}
-	focusColor         = lipgloss.Color("2")
-	borderStyle        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
-	focusedBorderStyle = borderStyle.BorderForeground(focusColor)
+	textColor              = lipgloss.NoColor{}
+	focusColor             = lipgloss.Color("2")
+
+	textStyle              = lipgloss.NewStyle().Foreground(textColor)
+	focusedPanelTitleStyle = lipgloss.NewStyle().Foreground(focusColor)
+
+	borderStyle            = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+	focusedBorderStyle     = borderStyle.BorderForeground(focusColor)
 )
 
 func (m *App) windowView() string {
@@ -27,7 +30,7 @@ func (m *App) mainView() string {
 		m.threadView(),
 		m.borderIfFocused(FocusedThread),
 		"Thread",
-		m.colorIfFocused(FocusedThread),
+		m.panelTitleStyleIfFocused(FocusedThread),
 	)
 }
 
@@ -36,7 +39,7 @@ func (m *App) inputView() string {
 		m.input.View(),
 		m.borderIfFocused(FocusedInput),
 		"Message Assistant",
-		m.colorIfFocused(FocusedInput),
+		m.panelTitleStyleIfFocused(FocusedInput),
 	)
 }
 
@@ -45,7 +48,7 @@ func (m *App) pullRequestView() string {
 		m.pullRequestViewport.View(),
 		m.borderIfFocused(FocusedPullRequest),
 		"Pull Request",
-		m.colorIfFocused(FocusedPullRequest),
+		m.panelTitleStyleIfFocused(FocusedPullRequest),
 	)
 }
 
@@ -54,15 +57,15 @@ func (m *App) threadListView() string {
 		m.threadList.View(),
 		m.borderIfFocused(FocusedThreadList),
 		"Threads",
-		m.colorIfFocused(FocusedThreadList),
+		m.panelTitleStyleIfFocused(FocusedThreadList),
 	)
 }
 
-func (m *App) colorIfFocused(focused Focused) color.Color {
+func (m *App) panelTitleStyleIfFocused(focused Focused) lipgloss.Style {
 	if m.focused == focused {
-		return focusColor
+		return focusedPanelTitleStyle
 	}
-	return textColor
+	return textStyle
 }
 
 func (m *App) borderIfFocused(focused Focused) lipgloss.Style {
