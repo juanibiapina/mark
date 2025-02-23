@@ -33,6 +33,12 @@ func (self Project) Prompt() (string, error) {
 	}
 	content += part
 
+	part, err = shellCommand("git", "log", "--oneline", "...main")
+	if err != nil {
+		return "", err
+	}
+	content += part
+
 	return content, nil
 }
 
