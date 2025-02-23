@@ -271,34 +271,6 @@ func (m *App) focusPrev() {
 	m.renderThreadList()
 }
 
-func (m *App) borderInput() lipgloss.Style {
-	if m.focused == FocusedInput {
-		return focusedBorderStyle
-	}
-	return borderStyle
-}
-
-func (m *App) borderPullRequest() lipgloss.Style {
-	if m.focused == FocusedPullRequest {
-		return focusedBorderStyle
-	}
-	return borderStyle
-}
-
-func (m *App) borderThreadList() lipgloss.Style {
-	if m.focused == FocusedThreadList {
-		return focusedBorderStyle
-	}
-	return borderStyle
-}
-
-func (m *App) borderThread() lipgloss.Style {
-	if m.focused == FocusedThread {
-		return focusedBorderStyle
-	}
-	return borderStyle
-}
-
 func (m *App) startStreaming() {
 	m.stream = model.NewStreamingMessage()
 	m.streaming = true
