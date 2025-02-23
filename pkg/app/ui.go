@@ -11,7 +11,7 @@ var (
 	focusColor             = lipgloss.Color("2")
 
 	textStyle              = lipgloss.NewStyle().Foreground(textColor)
-	focusedPanelTitleStyle = lipgloss.NewStyle().Foreground(focusColor)
+	focusedPanelTitleStyle = lipgloss.NewStyle().Foreground(focusColor).Bold(true)
 
 	borderStyle            = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
 	focusedBorderStyle     = borderStyle.BorderForeground(focusColor)
