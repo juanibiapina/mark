@@ -98,35 +98,14 @@ func TestApp(t *testing.T) {
 
 	t.Run("focus", func(t *testing.T) {
 		app := appWithFixture(t, "cwd")
+		focuses := []Focused{FocusedInput, FocusedCommit, FocusedThreadList, FocusedThread, FocusedInput}
 
-		// default focus
-		require.Equal(t, FocusedInput, app.focused)
-		v := app.View()
-		snaps.MatchSnapshot(t, v)
-
-		// tab once
-		app = update(app, key(tea.KeyTab))
-		require.Equal(t, FocusedCommit, app.focused)
-		v = app.View()
-		snaps.MatchSnapshot(t, v)
-
-		// tab twice
-		app = update(app, key(tea.KeyTab))
-		require.Equal(t, FocusedThreadList, app.focused)
-		v = app.View()
-		snaps.MatchSnapshot(t, v)
-
-		// tab thrice
-		app = update(app, key(tea.KeyTab))
-		require.Equal(t, FocusedThread, app.focused)
-		v = app.View()
-		snaps.MatchSnapshot(t, v)
-
-		// tab four times (back to input)
-		app = update(app, key(tea.KeyTab))
-		require.Equal(t, FocusedInput, app.focused)
-		v = app.View()
-		snaps.MatchSnapshot(t, v)
+		for _, expectedFocus := range focuses {
+			require.Equal(t, expectedFocus, app.focused)
+			v := app.View()
+			snaps.MatchSnapshot(t, v)
+			app = update(app, key(tea.KeyTab))
+		}
 	})
 
 	t.Run("input", func(t *testing.T) {
