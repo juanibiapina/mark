@@ -1,9 +1,17 @@
 package app
 
 import (
+	"image/color"
 	"mark/pkg/util"
 
 	"github.com/charmbracelet/lipgloss/v2"
+)
+
+var (
+	textColor          = lipgloss.NoColor{}
+	focusColor         = lipgloss.Color("2")
+	borderStyle        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+	focusedBorderStyle = borderStyle.BorderForeground(focusColor)
 )
 
 func (m *App) windowView() string {
@@ -19,6 +27,7 @@ func (m *App) mainView() string {
 		m.threadView(),
 		m.borderThread(),
 		"Thread",
+		m.colorIfFocused(FocusedThread),
 	)
 }
 
@@ -27,6 +36,7 @@ func (m *App) inputView() string {
 		m.input.View(),
 		m.borderInput(),
 		"Message Assistant",
+		m.colorIfFocused(FocusedInput),
 	)
 }
 
@@ -35,6 +45,7 @@ func (m *App) pullRequestView() string {
 		m.pullRequestViewport.View(),
 		m.borderPullRequest(),
 		"Pull Request",
+		m.colorIfFocused(FocusedPullRequest),
 	)
 }
 
@@ -43,7 +54,15 @@ func (m *App) threadListView() string {
 		m.threadList.View(),
 		m.borderThreadList(),
 		"Threads",
+		m.colorIfFocused(FocusedThreadList),
 	)
+}
+
+func (m *App) colorIfFocused(focused Focused) color.Color {
+	if m.focused == focused {
+		return focusColor
+	}
+	return textColor
 }
 
 func (m *App) threadView() string {

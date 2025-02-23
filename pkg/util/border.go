@@ -1,15 +1,22 @@
 package util
 
 import (
+	"image/color"
+
 	"github.com/charmbracelet/lipgloss/v2"
 )
 
-func RenderBorderWithTitle(v string, borderStyle lipgloss.Style, title string) string {
+func RenderBorderWithTitle(v string, borderStyle lipgloss.Style, title string, titleColor color.Color) string {
 	width := lipgloss.Width(v)
 
-	r := borderStyle.Render(v)
+	// render border
+	result := borderStyle.Render(v)
+
+	// place title
 	if title != "" && len(title) < width-2 {
-		r = PlaceOverlay(2, 0, title, r)
+		style := lipgloss.NewStyle().Foreground(titleColor)
+		result = PlaceOverlay(2, 0, style.Render(title), result)
 	}
-	return r
+
+	return result
 }

@@ -32,11 +32,7 @@ const (
 	ratio       = 0.67
 )
 
-var (
-	borderStyle           = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
-	focusedBorderStyle    = borderStyle.BorderForeground(lipgloss.Color("2"))
-	highlightedEntryStyle = lipgloss.NewStyle().Background(lipgloss.Color("4"))
-)
+var highlightedEntryStyle = lipgloss.NewStyle().Background(lipgloss.Color("4"))
 
 type App struct {
 	// models
