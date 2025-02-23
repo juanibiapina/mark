@@ -5,11 +5,11 @@ import (
 )
 
 type (
-	threadEntriesMsg          []model.ThreadEntry
-	partialMessage            string
-	replyMessage              string
-	threadMsg                 struct{ thread model.Thread }
-	pullRequestDescriptionMsg string
+	threadEntriesMsg []model.ThreadEntry
+	partialMessage   string
+	replyMessage     string
+	threadMsg        struct{ thread model.Thread }
+	commitMsg        string
 )
 
 type errMsg struct{ err error }

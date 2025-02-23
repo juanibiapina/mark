@@ -127,7 +127,7 @@ func processStream(m *App) tea.Cmd {
 	}
 }
 
-func (m *App) editPullRequest() (tea.Cmd, error) {
+func (m *App) editCommit() (tea.Cmd, error) {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		return nil, nil
@@ -158,7 +158,7 @@ func (m *App) editPullRequest() (tea.Cmd, error) {
 			return errMsg{err}
 		}
 
-		return pullRequestDescriptionMsg(string(contents))
+		return commitMsg(string(contents))
 	}), nil
 }
 

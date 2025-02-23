@@ -149,7 +149,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case threadMsg:
 		m.thread = msg.thread
 
-	case pullRequestDescriptionMsg:
+	case commitMsg:
 		m.thread.Commit.Description = string(msg)
 		cmd := m.saveThread()
 		cmds = append(cmds, cmd)
@@ -209,7 +209,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			if m.focused == FocusedCommit {
-				cmd := m.processPullRequestView(msg)
+				cmd := m.processCommitView(msg)
 				cmds = append(cmds, cmd)
 			}
 
@@ -225,7 +225,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	m.renderPullRequest()
+	m.renderCommit()
 	m.renderActiveThread()
 	m.renderThreadList()
 
@@ -279,12 +279,12 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	return cmd
 }
 
-func (m *App) processPullRequestView(msg tea.Msg) tea.Cmd {
+func (m *App) processCommitView(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "e":
-			cmd, err := m.editPullRequest()
+			cmd, err := m.editCommit()
 			if err != nil {
 				m.err = err
 				return tea.Quit
@@ -419,7 +419,7 @@ func (m *App) renderActiveThread() {
 	m.threadViewport.SetContent(content)
 }
 
-func (m *App) renderPullRequest() {
+func (m *App) renderCommit() {
 	m.commitViewport.SetContent(m.thread.Commit.Description)
 }
 
