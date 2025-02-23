@@ -283,6 +283,9 @@ func (m *App) processCommitView(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
+		case "c":
+			return m.createCommit()
+
 		case "e":
 			cmd, err := m.editCommit()
 			if err != nil {

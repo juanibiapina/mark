@@ -198,3 +198,20 @@ func (m *App) viewThreadInEditor() (tea.Cmd, error) {
 		return nil
 	}), nil
 }
+
+func (m *App) createCommit() tea.Cmd {
+	if m.thread.Commit.Description == "" {
+		return nil
+	}
+
+	return func() tea.Msg {
+		cmd := exec.Command("git", "commit", "-m", m.thread.Commit.Description)
+
+		err := cmd.Run()
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return nil
+	}
+}
