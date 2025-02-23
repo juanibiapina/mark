@@ -34,10 +34,26 @@ func appWithFixture(t *testing.T, dir string) App {
 	model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 
 	msg := cmd()
-	assert.NotNil(t, msg)
-	model, _ = model.Update(msg)
+	model = handleMessage(t, model, msg)
 
 	return model.(App)
+}
+
+// handleMessage is a helper function that processes messages like in a tea.Program.
+// This is needed for handling internal messages like tea.BatchMsg.
+func handleMessage(t *testing.T, model tea.Model, msg tea.Msg) tea.Model {
+    switch msg := msg.(type) {
+    case tea.QuitMsg:
+        t.Fatal("unexpected quit message")
+    case tea.BatchMsg:
+        for _, cmd := range msg {
+            m := cmd()
+            model, _ = model.Update(m)
+        }
+    default:
+        model, _ = model.Update(msg)
+    }
+    return model
 }
 
 func update(app App, msg tea.Msg) App {
@@ -65,8 +81,7 @@ func TestApp(t *testing.T) {
 		model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 
 		msg := cmd()
-		assert.NotNil(t, msg)
-		model, _ = model.Update(msg)
+		model = handleMessage(t, model, msg)
 
 		v = model.View()
 		snaps.MatchStandaloneSnapshot(t, v)
