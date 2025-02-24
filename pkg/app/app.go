@@ -87,10 +87,9 @@ type App struct {
 	threadListCursor int
 
 	// clients
-	ai          *openai.OpenAI
-	db          db.Database
-	controlChan chan string
-	listener    net.Listener
+	ai       *openai.OpenAI
+	db       db.Database
+	listener net.Listener
 
 	// error
 	err error
@@ -136,10 +135,9 @@ func MakeApp(cwd string) (App, error) {
 		thread: activeThread,
 
 		// clients
-		db:          db.MakeDatabase(dbdir),
-		ai:          openai.NewOpenAIClient(),
-		controlChan: make(chan string),
-		listener:    listener,
+		db:       db.MakeDatabase(dbdir),
+		ai:       openai.NewOpenAIClient(),
+		listener: listener,
 	}
 
 	return app, nil
@@ -151,7 +149,7 @@ func (m App) Err() error {
 
 // Init returns an initial command.
 func (m App) Init() (tea.Model, tea.Cmd) {
-	return m, tea.Batch(m.loadThreads(), m.listenForControlMessages(), m.waitForControlMessage())
+	return m, tea.Batch(m.loadThreads(), m.listenForControlMessages())
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -168,7 +166,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.handleWindowSize(msg.Width, msg.Height)
 
 	case controlMsg:
-		cmds = append(cmds, m.waitForControlMessage())
+		cmds = append(cmds, m.listenForControlMessages())
 		cmds = append(cmds, m.submitMessage())
 
 	case partialMessage:
@@ -786,26 +784,18 @@ func (m *App) handleWindowSize(width, height int) {
 // listenForControlMessages listens for incoming messages on the listener and sends them to the controlChan.
 func (m *App) listenForControlMessages() tea.Cmd {
 	return func() tea.Msg {
-		listener := m.listener
-
-		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				return errMsg{err}
-			}
-
-			scanner := bufio.NewScanner(conn)
-			for scanner.Scan() {
-				m.controlChan <- scanner.Text()
-			}
+		conn, err := m.listener.Accept()
+		if err != nil {
+			return errMsg{err}
 		}
-	}
-}
+		defer conn.Close()
 
-// waitForControlMessage waits for control messages on the controlChan and sends tea.Msg
-func (m *App) waitForControlMessage() tea.Cmd {
-	return func() tea.Msg {
-		return controlMsg(<-m.controlChan)
+		scanner := bufio.NewScanner(conn)
+		for scanner.Scan() {
+			return controlMsg(scanner.Text())
+		}
+
+		return nil
 	}
 }
 
