@@ -339,9 +339,7 @@ func (m *App) processThreadList(msg tea.Msg) tea.Cmd {
 		case "d":
 			return m.deleteSelectedThread()
 		default:
-			var cmd tea.Cmd
-			m.threadList, cmd = m.threadList.Update(msg)
-			return cmd
+			return nil
 		}
 	}
 
