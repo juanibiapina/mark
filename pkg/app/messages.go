@@ -10,8 +10,5 @@ type (
 	replyMessage     string
 	threadMsg        struct{ thread model.Thread }
 	commitMsg        string
+	errMsg           struct{ err error }
 )
-
-type errMsg struct{ err error }
-
-func (e errMsg) Error() string { return e.err.Error() }
