@@ -1,8 +1,10 @@
 package app
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -41,6 +43,7 @@ type (
 	replyMessage     string
 	threadMsg        struct{ thread model.Thread }
 	commitMsg        string
+	controlMsg       string
 	errMsg           struct{ err error }
 )
 
@@ -84,8 +87,10 @@ type App struct {
 	threadListCursor int
 
 	// clients
-	ai *openai.OpenAI
-	db db.Database
+	ai          *openai.OpenAI
+	db          db.Database
+	controlChan chan string
+	listener    net.Listener
 
 	// error
 	err error
@@ -94,6 +99,12 @@ type App struct {
 func MakeApp(cwd string) (App, error) {
 	// determine database directory
 	dbdir := path.Join(cwd, ".mark")
+
+	// create socket file for listening to messages
+	listener, err := createSocketFile(cwd)
+	if err != nil {
+		return App{}, err
+	}
 
 	// init input
 	input := textarea.New()
@@ -117,11 +128,18 @@ func MakeApp(cwd string) (App, error) {
 
 	// init app
 	app := App{
+		// models
 		project: project,
-		db:      db.MakeDatabase(dbdir),
-		ai:      openai.NewOpenAIClient(),
-		input:   input,
-		thread:  activeThread,
+
+		// views
+		input:  input,
+		thread: activeThread,
+
+		// clients
+		db:          db.MakeDatabase(dbdir),
+		ai:          openai.NewOpenAIClient(),
+		controlChan: make(chan string),
+		listener:    listener,
 	}
 
 	return app, nil
@@ -133,7 +151,7 @@ func (m App) Err() error {
 
 // Init returns an initial command.
 func (m App) Init() (tea.Model, tea.Cmd) {
-	return m, m.loadThreads()
+	return m, tea.Batch(m.loadThreads(), m.listenForControlMessages(), m.waitForControlMessage())
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -148,6 +166,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.handleWindowSize(msg.Width, msg.Height)
+
+	case controlMsg:
+		cmds = append(cmds, m.waitForControlMessage())
+		cmds = append(cmds, m.submitMessage())
 
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
@@ -759,4 +781,46 @@ func (m *App) handleWindowSize(width, height int) {
 	if !m.uiReady {
 		m.uiReady = true
 	}
+}
+
+// listenForControlMessages listens for incoming messages on the listener and sends them to the controlChan.
+func (m *App) listenForControlMessages() tea.Cmd {
+	return func() tea.Msg {
+		listener := m.listener
+
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return errMsg{err}
+			}
+
+			scanner := bufio.NewScanner(conn)
+			for scanner.Scan() {
+				m.controlChan <- scanner.Text()
+			}
+		}
+	}
+}
+
+// waitForControlMessage waits for control messages on the controlChan and sends tea.Msg
+func (m *App) waitForControlMessage() tea.Cmd {
+	return func() tea.Msg {
+		return controlMsg(<-m.controlChan)
+	}
+}
+
+func createSocketFile(cwd string) (net.Listener, error) {
+	// determine socket path
+	socketPath := path.Join(cwd, ".mark", "socket")
+
+	// remove socket file if it exists
+	os.Remove(socketPath)
+
+	// create socket file
+	listener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return listener, nil
 }
