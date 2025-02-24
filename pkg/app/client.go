@@ -33,7 +33,7 @@ func (self *Client) SendMessage(message string) error {
 	// Create a JSON message
 	jsonMessage := fmt.Sprintf(`{"message": "%s"}`, message)
 
-
+	// Open a connection to the socket
 	conn, err := self.openSocketConnection(socketPath)
 	if err != nil {
 		return err
