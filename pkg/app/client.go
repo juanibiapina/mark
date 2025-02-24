@@ -30,9 +30,6 @@ func (self *Client) SendMessage(message string) error {
 		return fmt.Errorf("Couldn't find socket path: %s", socketPath)
 	}
 
-	// Create a JSON message
-	jsonMessage := fmt.Sprintf(`{"message": "%s"}`, message)
-
 	// Open a connection to the socket
 	conn, err := self.openSocketConnection(socketPath)
 	if err != nil {
@@ -40,8 +37,8 @@ func (self *Client) SendMessage(message string) error {
 	}
 	defer conn.Close()
 
-	// Write the JSON message to the socket
-	_, err = conn.Write([]byte(jsonMessage))
+	// Write the message to the socket
+	_, err = conn.Write([]byte(message))
 	if err != nil {
 		return err
 	}
