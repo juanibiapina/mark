@@ -8,10 +8,10 @@ type ThreadEntry struct {
 }
 
 type Thread struct {
-	ID          string      `json:"id"`
-	Messages    []Message   `json:"messages"`
-	CreatedAt   time.Time   `json:"created_at"`
-	Commit Commit `json:"pull_request"`
+	ID        string    `json:"id"`
+	Messages  []Message `json:"messages"`
+	CreatedAt time.Time `json:"created_at"`
+	Commit    Commit    `json:"pull_request"`
 }
 
 func MakeThread() Thread {

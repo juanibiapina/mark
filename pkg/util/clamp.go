@@ -9,4 +9,3 @@ func Clamp(v, min, max int) int {
 	}
 	return v
 }
-

@@ -7,7 +7,7 @@ import (
 )
 
 // Program wraps the bubbletea program.
-type Program struct{
+type Program struct {
 	TeaProgram *tea.Program
 }
 
@@ -38,18 +38,18 @@ func NewProgram() (*Program, error) {
 
 // Run runs the bubbletea program.
 func (p *Program) Run() error {
-		// run the tea program
-		m, err := p.TeaProgram.Run()
-		if err != nil {
-			return err
-		}
+	// run the tea program
+	m, err := p.TeaProgram.Run()
+	if err != nil {
+		return err
+	}
 
-		// handle errors in the final model after bubbletea program exits
-		app := m.(App)
-		err = app.Err()
-		if err != nil {
-			return err
-		}
+	// handle errors in the final model after bubbletea program exits
+	app := m.(App)
+	err = app.Err()
+	if err != nil {
+		return err
+	}
 
-		return nil
+	return nil
 }
