@@ -24,21 +24,6 @@ func bareApp(t *testing.T) App {
 	return model.(App)
 }
 
-func appWithFixture(t *testing.T, dir string) App {
-	cwd := path.Join("testdata", dir)
-	app := makeApp(t, cwd)
-
-	model, cmd := app.Init()
-	assert.NotNil(t, cmd)
-
-	model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
-
-	msg := cmd()
-	model = handleMessage(t, model, msg)
-
-	return model.(App)
-}
-
 // handleMessage is a helper function that processes messages like in a tea.Program.
 // This is needed for handling internal messages like tea.BatchMsg.
 func handleMessage(t *testing.T, model tea.Model, msg tea.Msg) tea.Model {
@@ -112,7 +97,7 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("focus", func(t *testing.T) {
-		app := appWithFixture(t, "cwd")
+		app := bareApp(t)
 		focuses := []Focused{FocusedInput, FocusedCommit, FocusedThreadList, FocusedThread, FocusedInput}
 
 		for _, expectedFocus := range focuses {
