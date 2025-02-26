@@ -37,7 +37,13 @@ var sendMessageCmd = &cobra.Command{
 
 		// Read from stdin
 		scanner := bufio.NewScanner(os.Stdin)
-		line := scanner.Text() + "\n"
+		var line string
+		if ok := scanner.Scan(); ok {
+			line = scanner.Text()
+		} else {
+			fmt.Fprintf(os.Stderr, "Error: stdin is empty\n")
+			os.Exit(1)
+		}
 
 		// create a new client
 		client, err := app.NewClient(cwd)

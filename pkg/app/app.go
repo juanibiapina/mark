@@ -2,6 +2,7 @@ package app
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -43,7 +44,7 @@ type (
 	replyMessage     string
 	threadMsg        struct{ thread model.Thread }
 	commitMsg        string
-	controlMsg       string
+	controlMsg       struct{ msg ControlMsg }
 	errMsg           struct{ err error }
 )
 
@@ -94,6 +95,12 @@ type App struct {
 	// error
 	err error
 }
+
+type ControlMsg interface{}
+
+type (
+	ControlMsgSubmit struct{}
+)
 
 func MakeApp(cwd string) (App, error) {
 	// determine database directory
@@ -166,8 +173,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.handleWindowSize(msg.Width, msg.Height)
 
 	case controlMsg:
-		cmds = append(cmds, m.listenForControlMessages())
-		cmds = append(cmds, m.submitMessage())
+		cmds = append(cmds, m.processControlMessage(msg))
 
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
@@ -781,20 +787,29 @@ func (m *App) handleWindowSize(width, height int) {
 	}
 }
 
-// listenForControlMessages listens for incoming messages on the listener and sends them to the controlChan.
+// listenForControlMessages listens for incoming messages on the listener and sends a tea.Msg
 func (m *App) listenForControlMessages() tea.Cmd {
 	return func() tea.Msg {
+		// accept a connection in the socket
 		conn, err := m.listener.Accept()
 		if err != nil {
 			return errMsg{err}
 		}
 		defer conn.Close()
 
+		// read the control message
 		scanner := bufio.NewScanner(conn)
-		for scanner.Scan() {
-			return controlMsg(scanner.Text())
+		if ok := scanner.Scan(); ok {
+			cmsg, err := parseControlMessage(scanner.Text())
+			if err != nil {
+				// TODO: handle invalid messages
+				return nil
+			}
+			return controlMsg{msg: cmsg}
 		}
 
+		// TODO handle empty messages
+		// TODO handle scanner errors
 		return nil
 	}
 }
@@ -813,4 +828,26 @@ func createSocketFile(cwd string) (net.Listener, error) {
 	}
 
 	return listener, nil
+}
+
+func parseControlMessage(s string) (ControlMsg, error) {
+	switch s {
+	case "submit":
+		return ControlMsgSubmit{}, nil
+	default:
+		return nil, errors.New("invalid message")
+	}
+}
+
+func (m *App) processControlMessage(msg controlMsg) tea.Cmd {
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, m.listenForControlMessages())
+
+	switch msg.msg.(type) {
+	case ControlMsgSubmit:
+		cmds = append(cmds, m.submitMessage())
+	}
+
+	return tea.Batch(cmds...)
 }
