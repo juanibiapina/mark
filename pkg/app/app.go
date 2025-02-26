@@ -3,11 +3,14 @@ package app
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
 	"path"
 
 	"mark/pkg/db"
 	"mark/pkg/model"
 	"mark/pkg/openai"
+	"mark/pkg/util"
 
 	"github.com/charmbracelet/bubbles/v2/cursor"
 	"github.com/charmbracelet/bubbles/v2/textarea"
@@ -32,7 +35,27 @@ const (
 	ratio       = 0.67
 )
 
-var highlightedEntryStyle = lipgloss.NewStyle().Background(lipgloss.Color("4"))
+type (
+	threadEntriesMsg []model.ThreadEntry
+	partialMessage   string
+	replyMessage     string
+	threadMsg        struct{ thread model.Thread }
+	commitMsg        string
+	errMsg           struct{ err error }
+)
+
+var (
+	textColor  = lipgloss.NoColor{}
+	focusColor = lipgloss.Color("2")
+
+	textStyle              = lipgloss.NewStyle().Foreground(textColor)
+	focusedPanelTitleStyle = lipgloss.NewStyle().Foreground(focusColor).Bold(true)
+
+	borderStyle        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+	focusedBorderStyle = borderStyle.BorderForeground(focusColor)
+
+	highlightedEntryStyle = lipgloss.NewStyle().Background(lipgloss.Color("4"))
+)
 
 type App struct {
 	// models
@@ -444,4 +467,296 @@ func (m *App) renderThreadList() {
 	}
 
 	m.threadList.SetContent(content)
+}
+
+func (m *App) saveThread() tea.Cmd {
+	return func() tea.Msg {
+		err := m.db.SaveThread(m.thread)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return m.loadThreads()()
+	}
+}
+
+func (m *App) loadSelectedThread() tea.Cmd {
+	if len(m.threadListEntries) == 0 {
+		return nil
+	}
+
+	selectedEntry := m.threadListEntries[m.threadListCursor]
+
+	return func() tea.Msg {
+		thread, err := m.db.LoadThread(selectedEntry.ID)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return threadMsg{thread}
+	}
+}
+
+func (m *App) loadThreads() tea.Cmd {
+	return func() tea.Msg {
+		threads, err := m.db.ListThreads()
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return threadEntriesMsg(threads)
+	}
+}
+
+func (m *App) submitMessage() tea.Cmd {
+	m.cancelStreaming()
+
+	v := m.input.Value()
+	if v != "" {
+		m.thread.AddMessage(model.Message{Role: model.RoleUser, Content: v})
+		m.input.Reset()
+	}
+
+	// maybe update the prompt here
+
+	m.startStreaming()
+
+	cmds := []tea.Cmd{
+		complete(m),      // call completions API
+		processStream(m), // start receiving partial message
+	}
+	return tea.Batch(cmds...)
+}
+
+func (m *App) deleteSelectedThread() tea.Cmd {
+	if len(m.threadListEntries) == 0 {
+		return nil
+	}
+
+	selectedEntryID := m.threadListEntries[m.threadListCursor].ID
+
+	// Remove the thread from the list of entries
+	for i, entry := range m.threadListEntries {
+		if entry.ID == selectedEntryID {
+			m.threadListEntries = append(m.threadListEntries[:i], m.threadListEntries[i+1:]...)
+			break
+		}
+	}
+
+	// Ensure the cursor is in a valid position
+	if len(m.threadListEntries) == 0 {
+		m.threadListCursor = 0
+	} else {
+		m.threadListCursor = util.Clamp(m.threadListCursor, 0, len(m.threadListEntries)-1)
+	}
+
+	m.renderActiveThread()
+	m.renderThreadList()
+
+	return func() tea.Msg {
+		err := m.db.DeleteThread(selectedEntryID)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return nil
+	}
+}
+
+func complete(m *App) tea.Cmd {
+	return func() tea.Msg {
+		err := m.ai.CompleteStreaming(&m.thread, m.stream, m.project)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return nil
+	}
+}
+
+func processStream(m *App) tea.Cmd {
+	return func() tea.Msg {
+		select {
+		case v := <-m.stream.Reply:
+			return replyMessage(v)
+		case v := <-m.stream.Chunks:
+			return partialMessage(v)
+		}
+	}
+}
+
+func (m *App) editCommit() (tea.Cmd, error) {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		return nil, nil
+	}
+
+	tmpdir, err := os.MkdirTemp("", "mark-*")
+	if err != nil {
+		return nil, err
+	}
+
+	tmpFile := path.Join(tmpdir, "mark-pull-request-title")
+	err = os.WriteFile(tmpFile, []byte(m.thread.Commit.Description), 0o644)
+	if err != nil {
+		return nil, err
+	}
+
+	c := exec.Command(editor, tmpFile)
+
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		defer os.RemoveAll(tmpdir)
+
+		if err != nil {
+			return errMsg{err}
+		}
+
+		contents, err := os.ReadFile(tmpFile)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return commitMsg(string(contents))
+	}), nil
+}
+
+func (m *App) viewThreadInEditor() (tea.Cmd, error) {
+	// build the content
+	var content string
+	for _, msg := range m.thread.Messages {
+		content += "---\n"
+		content += msg.Content + "\n"
+	}
+
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		return nil, nil
+	}
+
+	tmpdir, err := os.MkdirTemp("", "mark-*")
+	if err != nil {
+		return nil, err
+	}
+
+	tmpFile := path.Join(tmpdir, "mark-thread")
+	err = os.WriteFile(tmpFile, []byte(content), 0o644)
+	if err != nil {
+		return nil, err
+	}
+
+	c := exec.Command(editor, tmpFile)
+
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		defer os.RemoveAll(tmpdir)
+
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return nil
+	}), nil
+}
+
+func (m *App) createCommit() tea.Cmd {
+	if m.thread.Commit.Description == "" {
+		return nil
+	}
+
+	return func() tea.Msg {
+		cmd := exec.Command("git", "commit", "-m", m.thread.Commit.Description)
+
+		err := cmd.Run()
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return nil
+	}
+}
+
+func (m *App) windowView() string {
+	return lipgloss.JoinHorizontal(lipgloss.Top, m.sidebarView(), m.mainView())
+}
+
+func (m *App) sidebarView() string {
+	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.commitView(), m.threadListView())
+}
+
+func (m *App) mainView() string {
+	return util.RenderBorderWithTitle(
+		m.threadView(),
+		m.borderIfFocused(FocusedThread),
+		"Thread",
+		m.panelTitleStyleIfFocused(FocusedThread),
+	)
+}
+
+func (m *App) inputView() string {
+	return util.RenderBorderWithTitle(
+		m.input.View(),
+		m.borderIfFocused(FocusedInput),
+		"Message Assistant",
+		m.panelTitleStyleIfFocused(FocusedInput),
+	)
+}
+
+func (m *App) commitView() string {
+	return util.RenderBorderWithTitle(
+		m.commitViewport.View(),
+		m.borderIfFocused(FocusedCommit),
+		"Commit",
+		m.panelTitleStyleIfFocused(FocusedCommit),
+	)
+}
+
+func (m *App) threadListView() string {
+	return util.RenderBorderWithTitle(
+		m.threadList.View(),
+		m.borderIfFocused(FocusedThreadList),
+		"Threads",
+		m.panelTitleStyleIfFocused(FocusedThreadList),
+	)
+}
+
+func (m *App) panelTitleStyleIfFocused(focused Focused) lipgloss.Style {
+	if m.focused == focused {
+		return focusedPanelTitleStyle
+	}
+	return textStyle
+}
+
+func (m *App) borderIfFocused(focused Focused) lipgloss.Style {
+	if m.focused == focused {
+		return focusedBorderStyle
+	}
+	return borderStyle
+}
+
+func (m *App) threadView() string {
+	return m.threadViewport.View()
+}
+
+func (m *App) handleWindowSize(width, height int) {
+	borderSize := 2 // 2 times the border width
+
+	m.mainPanelWidth = int(float64(width) * ratio)
+	m.mainPanelHeight = height
+	m.sideBarWidth = width - m.mainPanelWidth
+
+	m.input.SetWidth(m.sideBarWidth - borderSize)
+	m.input.SetHeight(inputHeight - borderSize)
+	rest := height - inputHeight
+	half := rest / 2
+	m.commitViewport.SetWidth(m.sideBarWidth - borderSize)
+	m.commitViewport.SetHeight(half - borderSize)
+	m.threadList.SetWidth(m.sideBarWidth - borderSize)
+	m.threadList.SetHeight(half - borderSize)
+	highlightedEntryStyle = highlightedEntryStyle.Width(m.sideBarWidth - borderSize)
+
+	m.threadViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
+	m.threadViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
+
+	if !m.uiReady {
+		m.uiReady = true
+	}
 }
