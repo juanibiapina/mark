@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"testing"
 
@@ -48,6 +49,14 @@ func update(app App, msg tea.Msg) App {
 
 func key(code rune) tea.Msg {
 	return tea.KeyPressMsg{Code: code, Text: string(code)}
+}
+
+func TestMain(m *testing.M) {
+	v := m.Run()
+
+	snaps.Clean(m, snaps.CleanOpts{Sort: true})
+
+	os.Exit(v)
 }
 
 func TestApp(t *testing.T) {
