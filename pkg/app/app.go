@@ -24,7 +24,6 @@ type Focused int
 
 const (
 	FocusedInput Focused = iota
-	FocusedCommit
 	FocusedThreadList
 	FocusedThread
 	FocusedEndMarker // used to determine the number of focusable items for cycling
@@ -40,7 +39,6 @@ type (
 	partialMessage   string
 	replyMessage     string
 	threadMsg        struct{ thread model.Thread }
-	commitMsg        string
 	errMsg           struct{ err error }
 )
 
@@ -77,8 +75,6 @@ type App struct {
 
 	input          textarea.Model
 	threadViewport viewport.Model
-
-	commitViewport viewport.Model
 
 	threadList       viewport.Model
 	threadListCursor int
@@ -172,11 +168,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case threadMsg:
 		m.thread = msg.thread
 
-	case commitMsg:
-		m.thread.Commit.Description = string(msg)
-		cmd := m.saveThread()
-		cmds = append(cmds, cmd)
-
 	case tea.KeyPressMsg:
 		switch msg.String() {
 
@@ -231,11 +222,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 
-			if m.focused == FocusedCommit {
-				cmd := m.processCommitView(msg)
-				cmds = append(cmds, cmd)
-			}
-
 			if m.focused == FocusedThreadList {
 				cmd := m.processThreadList(msg)
 				cmds = append(cmds, cmd)
@@ -248,7 +234,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	m.renderCommit()
 	m.renderActiveThread()
 	m.renderThreadList()
 
@@ -300,31 +285,6 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	return cmd
-}
-
-func (m *App) processCommitView(msg tea.Msg) tea.Cmd {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "c":
-			return m.createCommit()
-
-		case "e":
-			cmd, err := m.editCommit()
-			if err != nil {
-				m.err = err
-				return tea.Quit
-			}
-
-			return cmd
-		default:
-			var cmd tea.Cmd
-			m.commitViewport, cmd = m.commitViewport.Update(msg)
-			return cmd
-		}
-	}
-
-	return nil
 }
 
 func (m *App) selectNextThread() {
@@ -441,10 +401,6 @@ func (m *App) renderActiveThread() {
 	}
 
 	m.threadViewport.SetContent(content)
-}
-
-func (m *App) renderCommit() {
-	m.commitViewport.SetContent(m.thread.Commit.Description)
 }
 
 func (m *App) renderThreadList() {
@@ -585,41 +541,6 @@ func processStream(m *App) tea.Cmd {
 	}
 }
 
-func (m *App) editCommit() (tea.Cmd, error) {
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		return nil, nil
-	}
-
-	tmpdir, err := os.MkdirTemp("", "mark-*")
-	if err != nil {
-		return nil, err
-	}
-
-	tmpFile := path.Join(tmpdir, "mark-pull-request-title")
-	err = os.WriteFile(tmpFile, []byte(m.thread.Commit.Description), 0o644)
-	if err != nil {
-		return nil, err
-	}
-
-	c := exec.Command(editor, tmpFile)
-
-	return tea.ExecProcess(c, func(err error) tea.Msg {
-		defer os.RemoveAll(tmpdir)
-
-		if err != nil {
-			return errMsg{err}
-		}
-
-		contents, err := os.ReadFile(tmpFile)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return commitMsg(string(contents))
-	}), nil
-}
-
 func (m *App) viewThreadInEditor() (tea.Cmd, error) {
 	// build the content
 	var content string
@@ -657,29 +578,12 @@ func (m *App) viewThreadInEditor() (tea.Cmd, error) {
 	}), nil
 }
 
-func (m *App) createCommit() tea.Cmd {
-	if m.thread.Commit.Description == "" {
-		return nil
-	}
-
-	return func() tea.Msg {
-		cmd := exec.Command("git", "commit", "-m", m.thread.Commit.Description)
-
-		err := cmd.Run()
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return nil
-	}
-}
-
 func (m *App) windowView() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, m.sidebarView(), m.mainView())
 }
 
 func (m *App) sidebarView() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.commitView(), m.threadListView())
+	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.threadListView())
 }
 
 func (m *App) mainView() string {
@@ -697,15 +601,6 @@ func (m *App) inputView() string {
 		m.borderIfFocused(FocusedInput),
 		"Message Assistant",
 		m.panelTitleStyleIfFocused(FocusedInput),
-	)
-}
-
-func (m *App) commitView() string {
-	return util.RenderBorderWithTitle(
-		m.commitViewport.View(),
-		m.borderIfFocused(FocusedCommit),
-		"Commit",
-		m.panelTitleStyleIfFocused(FocusedCommit),
 	)
 }
 
@@ -746,11 +641,8 @@ func (m *App) handleWindowSize(width, height int) {
 	m.input.SetWidth(m.sideBarWidth - borderSize)
 	m.input.SetHeight(inputHeight - borderSize)
 	rest := height - inputHeight
-	half := rest / 2
-	m.commitViewport.SetWidth(m.sideBarWidth - borderSize)
-	m.commitViewport.SetHeight(half - borderSize)
 	m.threadList.SetWidth(m.sideBarWidth - borderSize)
-	m.threadList.SetHeight(half - borderSize)
+	m.threadList.SetHeight(rest - borderSize)
 	highlightedEntryStyle = highlightedEntryStyle.Width(m.sideBarWidth - borderSize)
 
 	m.threadViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width

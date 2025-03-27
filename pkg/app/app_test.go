@@ -107,7 +107,7 @@ func TestApp(t *testing.T) {
 
 	t.Run("focus", func(t *testing.T) {
 		app := bareApp(t)
-		focuses := []Focused{FocusedInput, FocusedCommit, FocusedThreadList, FocusedThread, FocusedInput}
+		focuses := []Focused{FocusedInput, FocusedThreadList, FocusedThread, FocusedInput}
 
 		for _, expectedFocus := range focuses {
 			require.Equal(t, expectedFocus, app.focused)
