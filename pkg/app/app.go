@@ -57,7 +57,6 @@ var (
 
 type App struct {
 	// models
-	project           model.Project
 	thread            model.Thread
 	threadListEntries []model.ThreadEntry
 
@@ -105,19 +104,12 @@ func MakeApp(cwd string) (App, error) {
 	// init active thread
 	activeThread := model.MakeThread()
 
-	// init project
-	project, err := model.MakeProject(cwd)
-	if err != nil {
-		return App{}, err
-	}
-
 	// init app
 	app := App{
-		project: project,
-		db:      db.MakeDatabase(dbdir),
-		ai:      openai.NewOpenAIClient(),
-		input:   input,
-		thread:  activeThread,
+		db:     db.MakeDatabase(dbdir),
+		ai:     openai.NewOpenAIClient(),
+		input:  input,
+		thread: activeThread,
 	}
 
 	return app, nil
@@ -521,7 +513,7 @@ func (m *App) deleteSelectedThread() tea.Cmd {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		err := m.ai.CompleteStreaming(&m.thread, m.stream, m.project)
+		err := m.ai.CompleteStreaming(&m.thread, m.stream)
 		if err != nil {
 			return errMsg{err}
 		}
