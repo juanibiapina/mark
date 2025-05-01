@@ -3,7 +3,7 @@ package db
 import (
 	"testing"
 
-	"mark/pkg/model"
+	"mark/internal/model"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

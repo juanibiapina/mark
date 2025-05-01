@@ -6,7 +6,7 @@ import (
 	"path"
 	"slices"
 
-	"mark/pkg/model"
+	"mark/internal/model"
 )
 
 type Database struct {

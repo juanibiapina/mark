@@ -7,10 +7,10 @@ import (
 	"os/exec"
 	"path"
 
-	"mark/pkg/db"
-	"mark/pkg/model"
-	"mark/pkg/openai"
-	"mark/pkg/util"
+	"mark/internal/db"
+	"mark/internal/model"
+	"mark/internal/openai"
+	"mark/internal/util"
 
 	"github.com/charmbracelet/bubbles/v2/textarea"
 	"github.com/charmbracelet/bubbles/v2/viewport"

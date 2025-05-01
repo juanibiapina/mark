@@ -1,7 +1,7 @@
 package openai
 
 import (
-	"mark/pkg/model"
+	"mark/internal/model"
 
 	"github.com/openai/openai-go"
 )

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"mark/pkg/app"
+	"mark/internal/app"
 
 	"github.com/spf13/cobra"
 )
