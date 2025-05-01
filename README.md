@@ -8,10 +8,8 @@ Development is currently in exploration mode and is considered alpha stage.
 
 ### The `.mark` directory
 
-Mark uses a directory called `.mark` in the current directory to keep its
-internal state. This allows you to maintain different state per project. You
-can also have a global instance that always runs in a global directory
-for non project specific tasks.
+Mark uses a directory called `.mark` in the current directory to keep a list of
+threads. This allows you to maintain different threads per project.
 
 ## Inspiration
 
