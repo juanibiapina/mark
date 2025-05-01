@@ -25,7 +25,7 @@ func bareApp(t *testing.T) App {
 	return model.(App)
 }
 
-// handleMessage is a helper function that processes messages like in a tea.Program.
+// handleMessage processes messages like in a tea.Program.
 // This is needed for handling internal messages like tea.BatchMsg.
 func handleMessage(t *testing.T, model tea.Model, msg tea.Msg) tea.Model {
 	switch msg := msg.(type) {
@@ -45,6 +45,15 @@ func handleMessage(t *testing.T, model tea.Model, msg tea.Msg) tea.Model {
 func update(app App, msg tea.Msg) App {
 	model, _ := app.Update(msg)
 	return model.(App)
+}
+
+// render a tea.Model to a string assuming it implements tea.ViewModel.
+func render(t *testing.T, model tea.Model) string {
+	vmodel, ok := model.(tea.ViewModel)
+	require.True(t, ok)
+
+	v := vmodel.View()
+	return v
 }
 
 func key(code rune) tea.Msg {
@@ -69,15 +78,16 @@ func TestApp(t *testing.T) {
 		v := app.View()
 		assert.Equal(t, "Initializing...", v)
 
-		model, cmd := app.Init()
+		cmd := app.Init()
 		assert.NotNil(t, cmd)
 
-		model, _ = model.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
+		model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 
 		msg := cmd()
 		model = handleMessage(t, model, msg)
 
-		v = model.View()
+		v = render(t, model)
+
 		snaps.MatchStandaloneSnapshot(t, v)
 	})
 
@@ -100,7 +110,7 @@ func TestApp(t *testing.T) {
 			model, cmd := app.Update(replyMessage("test"))
 			assert.NotNil(t, cmd)
 
-			v := model.View()
+			v := render(t, model)
 			snaps.MatchStandaloneSnapshot(t, v)
 		})
 	})

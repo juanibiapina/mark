@@ -12,7 +12,6 @@ import (
 	"mark/pkg/openai"
 	"mark/pkg/util"
 
-	"github.com/charmbracelet/bubbles/v2/cursor"
 	"github.com/charmbracelet/bubbles/v2/textarea"
 	"github.com/charmbracelet/bubbles/v2/viewport"
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -95,7 +94,6 @@ func MakeApp(cwd string) (App, error) {
 	input.Focus()       // focus is actually handled by the app
 	input.CharLimit = 0 // no character limit
 	input.MaxHeight = 0 // no max height
-	input.Cursor.SetMode(cursor.CursorStatic)
 	input.Prompt = ""
 	input.Styles.Focused.CursorLine = lipgloss.NewStyle() // Remove cursor line styling
 	input.ShowLineNumbers = false
@@ -120,8 +118,8 @@ func (m App) Err() error {
 }
 
 // Init returns an initial command.
-func (m App) Init() (tea.Model, tea.Cmd) {
-	return m, m.loadThreads()
+func (m App) Init() tea.Cmd {
+	return m.loadThreads()
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

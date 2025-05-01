@@ -7,7 +7,7 @@ import (
 )
 
 type OpenAI struct {
-	client *openai.Client
+	client openai.Client
 }
 
 func NewOpenAIClient() *OpenAI {
@@ -38,9 +38,9 @@ func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage) e
 	}
 
 	stream := a.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
-		Messages: openai.F(chatMessages),
+		Messages: chatMessages,
 		Seed:     openai.Int(1),
-		Model:    openai.F(openai.ChatModelGPT4o),
+		Model:    openai.ChatModelGPT4o,
 	})
 
 	acc := openai.ChatCompletionAccumulator{}
