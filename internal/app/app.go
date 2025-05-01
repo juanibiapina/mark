@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"slices"
 
 	"mark/internal/db"
 	"mark/internal/model"
@@ -367,12 +368,12 @@ func (m *App) renderActiveThread() {
 
 	var content string
 
-	for i := 0; i < len(messages); i++ {
+	for _, message := range messages {
 		var msg string
-		if messages[i].Role == model.RoleUser {
-			msg = lipgloss.NewStyle().Width(m.threadViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", messages[i].Content))
+		if message.Role == model.RoleUser {
+			msg = lipgloss.NewStyle().Width(m.threadViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", message.Content))
 		} else {
-			msg, err = renderer.Render(messages[i].Content)
+			msg, err = renderer.Render(message.Content)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -396,12 +397,12 @@ func (m *App) renderActiveThread() {
 func (m *App) renderThreadList() {
 	var content string
 
-	for i := 0; i < len(m.threadListEntries); i++ {
+	for i, entry := range m.threadListEntries {
 		prefix := "  "
-		if m.threadListEntries[i].ID == m.thread.ID {
+		if entry.ID == m.thread.ID {
 			prefix = "* "
 		}
-		entryContent := prefix + m.threadListEntries[i].ID
+		entryContent := prefix + entry.ID
 
 		if i == m.threadListCursor {
 			if m.focused == FocusedThreadList {
@@ -484,7 +485,7 @@ func (m *App) deleteSelectedThread() tea.Cmd {
 	// Remove the thread from the list of entries
 	for i, entry := range m.threadListEntries {
 		if entry.ID == selectedEntryID {
-			m.threadListEntries = append(m.threadListEntries[:i], m.threadListEntries[i+1:]...)
+			m.threadListEntries = slices.Delete(m.threadListEntries, i, i+1)
 			break
 		}
 	}
