@@ -9,8 +9,8 @@ import (
 	"slices"
 
 	"mark/internal/db"
+	"mark/internal/llm"
 	"mark/internal/model"
-	"mark/internal/openai"
 	"mark/internal/util"
 
 	"github.com/charmbracelet/bubbles/v2/textarea"
@@ -79,8 +79,8 @@ type App struct {
 	threadListCursor int
 
 	// clients
-	ai *openai.OpenAI
-	db db.Database
+	agent *llm.Agent
+	db    db.Database
 
 	// error
 	err error
@@ -106,7 +106,7 @@ func MakeApp(cwd string) (App, error) {
 	// init app
 	app := App{
 		db:     db.MakeDatabase(dbdir),
-		ai:     openai.NewOpenAIClient(),
+		agent:  llm.NewAgent(),
 		input:  input,
 		thread: activeThread,
 	}
@@ -512,7 +512,7 @@ func (m *App) deleteSelectedThread() tea.Cmd {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		err := m.ai.CompleteStreaming(&m.thread, m.stream)
+		err := m.agent.CompleteStreaming(&m.thread, m.stream)
 		if err != nil {
 			return errMsg{err}
 		}

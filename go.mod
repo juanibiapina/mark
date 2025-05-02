@@ -30,7 +30,6 @@ require (
 	github.com/charmbracelet/x/exp/slice v0.0.0-20250424195755-e256bf9b4ee5 // indirect
 	github.com/charmbracelet/x/input v0.3.4 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
-	github.com/charmbracelet/x/wcwidth v0.0.0-20250424195755-e256bf9b4ee5 // indirect
 	github.com/charmbracelet/x/windows v0.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
