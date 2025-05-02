@@ -1,4 +1,4 @@
-package openai
+package providers
 
 import (
 	"mark/internal/model"

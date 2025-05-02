@@ -1,20 +1,21 @@
 package llm
 
 import (
+	"mark/internal/llm/provider"
+	"mark/internal/llm/providers"
 	"mark/internal/model"
-	"mark/internal/openai"
 )
 
 type Agent struct {
-	ai *openai.OpenAI
+	provider provider.Provider
 }
 
 func NewAgent() *Agent {
 	return &Agent{
-		ai: openai.NewOpenAIClient(),
+		provider: providers.NewOpenAIClient(),
 	}
 }
 
 func (self *Agent) CompleteStreaming(c *model.Thread, s *model.StreamingMessage) error {
-	return self.ai.CompleteStreaming(c, s)
+	return self.provider.CompleteStreaming(c, s)
 }
