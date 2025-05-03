@@ -25,10 +25,10 @@ func NewAgent() *Agent {
 	}
 }
 
-func (self *Agent) CompleteStreaming(c *model.Thread, s *model.StreamingMessage) error {
+func (self *Agent) CompleteStreaming(c *model.Thread) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	self.cancel = cancel
-	return self.provider.CompleteStreaming(ctx, c, s)
+	return self.provider.CompleteStreaming(ctx, c, self.Stream)
 }
 
 func (self *Agent) Cancel() {

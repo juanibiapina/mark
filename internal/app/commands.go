@@ -95,7 +95,7 @@ func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
 		m.agent.Cancel()
 
-		err := m.agent.CompleteStreaming(&m.thread, m.agent.Stream)
+		err := m.agent.CompleteStreaming(&m.thread)
 		if err != nil {
 			return errMsg{err}
 		}
