@@ -20,7 +20,7 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // CompleteStreaming sends a list of messages to the OpenAI API and streams the response
-func (a *OpenAI) CompleteStreaming(ctx context.Context, c *model.Thread, s *model.StreamingMessage) error {
+func (a *OpenAI) CompleteStreaming(ctx context.Context, c model.Thread, s *model.StreamingMessage) error {
 	slog.Info("Starting streaming completion")
 
 	pch := s.Chunks

@@ -7,5 +7,5 @@ import (
 )
 
 type Provider interface {
-	CompleteStreaming(ctx context.Context, c *model.Thread, s *model.StreamingMessage) error
+	CompleteStreaming(ctx context.Context, c model.Thread, s *model.StreamingMessage) error
 }
