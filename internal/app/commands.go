@@ -95,7 +95,7 @@ func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
 		m.agent.Cancel()
 
-		err := m.agent.CompleteStreaming(&m.thread, m.stream)
+		err := m.agent.CompleteStreaming(&m.thread, m.agent.Stream)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -107,9 +107,9 @@ func complete(m *App) tea.Cmd {
 func processStream(m *App) tea.Cmd {
 	return func() tea.Msg {
 		select {
-		case v := <-m.stream.Reply:
+		case v := <-m.agent.Stream.Reply:
 			return replyMessage(v)
-		case v := <-m.stream.Chunks:
+		case v := <-m.agent.Stream.Chunks:
 			return partialMessage(v)
 		}
 	}

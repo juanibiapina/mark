@@ -59,11 +59,6 @@ type App struct {
 	thread            model.Thread
 	threadListEntries []model.ThreadEntry
 
-	// streaming
-	streaming      bool
-	stream         *model.StreamingMessage
-	partialMessage string
-
 	// ui
 	uiReady         bool
 	focused         Focused
@@ -137,17 +132,17 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case partialMessage:
 		// Ignore message if streaming has been cancelled
-		if !m.streaming {
+		if !m.agent.Streaming {
 			return m, nil
 		}
 
-		m.partialMessage += string(msg)
+		m.agent.PartialMessage += string(msg)
 
 		cmds = append(cmds, processStream(&m))
 
 	case replyMessage:
-		m.streaming = false
-		m.partialMessage = ""
+		m.agent.Streaming = false
+		m.agent.PartialMessage = ""
 		m.thread.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
 		cmd := m.saveThread()
 		cmds = append(cmds, cmd)
@@ -259,17 +254,17 @@ func (m *App) focusPrev() {
 }
 
 func (m *App) cancelStreaming() {
-	if m.stream == nil {
+	if m.agent.Stream == nil {
 		return
 	}
 
-	m.stream = nil
-	m.streaming = false
+	m.agent.Stream = nil
+	m.agent.Streaming = false
 
 	// Add the partial message to the chat history
-	m.thread.AddMessage(model.Message{Role: model.RoleAssistant, Content: m.partialMessage})
+	m.thread.AddMessage(model.Message{Role: model.RoleAssistant, Content: m.agent.PartialMessage})
 
-	m.partialMessage = ""
+	m.agent.PartialMessage = ""
 }
 
 func (m *App) processInputView(msg tea.Msg) tea.Cmd {
@@ -380,8 +375,8 @@ func (m *App) renderActiveThread() {
 		content += msg
 	}
 
-	if m.streaming {
-		c, err := renderer.Render(m.partialMessage)
+	if m.agent.Streaming {
+		c, err := renderer.Render(m.agent.PartialMessage)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -423,8 +418,8 @@ func (m *App) submitMessage() tea.Cmd {
 		m.input.Reset()
 	}
 
-	m.stream = model.NewStreamingMessage()
-	m.streaming = true
+	m.agent.Stream = model.NewStreamingMessage()
+	m.agent.Streaming = true
 
 	cmds := []tea.Cmd{
 		complete(m),      // call completions API

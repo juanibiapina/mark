@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+
 	"mark/internal/llm/provider"
 	"mark/internal/llm/providers"
 	"mark/internal/model"
@@ -11,6 +12,11 @@ type Agent struct {
 	provider provider.Provider
 
 	cancel context.CancelFunc
+
+	// streaming
+	Streaming      bool
+	Stream         *model.StreamingMessage
+	PartialMessage string
 }
 
 func NewAgent() *Agent {
