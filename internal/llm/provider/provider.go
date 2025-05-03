@@ -1,7 +1,11 @@
 package provider
 
-import "mark/internal/model"
+import (
+	"context"
+
+	"mark/internal/model"
+)
 
 type Provider interface {
-	CompleteStreaming(c *model.Thread, s *model.StreamingMessage) error
+	CompleteStreaming(ctx context.Context, c *model.Thread, s *model.StreamingMessage) error
 }

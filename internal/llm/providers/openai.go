@@ -1,6 +1,9 @@
 package providers
 
 import (
+	"context"
+	"log/slog"
+
 	"mark/internal/model"
 
 	"github.com/openai/openai-go"
@@ -17,8 +20,9 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // CompleteStreaming sends a list of messages to the OpenAI API and streams the response
-func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage) error {
-	ctx := s.Ctx
+func (a *OpenAI) CompleteStreaming(ctx context.Context, c *model.Thread, s *model.StreamingMessage) error {
+	slog.Info("Starting streaming completion")
+
 	pch := s.Chunks
 	ch := s.Reply
 
@@ -63,10 +67,15 @@ func (a *OpenAI) CompleteStreaming(c *model.Thread, s *model.StreamingMessage) e
 	}
 
 	if err := stream.Err(); err != nil {
-		return err
+		if err == context.Canceled {
+			slog.Info("Streaming canceled")
+			return nil
+		}
 	}
 
 	response := acc.Choices[0].Message.Content
 	ch <- response
+
+	slog.Info("Streaming finished")
 	return nil
 }

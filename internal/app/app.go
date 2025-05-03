@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"slices"
 
 	"mark/internal/db"
 	"mark/internal/llm"
@@ -199,10 +198,16 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.newThread()
 			inputHandled = true
 
-		case "ctrl+c":
+			cmd := cancelStreaming(m.agent)
 			m.cancelStreaming()
+			cmds = append(cmds, cmd)
+
+		case "ctrl+c":
 			inputHandled = true
 
+			cmd := cancelStreaming(m.agent)
+			m.cancelStreaming()
+			cmds = append(cmds, cmd)
 		}
 	}
 
@@ -253,17 +258,12 @@ func (m *App) focusPrev() {
 	}
 }
 
-func (m *App) startStreaming() {
-	m.stream = model.NewStreamingMessage()
-	m.streaming = true
-}
-
 func (m *App) cancelStreaming() {
-	if m.stream != nil {
-		m.stream.Cancel()
+	if m.stream == nil {
+		return
 	}
-	m.stream = nil
 
+	m.stream = nil
 	m.streaming = false
 
 	// Add the partial message to the chat history
@@ -344,8 +344,6 @@ func (m *App) processThreadView(msg tea.Msg) tea.Cmd {
 
 // newThread starts a new thread
 func (m *App) newThread() {
-	m.cancelStreaming()
-
 	m.thread = model.MakeThread()
 
 	m.input.Reset()
@@ -416,45 +414,6 @@ func (m *App) renderThreadList() {
 	m.threadList.SetContent(content)
 }
 
-func (m *App) saveThread() tea.Cmd {
-	return func() tea.Msg {
-		err := m.db.SaveThread(m.thread)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return m.loadThreads()()
-	}
-}
-
-func (m *App) loadSelectedThread() tea.Cmd {
-	if len(m.threadListEntries) == 0 {
-		return nil
-	}
-
-	selectedEntry := m.threadListEntries[m.threadListCursor]
-
-	return func() tea.Msg {
-		thread, err := m.db.LoadThread(selectedEntry.ID)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return threadMsg{thread}
-	}
-}
-
-func (m *App) loadThreads() tea.Cmd {
-	return func() tea.Msg {
-		threads, err := m.db.ListThreads()
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return threadEntriesMsg(threads)
-	}
-}
-
 func (m *App) submitMessage() tea.Cmd {
 	m.cancelStreaming()
 
@@ -464,72 +423,14 @@ func (m *App) submitMessage() tea.Cmd {
 		m.input.Reset()
 	}
 
-	// maybe update the prompt here
-
-	m.startStreaming()
+	m.stream = model.NewStreamingMessage()
+	m.streaming = true
 
 	cmds := []tea.Cmd{
 		complete(m),      // call completions API
 		processStream(m), // start receiving partial message
 	}
 	return tea.Batch(cmds...)
-}
-
-func (m *App) deleteSelectedThread() tea.Cmd {
-	if len(m.threadListEntries) == 0 {
-		return nil
-	}
-
-	selectedEntryID := m.threadListEntries[m.threadListCursor].ID
-
-	// Remove the thread from the list of entries
-	for i, entry := range m.threadListEntries {
-		if entry.ID == selectedEntryID {
-			m.threadListEntries = slices.Delete(m.threadListEntries, i, i+1)
-			break
-		}
-	}
-
-	// Ensure the cursor is in a valid position
-	if len(m.threadListEntries) == 0 {
-		m.threadListCursor = 0
-	} else {
-		m.threadListCursor = util.Clamp(m.threadListCursor, 0, len(m.threadListEntries)-1)
-	}
-
-	m.renderActiveThread()
-	m.renderThreadList()
-
-	return func() tea.Msg {
-		err := m.db.DeleteThread(selectedEntryID)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return nil
-	}
-}
-
-func complete(m *App) tea.Cmd {
-	return func() tea.Msg {
-		err := m.agent.CompleteStreaming(&m.thread, m.stream)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return nil
-	}
-}
-
-func processStream(m *App) tea.Cmd {
-	return func() tea.Msg {
-		select {
-		case v := <-m.stream.Reply:
-			return replyMessage(v)
-		case v := <-m.stream.Chunks:
-			return partialMessage(v)
-		}
-	}
 }
 
 func (m *App) viewThreadInEditor() (tea.Cmd, error) {

@@ -4,6 +4,8 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"os"
 
 	"mark/internal/app"
@@ -18,6 +20,8 @@ var rootCmd = &cobra.Command{
 	Use:   "mark",
 	Short: "Mark TUI Assistant",
 	Run: func(cmd *cobra.Command, args []string) {
+		setupLogging()
+
 		program, err := app.NewProgram()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -26,18 +30,32 @@ var rootCmd = &cobra.Command{
 
 		err = program.Run()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error: %+v\n", err)
 			os.Exit(1)
 		}
 	},
 }
 
-// Execute executes the root command.
+// Execute the root command.
 // This is called by main.main().
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
+	}
+}
+
+// setupLogging sets up logging to a file if the DEBUG environment variable is set.
+func setupLogging() {
+	if len(os.Getenv("DEBUG")) > 0 {
+		file, err := os.OpenFile("debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error opening log file: %v\n", err)
+			os.Exit(1)
+		}
+		log.SetOutput(file)
+	} else {
+		log.SetOutput(io.Discard)
 	}
 }
 
@@ -50,5 +68,5 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
