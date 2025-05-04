@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"mark/internal/llm/provider"
 	"mark/internal/model"
 
 	"github.com/openai/openai-go"
@@ -20,62 +21,62 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // CompleteStreaming sends a list of messages to the OpenAI API and streams the response
-func (a *OpenAI) CompleteStreaming(ctx context.Context, c model.Thread, s *model.StreamingMessage) error {
+func (a *OpenAI) CompleteStreaming(ctx context.Context, c model.Thread) (<-chan provider.StreamingEvent, error) {
 	slog.Info("Starting streaming completion")
 
-	pch := s.Chunks
-	ch := s.Reply
+	eventCh := make(chan provider.StreamingEvent)
 
-	defer close(pch)
-	defer close(ch)
+	go func() {
+		// Initialize the chat messages
+		var chatMessages []openai.ChatCompletionMessageParamUnion
 
-	// Initialize the chat messages
-	var chatMessages []openai.ChatCompletionMessageParamUnion
-
-	// Add the messages
-	for _, msg := range c.Messages {
-		if msg.Role == model.RoleUser {
-			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
-		} else {
-			chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))
-		}
-	}
-
-	stream := a.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
-		Messages: chatMessages,
-		Seed:     openai.Int(1),
-		Model:    openai.ChatModelGPT4o,
-	})
-
-	acc := openai.ChatCompletionAccumulator{}
-
-	for stream.Next() {
-		chunk := stream.Current()
-		acc.AddChunk(chunk)
-
-		if refusal, ok := acc.JustFinishedRefusal(); ok {
-			println("Refusal stream finished:", refusal)
-		}
-
-		// it's best to use chunks after handling JustFinished events
-		if len(chunk.Choices) > 0 {
-			content := chunk.Choices[0].Delta.Content
-			if content != "" {
-				pch <- chunk.Choices[0].Delta.Content
+		// Add the messages
+		for _, msg := range c.Messages {
+			if msg.Role == model.RoleUser {
+				chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
+			} else {
+				chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))
 			}
 		}
-	}
 
-	if err := stream.Err(); err != nil {
-		if err == context.Canceled {
-			slog.Info("Streaming canceled")
-			return nil
+		stream := a.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
+			Messages: chatMessages,
+			Seed:     openai.Int(1),
+			Model:    openai.ChatModelGPT4o,
+		})
+
+		acc := openai.ChatCompletionAccumulator{}
+
+		for stream.Next() {
+			chunk := stream.Current()
+			acc.AddChunk(chunk)
+
+			if refusal, ok := acc.JustFinishedRefusal(); ok {
+				println("Refusal stream finished:", refusal)
+			}
+
+			// it's best to use chunks after handling JustFinished events
+			if len(chunk.Choices) > 0 {
+				content := chunk.Choices[0].Delta.Content
+				if content != "" {
+					eventCh <- provider.StreamingEventChunk{Chunk: content}
+				}
+			}
 		}
-	}
 
-	response := acc.Choices[0].Message.Content
-	ch <- response
+		if err := stream.Err(); err != nil {
+			if err == context.Canceled {
+				slog.Info("Streaming canceled")
+				eventCh <- provider.StreamingCancelled{}
+				return
+			}
+		}
 
-	slog.Info("Streaming finished")
-	return nil
+		response := acc.Choices[0].Message.Content
+		eventCh <- provider.StreamingEventEnd{Message: response}
+
+		slog.Info("Streaming finished")
+	}()
+
+	return eventCh, nil
 }

@@ -44,8 +44,12 @@ func (p *Program) Run() error {
 		return err
 	}
 
-	// handle errors in the final model after bubbletea program exits
 	app := m.(App)
+
+	// close the events channel
+	close(app.events)
+
+	// handle errors in the final model after bubbletea program exits
 	err = app.Err()
 	if err != nil {
 		return err

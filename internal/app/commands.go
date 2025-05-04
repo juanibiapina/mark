@@ -3,13 +3,12 @@ package app
 import (
 	"slices"
 
-	"mark/internal/llm"
 	"mark/internal/util"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
 
-func cancelStreaming(agent *llm.Agent) tea.Cmd {
+func cancelStreaming(agent *Agent) tea.Cmd {
 	return func() tea.Msg {
 		agent.Cancel()
 
@@ -93,8 +92,6 @@ func (m *App) deleteSelectedThread() tea.Cmd {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.agent.Cancel()
-
 		err := m.agent.CompleteStreaming(m.thread)
 		if err != nil {
 			return errMsg{err}
@@ -104,13 +101,9 @@ func complete(m *App) tea.Cmd {
 	}
 }
 
-func processStream(m *App) tea.Cmd {
+func processEvents(events chan tea.Msg) tea.Cmd {
 	return func() tea.Msg {
-		select {
-		case v := <-m.agent.Stream.Reply:
-			return replyMessage(v)
-		case v := <-m.agent.Stream.Chunks:
-			return partialMessage(v)
-		}
+		v := <-events
+		return eventMsg{v}
 	}
 }

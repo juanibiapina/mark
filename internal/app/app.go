@@ -8,7 +8,6 @@ import (
 	"path"
 
 	"mark/internal/db"
-	"mark/internal/llm"
 	"mark/internal/model"
 	"mark/internal/util"
 
@@ -34,6 +33,7 @@ const (
 )
 
 type (
+	eventMsg         struct{ msg tea.Msg }
 	threadEntriesMsg []model.ThreadEntry
 	partialMessage   string
 	replyMessage     string
@@ -73,8 +73,11 @@ type App struct {
 	threadListCursor int
 
 	// clients
-	agent *llm.Agent
+	agent *Agent
 	db    db.Database
+
+	// events
+	events chan tea.Msg
 
 	// error
 	err error
@@ -97,12 +100,16 @@ func MakeApp(cwd string) (App, error) {
 	// init active thread
 	activeThread := model.MakeThread()
 
+	// init events channel
+	events := make(chan tea.Msg)
+
 	// init app
 	app := App{
 		db:     db.MakeDatabase(dbdir),
-		agent:  llm.NewAgent(),
+		agent:  NewAgent(events),
 		input:  input,
 		thread: activeThread,
+		events: events,
 	}
 
 	return app, nil
@@ -114,15 +121,17 @@ func (m App) Err() error {
 
 // Init returns an initial command.
 func (m App) Init() tea.Cmd {
-	return m.loadThreads()
+	return tea.Batch(m.loadThreads(), processEvents(m.events))
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var inputHandled bool // whether the key event was handled and shouldn't be passed to the input view
 
-	switch msg := msg.(type) {
+	msg, cmd := m.processEventMessage(msg)
+	cmds = append(cmds, cmd)
 
+	switch msg := msg.(type) {
 	case errMsg:
 		m.err = msg.err
 		return m, tea.Quit
@@ -131,14 +140,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.handleWindowSize(msg.Width, msg.Height)
 
 	case partialMessage:
-		// Ignore message if streaming has been cancelled
 		if !m.agent.Streaming {
 			return m, nil
 		}
 
 		m.agent.PartialMessage += string(msg)
-
-		cmds = append(cmds, processStream(&m))
 
 	case replyMessage:
 		m.agent.Streaming = false
@@ -237,6 +243,17 @@ func (m App) View() string {
 	}
 
 	return m.windowView()
+}
+
+// processEventMessage checks if the message is an event message, so we can restart the
+// event processing go routine. Returns the message to be processed normally.
+func (m App) processEventMessage(msg tea.Msg) (tea.Msg, tea.Cmd) {
+	switch msg := msg.(type) {
+	case eventMsg:
+		return msg.msg, processEvents(m.events)
+	default:
+		return msg, nil
+	}
 }
 
 func (m *App) focusNext() {
@@ -421,11 +438,7 @@ func (m *App) submitMessage() tea.Cmd {
 	m.agent.Stream = model.NewStreamingMessage()
 	m.agent.Streaming = true
 
-	cmds := []tea.Cmd{
-		complete(m),      // call completions API
-		processStream(m), // start receiving partial message
-	}
-	return tea.Batch(cmds...)
+	return complete(m)
 }
 
 func (m *App) viewThreadInEditor() (tea.Cmd, error) {

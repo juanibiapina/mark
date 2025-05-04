@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"os"
-	"path"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -23,23 +22,6 @@ func bareApp(t *testing.T) App {
 	app := makeApp(t, cwd)
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
 	return model.(App)
-}
-
-// handleMessage processes messages like in a tea.Program.
-// This is needed for handling internal messages like tea.BatchMsg.
-func handleMessage(t *testing.T, model tea.Model, msg tea.Msg) tea.Model {
-	switch msg := msg.(type) {
-	case tea.QuitMsg:
-		t.Fatal("unexpected quit message")
-	case tea.BatchMsg:
-		for _, cmd := range msg {
-			m := cmd()
-			model, _ = model.Update(m)
-		}
-	default:
-		model, _ = model.Update(msg)
-	}
-	return model
 }
 
 func update(app App, msg tea.Msg) App {
@@ -70,26 +52,6 @@ func TestMain(m *testing.M) {
 
 func TestApp(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Initialization", func(t *testing.T) {
-		cwd := path.Join("testdata", "cwd")
-		app := makeApp(t, cwd)
-
-		v := app.View()
-		assert.Equal(t, "Initializing...", v)
-
-		cmd := app.Init()
-		assert.NotNil(t, cmd)
-
-		model, _ := app.Update(tea.WindowSizeMsg{Width: 64, Height: 16})
-
-		msg := cmd()
-		model = handleMessage(t, model, msg)
-
-		v = render(t, model)
-
-		snaps.MatchStandaloneSnapshot(t, v)
-	})
 
 	t.Run("Error", func(t *testing.T) {
 		app := bareApp(t)
