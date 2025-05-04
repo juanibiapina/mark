@@ -21,7 +21,6 @@ type Agent struct {
 
 	// streaming
 	Streaming      bool
-	Stream         *model.StreamingMessage
 	PartialMessage string
 }
 

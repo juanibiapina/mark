@@ -271,11 +271,10 @@ func (m *App) focusPrev() {
 }
 
 func (m *App) cancelStreaming() {
-	if m.agent.Stream == nil {
+	if !m.agent.Streaming {
 		return
 	}
 
-	m.agent.Stream = nil
 	m.agent.Streaming = false
 
 	// Add the partial message to the chat history
@@ -435,7 +434,6 @@ func (m *App) submitMessage() tea.Cmd {
 		m.input.Reset()
 	}
 
-	m.agent.Stream = model.NewStreamingMessage()
 	m.agent.Streaming = true
 
 	return complete(m)
