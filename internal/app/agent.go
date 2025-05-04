@@ -34,6 +34,8 @@ func NewAgent(events chan tea.Msg) *Agent {
 func (self *Agent) CompleteStreaming(c model.Thread) error {
 	self.Cancel()
 
+	self.Streaming = true
+
 	ctx, cancel := context.WithCancel(context.Background())
 	self.cancel = cancel
 
@@ -52,6 +54,9 @@ func (self *Agent) CompleteStreaming(c model.Thread) error {
 			self.events <- errMsg{e.Error}
 
 		case provider.StreamingEventEnd:
+			slog.Info("Received end event")
+			self.Streaming = false
+			self.PartialMessage = ""
 			self.events <- replyMessage(e.Message)
 		}
 	}

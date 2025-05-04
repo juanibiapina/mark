@@ -140,15 +140,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.handleWindowSize(msg.Width, msg.Height)
 
 	case partialMessage:
-		if !m.agent.Streaming {
-			return m, nil
-		}
-
 		m.agent.PartialMessage += string(msg)
 
 	case replyMessage:
-		m.agent.Streaming = false
-		m.agent.PartialMessage = ""
 		m.thread.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
 		cmd := m.saveThread()
 		cmds = append(cmds, cmd)
@@ -433,8 +427,6 @@ func (m *App) submitMessage() tea.Cmd {
 		m.thread.AddMessage(model.Message{Role: model.RoleUser, Content: v})
 		m.input.Reset()
 	}
-
-	m.agent.Streaming = true
 
 	return complete(m)
 }
