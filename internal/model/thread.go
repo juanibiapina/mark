@@ -8,10 +8,12 @@ type ThreadEntry struct {
 }
 
 type Thread struct {
-	ID             string    `json:"id"`
-	Messages       []Message `json:"messages"`
-	PartialMessage string    `json:"partial_message"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID        string    `json:"id"`
+	Messages  []Message `json:"messages"`
+	CreatedAt time.Time `json:"created_at"`
+
+	streaming      bool
+	partialMessage string
 }
 
 func MakeThread() Thread {
@@ -28,24 +30,40 @@ func (thread *Thread) AddMessage(m Message) {
 }
 
 func (thread *Thread) AppendChunk(chunk string) {
-	thread.PartialMessage += chunk
+	thread.partialMessage += chunk
 }
 
 func (thread *Thread) FinishStreaming(msg string) {
 	thread.AddMessage(Message{
-		Role: RoleAssistant,
+		Role:    RoleAssistant,
 		Content: msg,
 	})
-	thread.PartialMessage = ""
+	thread.partialMessage = ""
+}
+
+func (thread *Thread) IsStreaming() bool {
+	return thread.streaming
+}
+
+func (thread *Thread) StartStreaming() {
+	thread.streaming = true
 }
 
 func (thread *Thread) CancelStreaming() {
-	if thread.PartialMessage == "" {
+	if !thread.streaming {
+		return
+	}
+	thread.streaming = false
+	if thread.partialMessage == "" {
 		return
 	}
 	thread.AddMessage(Message{
-		Role: RoleAssistant,
-		Content: thread.PartialMessage,
+		Role:    RoleAssistant,
+		Content: thread.partialMessage,
 	})
-	thread.PartialMessage = ""
+	thread.partialMessage = ""
+}
+
+func (thread *Thread) PartialMessage() string {
+	return thread.partialMessage
 }

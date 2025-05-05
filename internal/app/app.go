@@ -140,7 +140,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.handleWindowSize(msg.Width, msg.Height)
 
 	case streamChunkReceived:
-		m.thread.AppendChunk(string(msg))
+		if m.thread.IsStreaming() {
+			m.thread.AppendChunk(string(msg))
+		}
 
 	case streamFinished:
 		m.thread.FinishStreaming(string(msg))
@@ -368,8 +370,8 @@ func (m *App) renderActiveThread() {
 		content += msg
 	}
 
-	if m.thread.PartialMessage != "" {
-		c, err := renderer.Render(m.thread.PartialMessage)
+	if m.thread.IsStreaming() {
+		c, err := renderer.Render(m.thread.PartialMessage())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -410,6 +412,8 @@ func (m *App) submitMessage() tea.Cmd {
 		m.thread.AddMessage(model.Message{Role: model.RoleUser, Content: v})
 		m.input.Reset()
 	}
+
+	m.thread.StartStreaming()
 
 	return complete(m)
 }
