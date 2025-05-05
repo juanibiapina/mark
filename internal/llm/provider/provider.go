@@ -8,17 +8,15 @@ import (
 
 type StreamingEvent any
 
-type StreamingEventChunk struct {
+type StreamEventChunk struct {
 	Chunk string
 }
 
-type StreamingEventError struct {
+type StreamEventError struct {
 	Error error
 }
 
-type StreamingCancelled struct {}
-
-type StreamingEventEnd struct {
+type StreamEventEnd struct {
 	Message string
 }
 

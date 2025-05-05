@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"mark/internal/logging"
 	"mark/internal/llm/provider"
 	"mark/internal/llm/providers"
 	"mark/internal/model"
@@ -13,60 +14,50 @@ import (
 
 type Agent struct {
 	provider provider.Provider
-
-	cancel context.CancelFunc
-
-	// events is a channel for sending messages to the main program
-	events chan tea.Msg
-
-	// streaming
-	Streaming      bool
-	PartialMessage string
+	cancel context.CancelFunc // cancels the current streaming request
+	events chan tea.Msg // sends tea.Msg to the main app
+	logger *slog.Logger
 }
 
 func NewAgent(events chan tea.Msg) *Agent {
 	return &Agent{
 		provider: providers.NewOpenAIClient(),
 		events:   events,
+		logger:   logging.NewLogger("agent"),
 	}
 }
 
-func (self *Agent) CompleteStreaming(c model.Thread) error {
-	self.Cancel()
-
-	self.Streaming = true
-
+func (agent *Agent) CompleteStreaming(thread model.Thread) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	self.cancel = cancel
+	agent.cancel = cancel
 
-	streamingEvents, err := self.provider.CompleteStreaming(ctx, c)
+	streamingEvents, err := agent.provider.CompleteStreaming(ctx, thread)
 	if err != nil {
 		return err
 	}
 
 	for streamingEvent := range streamingEvents {
 		switch e := streamingEvent.(type) {
-		case provider.StreamingEventChunk:
-			slog.Info("Received chunk", slog.String("chunk", e.Chunk)) // TODO should be debug
-			self.events <- partialMessage(e.Chunk)
+		case provider.StreamEventChunk:
+			agent.logger.Info("Received StreamEventChunk", slog.String("chunk", e.Chunk)) // TODO should be debug
+			agent.events <- streamChunkReceived(e.Chunk)
 
-		case provider.StreamingEventError:
-			self.events <- errMsg{e.Error}
+		case provider.StreamEventError:
+			agent.logger.Error("Received StreamEventError", slog.String("error", e.Error.Error()))
+			agent.events <- errMsg{err: e.Error}
 
-		case provider.StreamingEventEnd:
-			slog.Info("Received end event")
-			self.Streaming = false
-			self.PartialMessage = ""
-			self.events <- replyMessage(e.Message)
+		case provider.StreamEventEnd:
+			agent.logger.Info("Received StreamEventEnd")
+			agent.events <- streamFinished(e.Message)
 		}
 	}
 
 	return nil
 }
 
-func (self *Agent) Cancel() {
-	if self.cancel != nil {
-		self.cancel()
-		self.cancel = nil
+func (agent *Agent) Cancel() {
+	if agent.cancel != nil {
+		agent.cancel()
+		agent.cancel = nil
 	}
 }

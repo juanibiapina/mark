@@ -8,9 +8,10 @@ type ThreadEntry struct {
 }
 
 type Thread struct {
-	ID        string    `json:"id"`
-	Messages  []Message `json:"messages"`
-	CreatedAt time.Time `json:"created_at"`
+	ID             string    `json:"id"`
+	Messages       []Message `json:"messages"`
+	PartialMessage string    `json:"partial_message"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 func MakeThread() Thread {
@@ -22,6 +23,29 @@ func MakeThread() Thread {
 	}
 }
 
-func (c *Thread) AddMessage(m Message) {
-	c.Messages = append(c.Messages, m)
+func (thread *Thread) AddMessage(m Message) {
+	thread.Messages = append(thread.Messages, m)
+}
+
+func (thread *Thread) AppendChunk(chunk string) {
+	thread.PartialMessage += chunk
+}
+
+func (thread *Thread) FinishStreaming(msg string) {
+	thread.AddMessage(Message{
+		Role: RoleAssistant,
+		Content: msg,
+	})
+	thread.PartialMessage = ""
+}
+
+func (thread *Thread) CancelStreaming() {
+	if thread.PartialMessage == "" {
+		return
+	}
+	thread.AddMessage(Message{
+		Role: RoleAssistant,
+		Content: thread.PartialMessage,
+	})
+	thread.PartialMessage = ""
 }

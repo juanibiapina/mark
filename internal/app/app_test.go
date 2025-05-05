@@ -69,7 +69,7 @@ func TestApp(t *testing.T) {
 		t.Run("replyMessage", func(t *testing.T) {
 			app := bareApp(t)
 
-			model, cmd := app.Update(replyMessage("test"))
+			model, cmd := app.Update(streamFinished("test"))
 			assert.NotNil(t, cmd)
 
 			v := render(t, model)

@@ -33,12 +33,12 @@ const (
 )
 
 type (
-	eventMsg         struct{ msg tea.Msg }
-	threadEntriesMsg []model.ThreadEntry
-	partialMessage   string
-	replyMessage     string
-	threadMsg        struct{ thread model.Thread }
-	errMsg           struct{ err error }
+	eventMsg            struct{ msg tea.Msg }
+	threadEntriesMsg    []model.ThreadEntry
+	streamChunkReceived string
+	streamFinished      string
+	threadMsg           struct{ thread model.Thread }
+	errMsg              struct{ err error }
 )
 
 var (
@@ -139,11 +139,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.handleWindowSize(msg.Width, msg.Height)
 
-	case partialMessage:
-		m.agent.PartialMessage += string(msg)
+	case streamChunkReceived:
+		m.thread.AppendChunk(string(msg))
 
-	case replyMessage:
-		m.thread.AddMessage(model.Message{Role: model.RoleAssistant, Content: string(msg)})
+	case streamFinished:
+		m.thread.FinishStreaming(string(msg))
 		cmd := m.saveThread()
 		cmds = append(cmds, cmd)
 
@@ -194,14 +194,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			inputHandled = true
 
 			cmd := cancelStreaming(m.agent)
-			m.cancelStreaming()
 			cmds = append(cmds, cmd)
 
 		case "ctrl+c":
 			inputHandled = true
 
 			cmd := cancelStreaming(m.agent)
-			m.cancelStreaming()
 			cmds = append(cmds, cmd)
 		}
 	}
@@ -262,19 +260,6 @@ func (m *App) focusPrev() {
 	if m.focused < 0 {
 		m.focused = FocusedEndMarker - 1
 	}
-}
-
-func (m *App) cancelStreaming() {
-	if !m.agent.Streaming {
-		return
-	}
-
-	m.agent.Streaming = false
-
-	// Add the partial message to the chat history
-	m.thread.AddMessage(model.Message{Role: model.RoleAssistant, Content: m.agent.PartialMessage})
-
-	m.agent.PartialMessage = ""
 }
 
 func (m *App) processInputView(msg tea.Msg) tea.Cmd {
@@ -357,8 +342,6 @@ func (m *App) newThread() {
 }
 
 func (m *App) renderActiveThread() {
-	messages := m.thread.Messages
-
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
@@ -371,7 +354,7 @@ func (m *App) renderActiveThread() {
 
 	var content string
 
-	for _, message := range messages {
+	for _, message := range m.thread.Messages {
 		var msg string
 		if message.Role == model.RoleUser {
 			msg = lipgloss.NewStyle().Width(m.threadViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", message.Content))
@@ -385,8 +368,8 @@ func (m *App) renderActiveThread() {
 		content += msg
 	}
 
-	if m.agent.Streaming {
-		c, err := renderer.Render(m.agent.PartialMessage)
+	if m.thread.PartialMessage != "" {
+		c, err := renderer.Render(m.thread.PartialMessage)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -420,7 +403,7 @@ func (m *App) renderThreadList() {
 }
 
 func (m *App) submitMessage() tea.Cmd {
-	m.cancelStreaming()
+	m.thread.CancelStreaming()
 
 	v := m.input.Value()
 	if v != "" {

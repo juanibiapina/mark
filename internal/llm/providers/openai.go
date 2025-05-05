@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"mark/internal/llm/provider"
+	"mark/internal/logging"
 	"mark/internal/model"
 
 	"github.com/openai/openai-go"
@@ -12,17 +13,19 @@ import (
 
 type OpenAI struct {
 	client openai.Client
+	logger *slog.Logger
 }
 
 func NewOpenAIClient() *OpenAI {
 	return &OpenAI{
 		client: openai.NewClient(),
+		logger: logging.NewLogger("provider-openai"),
 	}
 }
 
 // CompleteStreaming sends a list of messages to the OpenAI API and streams the response
 func (a *OpenAI) CompleteStreaming(ctx context.Context, c model.Thread) (<-chan provider.StreamingEvent, error) {
-	slog.Info("Starting streaming completion")
+	a.logger.Info("Starting streaming completion")
 
 	eventCh := make(chan provider.StreamingEvent)
 
@@ -52,30 +55,33 @@ func (a *OpenAI) CompleteStreaming(ctx context.Context, c model.Thread) (<-chan 
 			acc.AddChunk(chunk)
 
 			if refusal, ok := acc.JustFinishedRefusal(); ok {
-				println("Refusal stream finished:", refusal)
+				a.logger.Info("Stream refusal", slog.String("refusal", refusal))
 			}
 
 			// it's best to use chunks after handling JustFinished events
 			if len(chunk.Choices) > 0 {
 				content := chunk.Choices[0].Delta.Content
 				if content != "" {
-					eventCh <- provider.StreamingEventChunk{Chunk: content}
+					eventCh <- provider.StreamEventChunk{Chunk: content}
 				}
 			}
 		}
 
 		if err := stream.Err(); err != nil {
 			if err == context.Canceled {
-				slog.Info("Streaming canceled")
-				eventCh <- provider.StreamingCancelled{}
+				a.logger.Info("Streaming canceled")
+				return
+			} else {
+				a.logger.Error("Streaming error", slog.String("error", err.Error()))
+				eventCh <- provider.StreamEventError{Error: err}
 				return
 			}
 		}
 
 		response := acc.Choices[0].Message.Content
-		eventCh <- provider.StreamingEventEnd{Message: response}
+		eventCh <- provider.StreamEventEnd{Message: response}
 
-		slog.Info("Streaming finished")
+		a.logger.Info("Streaming finished")
 	}()
 
 	return eventCh, nil
