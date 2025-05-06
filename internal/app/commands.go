@@ -32,9 +32,13 @@ func (m *App) loadSelectedThread() tea.Cmd {
 		return nil
 	}
 
+	m.thread.CancelStreaming()
+
 	selectedEntry := m.threadListEntries[m.threadListCursor]
 
 	return func() tea.Msg {
+		m.agent.Cancel()
+
 		thread, err := m.db.LoadThread(selectedEntry.ID)
 		if err != nil {
 			return errMsg{err}
