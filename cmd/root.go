@@ -4,11 +4,10 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"log"
 	"os"
 
 	"mark/internal/app"
+	"mark/internal/logging"
 
 	"github.com/spf13/cobra"
 )
@@ -20,7 +19,7 @@ var rootCmd = &cobra.Command{
 	Use:   "mark",
 	Short: "Mark TUI Assistant",
 	Run: func(cmd *cobra.Command, args []string) {
-		setupLogging()
+		logging.Setup()
 
 		program, err := app.NewProgram()
 		if err != nil {
@@ -42,20 +41,6 @@ func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
-	}
-}
-
-// setupLogging sets up logging to a file if the DEBUG environment variable is set.
-func setupLogging() {
-	if len(os.Getenv("DEBUG")) > 0 {
-		file, err := os.OpenFile("debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error opening log file: %v\n", err)
-			os.Exit(1)
-		}
-		log.SetOutput(file)
-	} else {
-		log.SetOutput(io.Discard)
 	}
 }
 
