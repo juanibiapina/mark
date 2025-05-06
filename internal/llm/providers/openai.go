@@ -24,7 +24,7 @@ func NewOpenAIClient() *OpenAI {
 }
 
 // CompleteStreaming sends a list of messages to the OpenAI API and streams the response
-func (a *OpenAI) CompleteStreaming(ctx context.Context, c model.Thread) (<-chan provider.StreamingEvent, error) {
+func (a *OpenAI) CompleteStreaming(ctx context.Context, session model.Session) (<-chan provider.StreamingEvent, error) {
 	a.logger.Info("Starting streaming completion")
 
 	eventCh := make(chan provider.StreamingEvent)
@@ -34,7 +34,7 @@ func (a *OpenAI) CompleteStreaming(ctx context.Context, c model.Thread) (<-chan 
 		var chatMessages []openai.ChatCompletionMessageParamUnion
 
 		// Add the messages
-		for _, msg := range c.Messages {
+		for _, msg := range session.Messages {
 			if msg.Role == model.RoleUser {
 				chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
 			} else {

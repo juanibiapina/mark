@@ -21,7 +21,7 @@ type Focused int
 
 const (
 	FocusedInput Focused = iota
-	FocusedThread
+	FocusedMessages
 	FocusedEndMarker // used to determine the number of focusable items for cycling
 )
 
@@ -33,7 +33,6 @@ type (
 	eventMsg            struct{ msg tea.Msg }
 	streamChunkReceived string
 	streamFinished      string
-	threadMsg           struct{ thread model.Thread }
 	errMsg              struct{ err error }
 )
 
@@ -51,8 +50,11 @@ var (
 )
 
 type App struct {
-	// models
-	thread            model.Thread
+	session model.Session
+
+	agent  *Agent
+	events chan tea.Msg
+	err    error
 
 	// ui
 	uiReady         bool
@@ -61,13 +63,8 @@ type App struct {
 	mainPanelHeight int
 	sideBarWidth    int
 
-	input          textarea.Model
-	threadViewport viewport.Model
-
-	// clients
-	agent  *Agent
-	events chan tea.Msg
-	err    error
+	input            textarea.Model
+	messagesViewport viewport.Model
 }
 
 func MakeApp(cwd string) (App, error) {
@@ -81,18 +78,15 @@ func MakeApp(cwd string) (App, error) {
 	input.ShowLineNumbers = false
 	input.KeyMap.InsertNewline.SetEnabled(false)
 
-	// init active thread
-	activeThread := model.MakeThread()
-
 	// init events channel
 	events := make(chan tea.Msg)
 
 	// init app
 	app := App{
-		agent:  NewAgent(events),
-		input:  input,
-		thread: activeThread,
-		events: events,
+		agent:   NewAgent(events),
+		input:   input,
+		session: model.MakeSession(),
+		events:  events,
 	}
 
 	return app, nil
@@ -122,15 +116,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.handleWindowSize(msg.Width, msg.Height)
 
 	case streamChunkReceived:
-		if m.thread.IsStreaming() {
-			m.thread.AppendChunk(string(msg))
+		if m.session.IsStreaming() {
+			m.session.AppendChunk(string(msg))
 		}
 
 	case streamFinished:
-		m.thread.FinishStreaming(string(msg))
-
-	case threadMsg:
-		m.thread = msg.thread
+		m.session.FinishStreaming(string(msg))
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -153,7 +144,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 
 		case "ctrl+n":
-			m.newThread()
+			m.newSession()
 			inputHandled = true
 
 			cmd := cancelStreaming(m.agent)
@@ -174,14 +165,14 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 
-			if m.focused == FocusedThread {
-				cmd := m.processThreadView(msg)
+			if m.focused == FocusedMessages {
+				cmd := m.processMessagesView(msg)
 				cmds = append(cmds, cmd)
 			}
 		}
 	}
 
-	m.renderActiveThread()
+	m.renderMessagesView()
 
 	return m, tea.Batch(cmds...)
 }
@@ -225,12 +216,12 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	return cmd
 }
 
-func (m *App) processThreadView(msg tea.Msg) tea.Cmd {
+func (m *App) processMessagesView(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "e":
-			cmd, err := m.viewThreadInEditor()
+			cmd, err := m.viewMessagesInEditor()
 			if err != nil {
 				m.err = err
 				return tea.Quit
@@ -239,7 +230,7 @@ func (m *App) processThreadView(msg tea.Msg) tea.Cmd {
 			return cmd
 		default:
 			var cmd tea.Cmd
-			m.threadViewport, cmd = m.threadViewport.Update(msg)
+			m.messagesViewport, cmd = m.messagesViewport.Update(msg)
 			return cmd
 		}
 	}
@@ -247,20 +238,19 @@ func (m *App) processThreadView(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-// newThread starts a new thread
-func (m *App) newThread() {
-	m.thread = model.MakeThread()
+func (m *App) newSession() {
+	m.session = model.MakeSession()
 
 	m.input.Reset()
 
 	m.focused = FocusedInput
 }
 
-func (m *App) renderActiveThread() {
+func (m *App) renderMessagesView() {
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
-		glamour.WithWordWrap(m.threadViewport.Width()-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
+		glamour.WithWordWrap(m.messagesViewport.Width()-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
 	)
 	if err != nil {
 		m.err = err
@@ -269,10 +259,10 @@ func (m *App) renderActiveThread() {
 
 	var content string
 
-	for _, message := range m.thread.Messages {
+	for _, message := range m.session.Messages {
 		var msg string
 		if message.Role == model.RoleUser {
-			msg = lipgloss.NewStyle().Width(m.threadViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", message.Content))
+			msg = lipgloss.NewStyle().Width(m.messagesViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", message.Content))
 		} else {
 			msg, err = renderer.Render(message.Content)
 			if err != nil {
@@ -283,8 +273,8 @@ func (m *App) renderActiveThread() {
 		content += msg
 	}
 
-	if m.thread.IsStreaming() {
-		c, err := renderer.Render(m.thread.PartialMessage())
+	if m.session.IsStreaming() {
+		c, err := renderer.Render(m.session.PartialMessage())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -292,27 +282,27 @@ func (m *App) renderActiveThread() {
 		content += c
 	}
 
-	m.threadViewport.SetContent(content)
+	m.messagesViewport.SetContent(content)
 }
 
 func (m *App) submitMessage() tea.Cmd {
-	m.thread.CancelStreaming()
+	m.session.CancelStreaming()
 
 	v := m.input.Value()
 	if v != "" {
-		m.thread.AddMessage(model.Message{Role: model.RoleUser, Content: v})
+		m.session.AddMessage(model.Message{Role: model.RoleUser, Content: v})
 		m.input.Reset()
 	}
 
-	m.thread.StartStreaming()
+	m.session.StartStreaming()
 
 	return complete(m)
 }
 
-func (m *App) viewThreadInEditor() (tea.Cmd, error) {
+func (m *App) viewMessagesInEditor() (tea.Cmd, error) {
 	// build the content
 	var content string
-	for _, msg := range m.thread.Messages {
+	for _, msg := range m.session.Messages {
 		content += "---\n"
 		content += msg.Content + "\n"
 	}
@@ -327,7 +317,7 @@ func (m *App) viewThreadInEditor() (tea.Cmd, error) {
 		return nil, err
 	}
 
-	tmpFile := path.Join(tmpdir, "mark-thread")
+	tmpFile := path.Join(tmpdir, "mark-messages.md")
 	err = os.WriteFile(tmpFile, []byte(content), 0o644)
 	if err != nil {
 		return nil, err
@@ -352,10 +342,10 @@ func (m *App) windowView() string {
 
 func (m *App) mainView() string {
 	return util.RenderBorderWithTitle(
-		m.threadView(),
-		m.borderIfFocused(FocusedThread),
-		"Thread",
-		m.panelTitleStyleIfFocused(FocusedThread),
+		m.messagesView(),
+		m.borderIfFocused(FocusedMessages),
+		"Messages",
+		m.panelTitleStyleIfFocused(FocusedMessages),
 	)
 }
 
@@ -382,8 +372,8 @@ func (m *App) borderIfFocused(focused Focused) lipgloss.Style {
 	return borderStyle
 }
 
-func (m *App) threadView() string {
-	return m.threadViewport.View()
+func (m *App) messagesView() string {
+	return m.messagesViewport.View()
 }
 
 func (m *App) handleWindowSize(width, height int) {
@@ -395,8 +385,8 @@ func (m *App) handleWindowSize(width, height int) {
 	m.input.SetWidth(width - borderSize)
 	m.input.SetHeight(inputHeight - borderSize)
 
-	m.threadViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
-	m.threadViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
+	m.messagesViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
+	m.messagesViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
 
 	if !m.uiReady {
 		m.uiReady = true

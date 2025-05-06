@@ -27,11 +27,11 @@ func NewAgent(events chan tea.Msg) *Agent {
 	}
 }
 
-func (agent *Agent) CompleteStreaming(thread model.Thread) error {
+func (agent *Agent) CompleteStreaming(session model.Session) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	agent.cancel = cancel
 
-	streamingEvents, err := agent.provider.CompleteStreaming(ctx, thread)
+	streamingEvents, err := agent.provider.CompleteStreaming(ctx, session)
 	if err != nil {
 		return err
 	}

@@ -21,5 +21,5 @@ type StreamEventEnd struct {
 }
 
 type Provider interface {
-	CompleteStreaming(ctx context.Context, c model.Thread) (<-chan StreamingEvent, error)
+	CompleteStreaming(ctx context.Context, session model.Session) (<-chan StreamingEvent, error)
 }
