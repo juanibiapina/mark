@@ -23,26 +23,30 @@ func NewOpenAIClient() *OpenAI {
 	}
 }
 
+func convertMessages(messages []llm.Message) []openai.ChatCompletionMessageParamUnion {
+	var chatMessages []openai.ChatCompletionMessageParamUnion
+
+	for _, msg := range messages {
+		if msg.Role == llm.RoleUser {
+			chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
+		} else {
+			chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))
+		}
+	}
+
+	return chatMessages
+}
+
 func (a *OpenAI) CompleteStreaming(ctx context.Context, session llm.Session) (<-chan provider.StreamingEvent, error) {
 	a.logger.Info("Starting streaming completion")
 
 	eventCh := make(chan provider.StreamingEvent)
 
 	go func() {
-		// Initialize the chat messages
-		var chatMessages []openai.ChatCompletionMessageParamUnion
-
-		// Add the messages
-		for _, msg := range session.Messages {
-			if msg.Role == llm.RoleUser {
-				chatMessages = append(chatMessages, openai.UserMessage(msg.Content))
-			} else {
-				chatMessages = append(chatMessages, openai.AssistantMessage(msg.Content))
-			}
-		}
+		messages := convertMessages(session.Messages)
 
 		stream := a.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
-			Messages: chatMessages,
+			Messages: messages,
 			Seed:     openai.Int(1),
 			Model:    openai.ChatModelGPT4o,
 		})
