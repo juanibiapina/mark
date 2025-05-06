@@ -2,11 +2,6 @@ package model
 
 import "time"
 
-// ThreadEntry is an entry in the threads list.
-type ThreadEntry struct {
-	ID string
-}
-
 type Thread struct {
 	ID        string    `json:"id"`
 	Messages  []Message `json:"messages"`

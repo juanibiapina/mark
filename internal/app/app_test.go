@@ -66,11 +66,11 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("messages", func(t *testing.T) {
-		t.Run("replyMessage", func(t *testing.T) {
+		t.Run("streamFinished", func(t *testing.T) {
 			app := bareApp(t)
 
 			model, cmd := app.Update(streamFinished("test"))
-			assert.NotNil(t, cmd)
+			assert.Nil(t, cmd)
 
 			v := render(t, model)
 			snaps.MatchStandaloneSnapshot(t, v)
@@ -79,7 +79,7 @@ func TestApp(t *testing.T) {
 
 	t.Run("focus", func(t *testing.T) {
 		app := bareApp(t)
-		focuses := []Focused{FocusedInput, FocusedThreadList, FocusedThread, FocusedInput}
+		focuses := []Focused{FocusedInput, FocusedThread, FocusedInput}
 
 		for _, expectedFocus := range focuses {
 			require.Equal(t, expectedFocus, app.focused)

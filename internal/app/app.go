@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path"
 
-	"mark/internal/db"
 	"mark/internal/model"
 	"mark/internal/util"
 
@@ -22,19 +21,16 @@ type Focused int
 
 const (
 	FocusedInput Focused = iota
-	FocusedThreadList
 	FocusedThread
 	FocusedEndMarker // used to determine the number of focusable items for cycling
 )
 
 const (
 	inputHeight = 5
-	ratio       = 0.67
 )
 
 type (
 	eventMsg            struct{ msg tea.Msg }
-	threadEntriesMsg    []model.ThreadEntry
 	streamChunkReceived string
 	streamFinished      string
 	threadMsg           struct{ thread model.Thread }
@@ -57,7 +53,6 @@ var (
 type App struct {
 	// models
 	thread            model.Thread
-	threadListEntries []model.ThreadEntry
 
 	// ui
 	uiReady         bool
@@ -69,24 +64,13 @@ type App struct {
 	input          textarea.Model
 	threadViewport viewport.Model
 
-	threadList       viewport.Model
-	threadListCursor int
-
 	// clients
-	agent *Agent
-	db    db.Database
-
-	// events
+	agent  *Agent
 	events chan tea.Msg
-
-	// error
-	err error
+	err    error
 }
 
 func MakeApp(cwd string) (App, error) {
-	// determine database directory
-	dbdir := path.Join(cwd, ".mark")
-
 	// init input
 	input := textarea.New()
 	input.Focus()       // focus is actually handled by the app
@@ -105,7 +89,6 @@ func MakeApp(cwd string) (App, error) {
 
 	// init app
 	app := App{
-		db:     db.MakeDatabase(dbdir),
 		agent:  NewAgent(events),
 		input:  input,
 		thread: activeThread,
@@ -119,9 +102,8 @@ func (m App) Err() error {
 	return m.err
 }
 
-// Init returns an initial command.
 func (m App) Init() tea.Cmd {
-	return tea.Batch(m.loadThreads(), processEvents(m.events))
+	return processEvents(m.events)
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -146,11 +128,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case streamFinished:
 		m.thread.FinishStreaming(string(msg))
-		cmd := m.saveThread()
-		cmds = append(cmds, cmd)
-
-	case threadEntriesMsg:
-		m.threadListEntries = msg
 
 	case threadMsg:
 		m.thread = msg.thread
@@ -169,26 +146,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusPrev()
 			inputHandled = true
 
-		case "space":
-			if m.focused == FocusedThreadList {
-				inputHandled = true
-
-				cmd := m.loadSelectedThread()
-				cmds = append(cmds, cmd)
-			}
-
 		case "enter":
 			inputHandled = true
 
 			cmd := m.submitMessage()
-			cmds = append(cmds, cmd)
-			cmd = m.saveThread()
-			cmds = append(cmds, cmd)
-
-		case "ctrl+l":
-			inputHandled = true
-			m.thread.Messages = nil
-			cmd := m.saveThread()
 			cmds = append(cmds, cmd)
 
 		case "ctrl+n":
@@ -213,11 +174,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 
-			if m.focused == FocusedThreadList {
-				cmd := m.processThreadList(msg)
-				cmds = append(cmds, cmd)
-			}
-
 			if m.focused == FocusedThread {
 				cmd := m.processThreadView(msg)
 				cmds = append(cmds, cmd)
@@ -226,7 +182,6 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	m.renderActiveThread()
-	m.renderThreadList()
 
 	return m, tea.Batch(cmds...)
 }
@@ -268,48 +223,6 @@ func (m *App) processInputView(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	return cmd
-}
-
-func (m *App) selectNextThread() {
-	if len(m.threadListEntries) == 0 {
-		return
-	}
-
-	m.threadListCursor++
-
-	if m.threadListCursor >= len(m.threadListEntries) {
-		m.threadListCursor = 0
-	}
-}
-
-func (m *App) selectPrevThread() {
-	if len(m.threadListEntries) == 0 {
-		return
-	}
-
-	m.threadListCursor--
-
-	if m.threadListCursor < 0 {
-		m.threadListCursor = len(m.threadListEntries) - 1
-	}
-}
-
-func (m *App) processThreadList(msg tea.Msg) tea.Cmd {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "j":
-			m.selectNextThread()
-		case "k":
-			m.selectPrevThread()
-		case "d":
-			return m.deleteSelectedThread()
-		default:
-			return nil
-		}
-	}
-
-	return nil
 }
 
 func (m *App) processThreadView(msg tea.Msg) tea.Cmd {
@@ -382,28 +295,6 @@ func (m *App) renderActiveThread() {
 	m.threadViewport.SetContent(content)
 }
 
-func (m *App) renderThreadList() {
-	var content string
-
-	for i, entry := range m.threadListEntries {
-		prefix := "  "
-		if entry.ID == m.thread.ID {
-			prefix = "* "
-		}
-		entryContent := prefix + entry.ID
-
-		if i == m.threadListCursor {
-			if m.focused == FocusedThreadList {
-				entryContent = highlightedEntryStyle.Render(entryContent)
-			}
-		}
-
-		content += entryContent + "\n"
-	}
-
-	m.threadList.SetContent(content)
-}
-
 func (m *App) submitMessage() tea.Cmd {
 	m.thread.CancelStreaming()
 
@@ -456,11 +347,7 @@ func (m *App) viewThreadInEditor() (tea.Cmd, error) {
 }
 
 func (m *App) windowView() string {
-	return lipgloss.JoinHorizontal(lipgloss.Top, m.sidebarView(), m.mainView())
-}
-
-func (m *App) sidebarView() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.inputView(), m.threadListView())
+	return lipgloss.JoinVertical(lipgloss.Top, m.mainView(), m.inputView())
 }
 
 func (m *App) mainView() string {
@@ -478,15 +365,6 @@ func (m *App) inputView() string {
 		m.borderIfFocused(FocusedInput),
 		"Message Assistant",
 		m.panelTitleStyleIfFocused(FocusedInput),
-	)
-}
-
-func (m *App) threadListView() string {
-	return util.RenderBorderWithTitle(
-		m.threadList.View(),
-		m.borderIfFocused(FocusedThreadList),
-		"Threads",
-		m.panelTitleStyleIfFocused(FocusedThreadList),
 	)
 }
 
@@ -511,16 +389,11 @@ func (m *App) threadView() string {
 func (m *App) handleWindowSize(width, height int) {
 	borderSize := 2 // 2 times the border width
 
-	m.mainPanelWidth = int(float64(width) * ratio)
-	m.mainPanelHeight = height
-	m.sideBarWidth = width - m.mainPanelWidth
+	m.mainPanelWidth = width
+	m.mainPanelHeight = height - inputHeight
 
-	m.input.SetWidth(m.sideBarWidth - borderSize)
+	m.input.SetWidth(width - borderSize)
 	m.input.SetHeight(inputHeight - borderSize)
-	rest := height - inputHeight
-	m.threadList.SetWidth(m.sideBarWidth - borderSize)
-	m.threadList.SetHeight(rest - borderSize)
-	highlightedEntryStyle = highlightedEntryStyle.Width(m.sideBarWidth - borderSize)
 
 	m.threadViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
 	m.threadViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
