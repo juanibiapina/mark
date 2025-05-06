@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path"
 
-	"mark/internal/model"
+	"mark/internal/llm"
 	"mark/internal/util"
 
 	"github.com/charmbracelet/bubbles/v2/textarea"
@@ -50,7 +50,7 @@ var (
 )
 
 type App struct {
-	session model.Session
+	session llm.Session
 
 	agent  *Agent
 	events chan tea.Msg
@@ -85,7 +85,7 @@ func MakeApp(cwd string) (App, error) {
 	app := App{
 		agent:   NewAgent(events),
 		input:   input,
-		session: model.MakeSession(),
+		session: llm.MakeSession(),
 		events:  events,
 	}
 
@@ -239,7 +239,7 @@ func (m *App) processMessagesView(msg tea.Msg) tea.Cmd {
 }
 
 func (m *App) newSession() {
-	m.session = model.MakeSession()
+	m.session = llm.MakeSession()
 
 	m.input.Reset()
 
@@ -261,7 +261,7 @@ func (m *App) renderMessagesView() {
 
 	for _, message := range m.session.Messages {
 		var msg string
-		if message.Role == model.RoleUser {
+		if message.Role == llm.RoleUser {
 			msg = lipgloss.NewStyle().Width(m.messagesViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", message.Content))
 		} else {
 			msg, err = renderer.Render(message.Content)
@@ -290,7 +290,7 @@ func (m *App) submitMessage() tea.Cmd {
 
 	v := m.input.Value()
 	if v != "" {
-		m.session.AddMessage(model.Message{Role: model.RoleUser, Content: v})
+		m.session.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
 		m.input.Reset()
 	}
 

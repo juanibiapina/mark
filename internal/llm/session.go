@@ -1,4 +1,4 @@
-package model
+package llm
 
 type Session struct {
 	Messages []Message `json:"messages"`

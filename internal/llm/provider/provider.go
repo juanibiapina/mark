@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"mark/internal/model"
+	"mark/internal/llm"
 )
 
 type StreamingEvent any
@@ -21,5 +21,5 @@ type StreamEventEnd struct {
 }
 
 type Provider interface {
-	CompleteStreaming(ctx context.Context, session model.Session) (<-chan StreamingEvent, error)
+	CompleteStreaming(ctx context.Context, session llm.Session) (<-chan StreamingEvent, error)
 }

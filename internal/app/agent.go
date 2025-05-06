@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"mark/internal/logging"
+	"mark/internal/llm"
 	"mark/internal/llm/provider"
 	"mark/internal/llm/providers"
-	"mark/internal/model"
+	"mark/internal/logging"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
@@ -27,7 +27,7 @@ func NewAgent(events chan tea.Msg) *Agent {
 	}
 }
 
-func (agent *Agent) CompleteStreaming(session model.Session) error {
+func (agent *Agent) CompleteStreaming(session llm.Session) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	agent.cancel = cancel
 
