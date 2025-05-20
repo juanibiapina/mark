@@ -28,18 +28,31 @@ func NewAgent(events chan tea.Msg) *Agent {
 	}
 }
 
+func convertSessionToMessages(session llm.Session) []llm.Message {
+	var messages []llm.Message
+
+	// add context message
+	messages = append(messages, llm.Message{
+		Role:    llm.RoleUser,
+		Content: session.ContextMessage(),
+	})
+
+	// add prompt
+	messages = append(messages, llm.Message{
+		Role:    llm.RoleUser,
+		Content: session.Prompt(),
+	})
+
+	return messages
+}
+
 func (agent *Agent) CompleteStreaming(session llm.Session) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	agent.cancel = cancel
 
 	agent.streaming = true
 
-	messages := []llm.Message{
-		{
-			Role:    llm.RoleUser,
-			Content: session.Prompt(),
-		},
-	}
+	messages := convertSessionToMessages(session)
 
 	streamingEvents, err := agent.provider.CompleteStreaming(ctx, messages)
 	if err != nil {

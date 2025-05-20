@@ -1,8 +1,11 @@
 package llm
 
+import "strings"
+
 type Session struct {
-	prompt string
-	reply  string
+	context []string
+	prompt  string
+	reply   string
 }
 
 func MakeSession() Session {
@@ -31,4 +34,8 @@ func (session *Session) ClearReply() {
 
 func (session *Session) Reply() string {
 	return session.reply
+}
+
+func (session *Session) ContextMessage() string {
+	return strings.Join(session.context, "\n\n")
 }
