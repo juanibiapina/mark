@@ -37,13 +37,13 @@ func convertMessages(messages []llm.Message) []openai.ChatCompletionMessageParam
 	return chatMessages
 }
 
-func (a *OpenAI) CompleteStreaming(ctx context.Context, session llm.Session) (<-chan provider.StreamingEvent, error) {
+func (a *OpenAI) CompleteStreaming(ctx context.Context, messages []llm.Message) (<-chan provider.StreamingEvent, error) {
 	a.logger.Info("Starting streaming completion")
 
 	eventCh := make(chan provider.StreamingEvent)
 
 	go func() {
-		messages := convertMessages(session.Messages)
+		messages := convertMessages(messages)
 
 		stream := a.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 			Messages: messages,
