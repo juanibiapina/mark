@@ -116,9 +116,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.handleWindowSize(msg.Width, msg.Height)
 
 	case streamChunkReceived:
-		if m.session.IsStreaming() {
-			m.session.AppendChunk(string(msg))
-		}
+		m.session.AppendChunk(string(msg))
 
 	case streamFinished:
 		m.session.FinishStreaming(string(msg))
@@ -273,7 +271,8 @@ func (m *App) renderMessagesView() {
 		content += msg
 	}
 
-	if m.session.IsStreaming() {
+	partialMessage := m.session.PartialMessage()
+	if partialMessage != "" {
 		c, err := renderer.Render(m.session.PartialMessage())
 		if err != nil {
 			log.Fatal(err)
@@ -286,15 +285,14 @@ func (m *App) renderMessagesView() {
 }
 
 func (m *App) submitMessage() tea.Cmd {
-	m.session.CancelStreaming()
+	m.agent.Cancel()
+	m.session.AcceptPartialMessage()
 
 	v := m.input.Value()
 	if v != "" {
 		m.session.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
 		m.input.Reset()
 	}
-
-	m.session.StartStreaming()
 
 	return complete(m)
 }

@@ -1,9 +1,7 @@
 package llm
 
 type Session struct {
-	Messages []Message `json:"messages"`
-
-	streaming      bool
+	Messages       []Message `json:"messages"`
 	partialMessage string
 }
 
@@ -27,19 +25,7 @@ func (session *Session) FinishStreaming(msg string) {
 	session.partialMessage = ""
 }
 
-func (session *Session) IsStreaming() bool {
-	return session.streaming
-}
-
-func (session *Session) StartStreaming() {
-	session.streaming = true
-}
-
-func (session *Session) CancelStreaming() {
-	if !session.streaming {
-		return
-	}
-	session.streaming = false
+func (session *Session) AcceptPartialMessage() {
 	if session.partialMessage == "" {
 		return
 	}

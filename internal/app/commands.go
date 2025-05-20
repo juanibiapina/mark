@@ -14,8 +14,6 @@ func cancelStreaming(agent *Agent) tea.Cmd {
 
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
-		m.agent.Cancel()
-
 		err := m.agent.CompleteStreaming(m.session)
 		if err != nil {
 			return errMsg{err}

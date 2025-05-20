@@ -13,10 +13,11 @@ import (
 )
 
 type Agent struct {
-	provider provider.Provider
-	cancel   context.CancelFunc // cancels the current streaming request
-	events   chan tea.Msg       // sends tea.Msg to the main app
-	logger   *slog.Logger
+	provider  provider.Provider
+	cancel    context.CancelFunc // cancels the current streaming request
+	streaming bool               // true if the agent is currently streaming
+	events    chan tea.Msg       // sends tea.Msg to the main app
+	logger    *slog.Logger
 }
 
 func NewAgent(events chan tea.Msg) *Agent {
@@ -30,6 +31,8 @@ func NewAgent(events chan tea.Msg) *Agent {
 func (agent *Agent) CompleteStreaming(session llm.Session) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	agent.cancel = cancel
+
+	agent.streaming = true
 
 	streamingEvents, err := agent.provider.CompleteStreaming(ctx, session.Messages)
 	if err != nil {
@@ -52,10 +55,14 @@ func (agent *Agent) CompleteStreaming(session llm.Session) error {
 		}
 	}
 
+	agent.streaming = false
+
 	return nil
 }
 
 func (agent *Agent) Cancel() {
+	agent.streaming = false
+
 	if agent.cancel != nil {
 		agent.cancel()
 		agent.cancel = nil
