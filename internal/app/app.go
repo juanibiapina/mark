@@ -252,6 +252,11 @@ func (m *App) viewMessagesInEditor() (tea.Cmd, error) {
 	}), nil
 }
 
+func (app *App) deleteContextItem(index int) {
+	app.session.DeleteContextItem(index)
+	app.main.contextItemsList.SetItemsFromSessionContext(app.session.Context())
+}
+
 func (m *App) handleWindowSize(width, height int) {
 	m.width = width
 	m.height = height

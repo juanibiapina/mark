@@ -1,5 +1,7 @@
 package llm
 
+import "slices"
+
 type ContextItem string
 
 // implement list.Item interface
@@ -41,6 +43,10 @@ func (session *Session) Reply() string {
 
 func (session *Session) AddContext(content string) {
 	session.context = append(session.context, ContextItem(content))
+}
+
+func (session *Session) DeleteContextItem(index int) {
+	session.context = slices.Delete(session.context, index, index+1)
 }
 
 func (session *Session) Context() []ContextItem {

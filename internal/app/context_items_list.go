@@ -91,9 +91,25 @@ func (l *ContextItemsList) Width() int {
 }
 
 func (l *ContextItemsList) Update(app *App, msg tea.Msg) tea.Cmd {
-	var cmd tea.Cmd
-	l.model, cmd = l.model.Update(msg)
-	return cmd
+	var inputHandled bool
+	var cmds []tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "d":
+			inputHandled = true
+			app.deleteContextItem(l.model.GlobalIndex())
+		}
+	}
+
+	if !inputHandled {
+		var cmd tea.Cmd
+		l.model, cmd = l.model.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return tea.Batch(cmds...)
 }
 
 func (l *ContextItemsList) View() string {
