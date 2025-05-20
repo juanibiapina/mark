@@ -34,7 +34,7 @@ func (dialog *AddContextDialog) Update(app *App, msg tea.Msg) tea.Cmd {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
-			app.session.AddContext(dialog.input.Value())
+			app.addContext(dialog.input.Value())
 			app.hideAddContextDialog()
 		case "esc":
 			app.hideAddContextDialog()

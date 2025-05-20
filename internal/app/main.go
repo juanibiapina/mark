@@ -13,12 +13,14 @@ type Focused int
 
 const (
 	FocusedInput Focused = iota
+	FocusedContextItemsList
 	FocusedMessages
 	FocusedEndMarker // used to determine the number of focusable items for cycling
 )
 
 type Main struct {
 	input            textarea.Model
+	contextItemsList *ContextItemsList
 	messagesViewport viewport.Model
 
 	focused Focused
@@ -34,20 +36,30 @@ func NewMain() *Main {
 	input.ShowLineNumbers = false
 	input.KeyMap.InsertNewline.SetEnabled(false)
 
-	return &Main{
-		input: input,
+	main := &Main{
+		input:            input,
+		contextItemsList: NewContextItemsList(),
 	}
+
+	return main
 }
 
 func (main *Main) SetSize(width, height int) {
 	borderSize := 2 // 2 times the border width
 	inputHeight := 5
 
+	availableHeight := height - borderSize
+
 	main.input.SetWidth(width - borderSize)
 	main.input.SetHeight(inputHeight - borderSize)
 
-	main.messagesViewport.SetWidth(width - 2)                 // 2 is the border width
-	main.messagesViewport.SetHeight(height - inputHeight - 2) // 2 is the border width
+	sidebarWidth := width / 3
+	messagesWidth := width - sidebarWidth
+
+	main.contextItemsList.SetSize(sidebarWidth-borderSize, availableHeight-inputHeight)
+
+	main.messagesViewport.SetWidth(messagesWidth - borderSize)
+	main.messagesViewport.SetHeight(availableHeight - inputHeight)
 }
 
 func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
@@ -88,6 +100,11 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 
+		if main.focused == FocusedContextItemsList {
+			cmd := main.contextItemsList.Update(app, msg)
+			cmds = append(cmds, cmd)
+		}
+
 		if main.focused == FocusedMessages {
 			cmd := main.processMessagesView(app, msg)
 			cmds = append(cmds, cmd)
@@ -98,7 +115,9 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 }
 
 func (main *Main) View() string {
-	return lipgloss.JoinVertical(lipgloss.Top, main.messagesView(), main.inputView())
+	top := lipgloss.JoinHorizontal(lipgloss.Left, main.contextItemsListView(), main.messagesView())
+	bottom := main.inputView()
+	return lipgloss.JoinVertical(lipgloss.Top, top, bottom)
 }
 
 func (main *Main) inputView() string {
@@ -107,6 +126,15 @@ func (main *Main) inputView() string {
 		main.borderIfFocused(FocusedInput),
 		"Message Assistant",
 		main.panelTitleStyleIfFocused(FocusedInput),
+	)
+}
+
+func (main *Main) contextItemsListView() string {
+	return util.RenderBorderWithTitle(
+		main.contextItemsList.View(),
+		main.borderIfFocused(FocusedContextItemsList),
+		"Context",
+		main.panelTitleStyleIfFocused(FocusedContextItemsList),
 	)
 }
 
@@ -124,12 +152,24 @@ func (main *Main) focusNext() {
 	if main.focused == FocusedEndMarker {
 		main.focused = 0
 	}
+
+	if main.focused == FocusedContextItemsList {
+		main.contextItemsList.Focus()
+	} else {
+		main.contextItemsList.Blur()
+	}
 }
 
 func (main *Main) focusPrev() {
 	main.focused -= 1
 	if main.focused < 0 {
 		main.focused = FocusedEndMarker - 1
+	}
+
+	if main.focused == FocusedContextItemsList {
+		main.contextItemsList.Focus()
+	} else {
+		main.contextItemsList.Blur()
 	}
 }
 

@@ -145,6 +145,14 @@ func (m *App) hideAddContextDialog() {
 	m.dialog = nil
 }
 
+func (m *App) addContext(context string) {
+	m.session.AddContext(context)
+	m.main.contextItemsList.SetItemsFromSessionContext(m.session.Context())
+}
+
+func (m *App) setContextItemsFromSession() {
+}
+
 // processEventMessage checks if the message is an event message, so we can restart the
 // event processing go routine. Returns the message to be processed normally.
 func (m App) processEventMessage(msg tea.Msg) (tea.Msg, tea.Cmd) {
@@ -161,6 +169,7 @@ func (m *App) newSession() {
 
 	m.session = llm.MakeSession()
 
+	m.setContextItemsFromSession()
 	m.main.input.Reset()
 
 	m.main.focused = FocusedInput

@@ -1,9 +1,12 @@
 package llm
 
-import "strings"
+type ContextItem string
+
+// implement list.Item interface
+func (i ContextItem) FilterValue() string { return "" }
 
 type Session struct {
-	context []string
+	context []ContextItem
 	prompt  string
 	reply   string
 }
@@ -37,9 +40,20 @@ func (session *Session) Reply() string {
 }
 
 func (session *Session) AddContext(content string) {
-	session.context = append(session.context, content)
+	session.context = append(session.context, ContextItem(content))
+}
+
+func (session *Session) Context() []ContextItem {
+	return session.context
 }
 
 func (session *Session) ContextMessage() string {
-	return strings.Join(session.context, "\n\n")
+	var message string
+
+	for _, v := range session.context {
+		message += string(v)
+		message += "\n\n"
+	}
+
+	return message
 }
