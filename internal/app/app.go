@@ -257,23 +257,15 @@ func (m *App) renderMessagesView() {
 
 	var content string
 
-	for _, message := range m.session.Messages {
-		var msg string
-		if message.Role == llm.RoleUser {
-			msg = lipgloss.NewStyle().Width(m.messagesViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", message.Content))
-		} else {
-			msg, err = renderer.Render(message.Content)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
+	// render the user message
+	msg := lipgloss.NewStyle().Width(m.messagesViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", m.session.Prompt()))
 
-		content += msg
-	}
+	content += msg
 
-	partialMessage := m.session.PartialMessage()
-	if partialMessage != "" {
-		c, err := renderer.Render(m.session.PartialMessage())
+	// render the assistant message
+	assistantMessage := m.session.Reply()
+	if assistantMessage != "" {
+		c, err := renderer.Render(assistantMessage)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -286,11 +278,11 @@ func (m *App) renderMessagesView() {
 
 func (m *App) submitMessage() tea.Cmd {
 	m.agent.Cancel()
-	m.session.AcceptPartialMessage()
+	m.session.ClearReply()
 
 	v := m.input.Value()
 	if v != "" {
-		m.session.AddMessage(llm.Message{Role: llm.RoleUser, Content: v})
+		m.session.SetPrompt(v)
 		m.input.Reset()
 	}
 
@@ -300,14 +292,12 @@ func (m *App) submitMessage() tea.Cmd {
 func (m *App) viewMessagesInEditor() (tea.Cmd, error) {
 	// build the content
 	var content string
-	for _, msg := range m.session.Messages {
-		content += "---\n"
-		content += msg.Content + "\n"
-	}
+
+	content += m.session.Reply()
 
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
-		return nil, nil
+		return nil, nil // TODO: handle this error
 	}
 
 	tmpdir, err := os.MkdirTemp("", "mark-*")

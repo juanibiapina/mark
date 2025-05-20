@@ -1,41 +1,34 @@
 package llm
 
 type Session struct {
-	Messages       []Message `json:"messages"`
-	partialMessage string
+	prompt string
+	reply  string
 }
 
 func MakeSession() Session {
 	return Session{}
 }
 
-func (session *Session) AddMessage(m Message) {
-	session.Messages = append(session.Messages, m)
+func (session *Session) Prompt() string {
+	return session.prompt
+}
+
+func (session *Session) SetPrompt(content string) {
+	session.prompt = content
 }
 
 func (session *Session) AppendChunk(chunk string) {
-	session.partialMessage += chunk
+	session.reply += chunk
 }
 
 func (session *Session) FinishStreaming(msg string) {
-	session.AddMessage(Message{
-		Role:    RoleAssistant,
-		Content: msg,
-	})
-	session.partialMessage = ""
+	session.reply = msg
 }
 
-func (session *Session) AcceptPartialMessage() {
-	if session.partialMessage == "" {
-		return
-	}
-	session.AddMessage(Message{
-		Role:    RoleAssistant,
-		Content: session.partialMessage,
-	})
-	session.partialMessage = ""
+func (session *Session) ClearReply() {
+	session.reply = ""
 }
 
-func (session *Session) PartialMessage() string {
-	return session.partialMessage
+func (session *Session) Reply() string {
+	return session.reply
 }

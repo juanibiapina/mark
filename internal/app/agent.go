@@ -34,7 +34,14 @@ func (agent *Agent) CompleteStreaming(session llm.Session) error {
 
 	agent.streaming = true
 
-	streamingEvents, err := agent.provider.CompleteStreaming(ctx, session.Messages)
+	messages := []llm.Message{
+		{
+			Role:    llm.RoleUser,
+			Content: session.Prompt(),
+		},
+	}
+
+	streamingEvents, err := agent.provider.CompleteStreaming(ctx, messages)
 	if err != nil {
 		return err
 	}
