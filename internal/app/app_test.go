@@ -71,8 +71,12 @@ func TestApp(t *testing.T) {
 
 			model, cmd := app.Update(streamFinished("test"))
 			assert.Nil(t, cmd)
-
 			v := render(t, model)
+			snaps.MatchStandaloneSnapshot(t, v)
+
+			model, cmd = app.Update(streamStarted{})
+			assert.Nil(t, cmd)
+			v = render(t, model)
 			snaps.MatchStandaloneSnapshot(t, v)
 		})
 	})

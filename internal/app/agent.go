@@ -47,6 +47,10 @@ func convertSessionToMessages(session llm.Session) []llm.Message {
 }
 
 func (agent *Agent) CompleteStreaming(session llm.Session) error {
+	if agent.streaming {
+		agent.Cancel()
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	agent.cancel = cancel
 
@@ -58,6 +62,8 @@ func (agent *Agent) CompleteStreaming(session llm.Session) error {
 	if err != nil {
 		return err
 	}
+
+	agent.events <- streamStarted{}
 
 	for streamingEvent := range streamingEvents {
 		switch e := streamingEvent.(type) {

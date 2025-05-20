@@ -36,6 +36,10 @@ func (session *Session) Reply() string {
 	return session.reply
 }
 
+func (session *Session) AddContext(content string) {
+	session.context = append(session.context, content)
+}
+
 func (session *Session) ContextMessage() string {
 	return strings.Join(session.context, "\n\n")
 }

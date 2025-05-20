@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"mark/internal/llm"
+	"mark/internal/util"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/glamour"
@@ -16,6 +17,7 @@ import (
 
 type (
 	eventMsg            struct{ msg tea.Msg }
+	streamStarted       struct{}
 	streamChunkReceived string
 	streamFinished      string
 	errMsg              struct{ err error }
@@ -42,7 +44,10 @@ type App struct {
 	err    error
 
 	uiReady bool
+	width   int
+	height  int
 	main    *Main
+	dialog  *AddContextDialog
 }
 
 func MakeApp(cwd string) (App, error) {
@@ -84,6 +89,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.handleWindowSize(msg.Width, msg.Height)
 
+	case streamStarted:
+		m.session.ClearReply()
+
 	case streamChunkReceived:
 		m.session.AppendChunk(string(msg))
 
@@ -91,9 +99,15 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.session.FinishStreaming(string(msg))
 	}
 
-	// delegate to main component
-	cmd = m.main.Update(&m, msg)
-	cmds = append(cmds, cmd)
+	// delegate to component update
+	if m.dialog != nil {
+		cmd := m.dialog.Update(&m, msg)
+		cmds = append(cmds, cmd)
+	} else {
+		// delegate to main component
+		cmd = m.main.Update(&m, msg)
+		cmds = append(cmds, cmd)
+	}
 
 	m.renderMessagesView()
 
@@ -105,7 +119,30 @@ func (m App) View() string {
 		return "Initializing..."
 	}
 
-	return m.main.View()
+	var view string
+
+	view += m.main.View()
+
+	if m.dialog != nil {
+		dialogView := m.dialog.View()
+		dialogWidth := lipgloss.Width(dialogView)
+		dialogHeight := lipgloss.Height(dialogView)
+		x := (m.width - dialogWidth) / 2
+		y := (m.height - dialogHeight) / 2
+
+		view = util.PlaceOverlay(x, y, dialogView, view)
+	}
+
+	return view
+}
+
+func (m *App) showAddContextDialog() {
+	m.dialog = NewDialog()
+	m.setDialogSize()
+}
+
+func (m *App) hideAddContextDialog() {
+	m.dialog = nil
 }
 
 // processEventMessage checks if the message is an event message, so we can restart the
@@ -162,9 +199,6 @@ func (m *App) renderMessagesView() {
 }
 
 func (m *App) submitMessage() tea.Cmd {
-	m.agent.Cancel()
-	m.session.ClearReply()
-
 	v := m.main.input.Value()
 	if v != "" {
 		m.session.SetPrompt(v)
@@ -210,9 +244,19 @@ func (m *App) viewMessagesInEditor() (tea.Cmd, error) {
 }
 
 func (m *App) handleWindowSize(width, height int) {
+	m.width = width
+	m.height = height
+
 	m.main.SetSize(width, height)
+	m.setDialogSize()
 
 	if !m.uiReady {
 		m.uiReady = true
+	}
+}
+
+func (m *App) setDialogSize() {
+	if m.dialog != nil {
+		m.dialog.SetSize(m.width/2, 3) // TODO: this height is ignored
 	}
 }
