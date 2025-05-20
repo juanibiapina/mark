@@ -82,7 +82,7 @@ func TestApp(t *testing.T) {
 		focuses := []Focused{FocusedInput, FocusedMessages, FocusedInput}
 
 		for _, expectedFocus := range focuses {
-			require.Equal(t, expectedFocus, app.focused)
+			require.Equal(t, expectedFocus, app.main.focused)
 			v := app.View()
 			snaps.MatchSnapshot(t, v)
 			app = update(app, key(tea.KeyTab))

@@ -8,25 +8,10 @@ import (
 	"path"
 
 	"mark/internal/llm"
-	"mark/internal/util"
 
-	"github.com/charmbracelet/bubbles/v2/textarea"
-	"github.com/charmbracelet/bubbles/v2/viewport"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss/v2"
-)
-
-type Focused int
-
-const (
-	FocusedInput Focused = iota
-	FocusedMessages
-	FocusedEndMarker // used to determine the number of focusable items for cycling
-)
-
-const (
-	inputHeight = 5
 )
 
 type (
@@ -56,35 +41,18 @@ type App struct {
 	events chan tea.Msg
 	err    error
 
-	// ui
-	uiReady         bool
-	focused         Focused
-	mainPanelWidth  int
-	mainPanelHeight int
-	sideBarWidth    int
-
-	input            textarea.Model
-	messagesViewport viewport.Model
+	uiReady bool
+	main    *Main
 }
 
 func MakeApp(cwd string) (App, error) {
-	// init input
-	input := textarea.New()
-	input.Focus()       // focus is actually handled by the app
-	input.CharLimit = 0 // no character limit
-	input.MaxHeight = 0 // no max height
-	input.Prompt = ""
-	input.Styles.Focused.CursorLine = lipgloss.NewStyle() // Remove cursor line styling
-	input.ShowLineNumbers = false
-	input.KeyMap.InsertNewline.SetEnabled(false)
-
 	// init events channel
 	events := make(chan tea.Msg)
 
 	// init app
 	app := App{
 		agent:   NewAgent(events),
-		input:   input,
+		main:    NewMain(),
 		session: llm.MakeSession(),
 		events:  events,
 	}
@@ -102,11 +70,12 @@ func (m App) Init() tea.Cmd {
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
-	var inputHandled bool // whether the key event was handled and shouldn't be passed to the input view
 
+	// extract messages from event messages
 	msg, cmd := m.processEventMessage(msg)
 	cmds = append(cmds, cmd)
 
+	// handle messages
 	switch msg := msg.(type) {
 	case errMsg:
 		m.err = msg.err
@@ -120,55 +89,11 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case streamFinished:
 		m.session.FinishStreaming(string(msg))
-
-	case tea.KeyPressMsg:
-		switch msg.String() {
-
-		case "esc":
-			return m, tea.Quit
-
-		case "tab":
-			m.focusNext()
-			inputHandled = true
-
-		case "shift+tab":
-			m.focusPrev()
-			inputHandled = true
-
-		case "enter":
-			inputHandled = true
-
-			cmd := m.submitMessage()
-			cmds = append(cmds, cmd)
-
-		case "ctrl+n":
-			m.newSession()
-			inputHandled = true
-
-			cmd := cancelStreaming(m.agent)
-			cmds = append(cmds, cmd)
-
-		case "ctrl+c":
-			inputHandled = true
-
-			cmd := cancelStreaming(m.agent)
-			cmds = append(cmds, cmd)
-		}
 	}
 
-	if m.uiReady {
-		if !inputHandled {
-			if m.focused == FocusedInput {
-				cmd := m.processInputView(msg)
-				cmds = append(cmds, cmd)
-			}
-
-			if m.focused == FocusedMessages {
-				cmd := m.processMessagesView(msg)
-				cmds = append(cmds, cmd)
-			}
-		}
-	}
+	// delegate to main component
+	cmd = m.main.Update(&m, msg)
+	cmds = append(cmds, cmd)
 
 	m.renderMessagesView()
 
@@ -180,7 +105,7 @@ func (m App) View() string {
 		return "Initializing..."
 	}
 
-	return m.windowView()
+	return m.main.View()
 }
 
 // processEventMessage checks if the message is an event message, so we can restart the
@@ -194,61 +119,21 @@ func (m App) processEventMessage(msg tea.Msg) (tea.Msg, tea.Cmd) {
 	}
 }
 
-func (m *App) focusNext() {
-	m.focused += 1
-	if m.focused == FocusedEndMarker {
-		m.focused = 0
-	}
-}
-
-func (m *App) focusPrev() {
-	m.focused -= 1
-	if m.focused < 0 {
-		m.focused = FocusedEndMarker - 1
-	}
-}
-
-func (m *App) processInputView(msg tea.Msg) tea.Cmd {
-	var cmd tea.Cmd
-	m.input, cmd = m.input.Update(msg)
-	return cmd
-}
-
-func (m *App) processMessagesView(msg tea.Msg) tea.Cmd {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "e":
-			cmd, err := m.viewMessagesInEditor()
-			if err != nil {
-				m.err = err
-				return tea.Quit
-			}
-
-			return cmd
-		default:
-			var cmd tea.Cmd
-			m.messagesViewport, cmd = m.messagesViewport.Update(msg)
-			return cmd
-		}
-	}
-
-	return nil
-}
-
 func (m *App) newSession() {
+	m.agent.Cancel()
+
 	m.session = llm.MakeSession()
 
-	m.input.Reset()
+	m.main.input.Reset()
 
-	m.focused = FocusedInput
+	m.main.focused = FocusedInput
 }
 
 func (m *App) renderMessagesView() {
 	// create a new glamour renderer
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
-		glamour.WithWordWrap(m.messagesViewport.Width()-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
+		glamour.WithWordWrap(m.main.messagesViewport.Width()-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
 	)
 	if err != nil {
 		m.err = err
@@ -258,7 +143,7 @@ func (m *App) renderMessagesView() {
 	var content string
 
 	// render the user message
-	msg := lipgloss.NewStyle().Width(m.messagesViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", m.session.Prompt()))
+	msg := lipgloss.NewStyle().Width(m.main.messagesViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", m.session.Prompt()))
 
 	content += msg
 
@@ -273,17 +158,17 @@ func (m *App) renderMessagesView() {
 		content += c
 	}
 
-	m.messagesViewport.SetContent(content)
+	m.main.messagesViewport.SetContent(content)
 }
 
 func (m *App) submitMessage() tea.Cmd {
 	m.agent.Cancel()
 	m.session.ClearReply()
 
-	v := m.input.Value()
+	v := m.main.input.Value()
 	if v != "" {
 		m.session.SetPrompt(v)
-		m.input.Reset()
+		m.main.input.Reset()
 	}
 
 	return complete(m)
@@ -324,57 +209,8 @@ func (m *App) viewMessagesInEditor() (tea.Cmd, error) {
 	}), nil
 }
 
-func (m *App) windowView() string {
-	return lipgloss.JoinVertical(lipgloss.Top, m.mainView(), m.inputView())
-}
-
-func (m *App) mainView() string {
-	return util.RenderBorderWithTitle(
-		m.messagesView(),
-		m.borderIfFocused(FocusedMessages),
-		"Messages",
-		m.panelTitleStyleIfFocused(FocusedMessages),
-	)
-}
-
-func (m *App) inputView() string {
-	return util.RenderBorderWithTitle(
-		m.input.View(),
-		m.borderIfFocused(FocusedInput),
-		"Message Assistant",
-		m.panelTitleStyleIfFocused(FocusedInput),
-	)
-}
-
-func (m *App) panelTitleStyleIfFocused(focused Focused) lipgloss.Style {
-	if m.focused == focused {
-		return focusedPanelTitleStyle
-	}
-	return textStyle
-}
-
-func (m *App) borderIfFocused(focused Focused) lipgloss.Style {
-	if m.focused == focused {
-		return focusedBorderStyle
-	}
-	return borderStyle
-}
-
-func (m *App) messagesView() string {
-	return m.messagesViewport.View()
-}
-
 func (m *App) handleWindowSize(width, height int) {
-	borderSize := 2 // 2 times the border width
-
-	m.mainPanelWidth = width
-	m.mainPanelHeight = height - inputHeight
-
-	m.input.SetWidth(width - borderSize)
-	m.input.SetHeight(inputHeight - borderSize)
-
-	m.messagesViewport.SetWidth(m.mainPanelWidth - 2)   // 2 is the border width
-	m.messagesViewport.SetHeight(m.mainPanelHeight - 2) // 2 is the border width
+	m.main.SetSize(width, height)
 
 	if !m.uiReady {
 		m.uiReady = true

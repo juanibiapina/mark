@@ -4,14 +4,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
 
-func cancelStreaming(agent *Agent) tea.Cmd {
-	return func() tea.Msg {
-		agent.Cancel()
-
-		return nil
-	}
-}
-
 func complete(m *App) tea.Cmd {
 	return func() tea.Msg {
 		err := m.agent.CompleteStreaming(m.session)
