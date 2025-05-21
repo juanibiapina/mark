@@ -48,17 +48,16 @@ func (main *Main) SetSize(width, height int) {
 	inputHeight := 5
 
 	availableHeight := height - borderSize
-
-	main.input.SetWidth(width - borderSize)
-	main.input.SetHeight(inputHeight - borderSize)
-
 	sidebarWidth := width / 3
 	messagesWidth := width - sidebarWidth
+
+	main.input.SetWidth(sidebarWidth - borderSize)
+	main.input.SetHeight(inputHeight - borderSize)
 
 	main.contextItemsList.SetSize(sidebarWidth-borderSize, availableHeight-inputHeight)
 
 	main.messagesViewport.SetWidth(messagesWidth - borderSize)
-	main.messagesViewport.SetHeight(availableHeight - inputHeight)
+	main.messagesViewport.SetHeight(availableHeight)
 }
 
 func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
@@ -109,9 +108,9 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 }
 
 func (main *Main) View() string {
-	top := lipgloss.JoinHorizontal(lipgloss.Left, main.contextItemsListView(), main.messagesView())
-	bottom := main.inputView()
-	return lipgloss.JoinVertical(lipgloss.Top, top, bottom)
+	sidebar := lipgloss.JoinVertical(lipgloss.Top, main.inputView(), main.contextItemsListView())
+	mainpane := main.messagesView()
+	return lipgloss.JoinHorizontal(lipgloss.Left, sidebar, mainpane)
 }
 
 func (main *Main) inputView() string {
