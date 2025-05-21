@@ -27,7 +27,7 @@ type Main struct {
 
 func NewMain() *Main {
 	input := textarea.New()
-	input.Focus()
+	input.Focus() // starts focused because default focus is FocusedInput
 	input.CharLimit = 0 // no character limit
 	input.MaxHeight = 0 // no max height
 	input.Prompt = ""
@@ -147,8 +147,10 @@ func (main *Main) focusNext() {
 	}
 
 	if main.focused == FocusedContextItemsList {
+		main.input.Blur()
 		main.contextItemsList.Focus()
 	} else {
+		main.input.Focus()
 		main.contextItemsList.Blur()
 	}
 }
@@ -160,8 +162,10 @@ func (main *Main) focusPrev() {
 	}
 
 	if main.focused == FocusedContextItemsList {
+		main.input.Blur()
 		main.contextItemsList.Focus()
 	} else {
+		main.input.Focus()
 		main.contextItemsList.Blur()
 	}
 }
