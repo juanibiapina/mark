@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"mark/internal/icon"
 	"mark/internal/llm"
 
 	"github.com/charmbracelet/bubbles/v2/list"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(2)
+	itemStyle         = lipgloss.NewStyle()
 	selectedItemStyle = lipgloss.NewStyle().Background(lipgloss.Color("4"))
 )
 
@@ -36,11 +37,13 @@ func (d *contextItemDelegate) Render(w io.Writer, m list.Model, index int, listI
 	str := string(i)
 	str = ansi.Truncate(str, maxWidth-2, "...") // - 2 for padding
 
+	str = icon.Txt + " " + str
+
 	fn := itemStyle.Width(maxWidth).Render
 	if d.l.IsFocused() {
 		if index == m.Index() {
 			fn = func(s ...string) string {
-				return selectedItemStyle.Width(maxWidth).Render("> " + strings.Join(s, " "))
+				return selectedItemStyle.Width(maxWidth).Render(strings.Join(s, " "))
 			}
 		}
 	}
