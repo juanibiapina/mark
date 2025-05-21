@@ -47,7 +47,7 @@ func convertSessionToMessages(session domain.Session) []llm.Message {
 	return messages
 }
 
-func (agent *Agent) CompleteStreaming(session domain.Session) error {
+func (agent *Agent) Run(session domain.Session) error {
 	if agent.streaming {
 		agent.Cancel()
 	}

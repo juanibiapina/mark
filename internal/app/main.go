@@ -76,10 +76,6 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 		case "shift+tab":
 			inputHandled = true
 			main.focusPrev()
-		case "enter":
-			inputHandled = true
-			cmd := app.submitMessage()
-			cmds = append(cmds, cmd)
 		case "ctrl+n":
 			inputHandled = true
 			app.newSession()
@@ -91,7 +87,7 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 
 	if !inputHandled {
 		if main.focused == FocusedInput {
-			cmd := main.processInputView(msg)
+			cmd := main.processInputView(app, msg)
 			cmds = append(cmds, cmd)
 		}
 
@@ -181,8 +177,25 @@ func (main *Main) panelTitleStyleIfFocused(focused Focused) lipgloss.Style {
 	return textStyle
 }
 
-func (main *Main) processInputView(msg tea.Msg) tea.Cmd {
-	var cmd tea.Cmd
-	main.input, cmd = main.input.Update(msg)
-	return cmd
+func (main *Main) processInputView(app *App, msg tea.Msg) tea.Cmd {
+	var inputHandled bool
+	var cmds []tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "enter":
+			inputHandled = true
+			cmd := app.submitMessage()
+			cmds = append(cmds, cmd)
+		}
+	}
+
+	if !inputHandled {
+		var cmd tea.Cmd
+		main.input, cmd = main.input.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return tea.Batch(cmds...)
 }

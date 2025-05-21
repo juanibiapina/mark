@@ -203,12 +203,14 @@ func (m *App) renderMessagesView() {
 
 func (m *App) submitMessage() tea.Cmd {
 	v := m.main.input.Value()
-	if v != "" {
-		m.session.SetPrompt(v)
-		m.main.input.Reset()
+	if v == "" {
+		return nil
 	}
 
-	return complete(m)
+	m.session.SetPrompt(v)
+	m.main.input.Reset()
+
+	return runAgent(m)
 }
 
 func (app *App) deleteContextItem(index int) {
@@ -216,9 +218,9 @@ func (app *App) deleteContextItem(index int) {
 	app.main.contextItemsList.SetItemsFromSessionContextItems(app.session.Context().Items())
 }
 
-func complete(m *App) tea.Cmd {
+func runAgent(m *App) tea.Cmd {
 	return func() tea.Msg {
-		err := m.agent.CompleteStreaming(m.session)
+		err := m.agent.Run(m.session)
 		if err != nil {
 			return errMsg{err}
 		}
