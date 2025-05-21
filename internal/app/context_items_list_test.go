@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"mark/internal/llm"
+	"mark/internal/domain"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 )
@@ -28,7 +28,7 @@ func TestContextItemsList(t *testing.T) {
 
 			cil := NewContextItemsList()
 			cil.SetSize(20, 10)
-			cil.SetItemsFromSessionContext([]llm.ContextItem{"item 1", "item 2", "item 3"})
+			cil.SetItemsFromSessionContext([]domain.ContextItem{"item 1", "item 2", "item 3"})
 			cil.Blur()
 			v := cil.View()
 			snaps.MatchStandaloneSnapshot(t, v)
@@ -39,7 +39,7 @@ func TestContextItemsList(t *testing.T) {
 
 			cil := NewContextItemsList()
 			cil.SetSize(20, 10)
-			cil.SetItemsFromSessionContext([]llm.ContextItem{"item 1", "item 2", "item 3"})
+			cil.SetItemsFromSessionContext([]domain.ContextItem{"item 1", "item 2", "item 3"})
 			cil.Focus()
 			v := cil.View()
 			snaps.MatchStandaloneSnapshot(t, v)

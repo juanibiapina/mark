@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
+	"mark/internal/domain"
 	"mark/internal/icon"
-	"mark/internal/llm"
 
 	"github.com/charmbracelet/bubbles/v2/list"
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -27,7 +27,7 @@ func (d *contextItemDelegate) Height() int                             { return 
 func (d *contextItemDelegate) Spacing() int                            { return 0 }
 func (d *contextItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d *contextItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(llm.ContextItem)
+	i, ok := listItem.(domain.ContextItem)
 	if !ok {
 		return
 	}
@@ -134,7 +134,7 @@ func (l *ContextItemsList) IsFocused() bool {
 	return l.focused
 }
 
-func (l *ContextItemsList) SetItemsFromSessionContext(context []llm.ContextItem) {
+func (l *ContextItemsList) SetItemsFromSessionContext(context []domain.ContextItem) {
 	items := make([]list.Item, len(context))
 	for i, ctxItem := range context {
 		items[i] = ctxItem

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"mark/internal/domain"
 	"mark/internal/llm"
 	"mark/internal/llm/provider"
 	"mark/internal/llm/providers"
@@ -28,7 +29,7 @@ func NewAgent(events chan tea.Msg) *Agent {
 	}
 }
 
-func convertSessionToMessages(session llm.Session) []llm.Message {
+func convertSessionToMessages(session domain.Session) []llm.Message {
 	var messages []llm.Message
 
 	// add context message
@@ -46,7 +47,7 @@ func convertSessionToMessages(session llm.Session) []llm.Message {
 	return messages
 }
 
-func (agent *Agent) CompleteStreaming(session llm.Session) error {
+func (agent *Agent) CompleteStreaming(session domain.Session) error {
 	if agent.streaming {
 		agent.Cancel()
 	}

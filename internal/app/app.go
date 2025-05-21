@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"mark/internal/llm"
+	"mark/internal/domain"
 	"mark/internal/util"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -34,7 +34,7 @@ var (
 )
 
 type App struct {
-	session llm.Session
+	session domain.Session
 
 	agent  *Agent
 	events chan tea.Msg
@@ -55,7 +55,7 @@ func MakeApp(cwd string) (App, error) {
 	app := App{
 		agent:   NewAgent(events),
 		main:    NewMain(),
-		session: llm.MakeSession(),
+		session: domain.MakeSession(),
 		events:  events,
 	}
 
@@ -161,7 +161,7 @@ func (m App) processEventMessage(msg tea.Msg) (tea.Msg, tea.Cmd) {
 func (m *App) newSession() {
 	m.agent.Cancel()
 
-	m.session = llm.MakeSession()
+	m.session = domain.MakeSession()
 
 	m.main.contextItemsList.SetItemsFromSessionContext(m.session.Context())
 	m.main.input.Reset()
