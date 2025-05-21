@@ -34,7 +34,7 @@ func (d *contextItemDelegate) Render(w io.Writer, m list.Model, index int, listI
 
 	maxWidth := d.l.Width()
 
-	str := string(i)
+	str := i.Title()
 	str = ansi.Truncate(str, maxWidth-2, "...") // - 2 for padding
 
 	str = icon.Txt + " " + str
@@ -134,7 +134,7 @@ func (l *ContextItemsList) IsFocused() bool {
 	return l.focused
 }
 
-func (l *ContextItemsList) SetItemsFromSessionContext(context []domain.ContextItem) {
+func (l *ContextItemsList) SetItemsFromSessionContextItems(context []domain.ContextItem) {
 	items := make([]list.Item, len(context))
 	for i, ctxItem := range context {
 		items[i] = ctxItem

@@ -93,7 +93,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.session.AppendChunk(string(msg))
 
 	case streamFinished:
-		m.session.FinishStreaming(string(msg))
+		m.session.SetReply(string(msg))
 	}
 
 	// delegate to component update
@@ -143,8 +143,8 @@ func (m *App) hideAddContextDialog() {
 }
 
 func (m *App) addContext(context string) {
-	m.session.AddContext(context)
-	m.main.contextItemsList.SetItemsFromSessionContext(m.session.Context())
+	m.session.Context().AddItem(domain.TextItem(context))
+	m.main.contextItemsList.SetItemsFromSessionContextItems(m.session.Context().Items())
 }
 
 // processEventMessage checks if the message is an event message, so we can restart the
@@ -163,7 +163,7 @@ func (m *App) newSession() {
 
 	m.session = domain.MakeSession()
 
-	m.main.contextItemsList.SetItemsFromSessionContext(m.session.Context())
+	m.main.contextItemsList.SetItemsFromSessionContextItems(m.session.Context().Items())
 	m.main.input.Reset()
 
 	m.main.focused = FocusedInput
@@ -212,8 +212,8 @@ func (m *App) submitMessage() tea.Cmd {
 }
 
 func (app *App) deleteContextItem(index int) {
-	app.session.DeleteContextItem(index)
-	app.main.contextItemsList.SetItemsFromSessionContext(app.session.Context())
+	app.session.Context().DeleteItem(index)
+	app.main.contextItemsList.SetItemsFromSessionContextItems(app.session.Context().Items())
 }
 
 func (m *App) handleWindowSize(width, height int) {
