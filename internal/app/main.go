@@ -14,7 +14,6 @@ type Focused int
 const (
 	FocusedInput Focused = iota
 	FocusedContextItemsList
-	FocusedMessages
 	FocusedEndMarker // used to determine the number of focusable items for cycling
 )
 
@@ -104,11 +103,6 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 			cmd := main.contextItemsList.Update(app, msg)
 			cmds = append(cmds, cmd)
 		}
-
-		if main.focused == FocusedMessages {
-			cmd := main.processMessagesView(app, msg)
-			cmds = append(cmds, cmd)
-		}
 	}
 
 	return tea.Batch(cmds...)
@@ -141,9 +135,9 @@ func (main *Main) contextItemsListView() string {
 func (main *Main) messagesView() string {
 	return util.RenderBorderWithTitle(
 		main.messagesViewport.View(),
-		main.borderIfFocused(FocusedMessages),
+		borderStyle,
 		"Messages",
-		main.panelTitleStyleIfFocused(FocusedMessages),
+		textStyle,
 	)
 }
 
@@ -191,26 +185,4 @@ func (main *Main) processInputView(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	main.input, cmd = main.input.Update(msg)
 	return cmd
-}
-
-func (main *Main) processMessagesView(app *App, msg tea.Msg) tea.Cmd {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "e":
-			cmd, err := app.viewMessagesInEditor()
-			if err != nil {
-				app.err = err
-				return tea.Quit
-			}
-
-			return cmd
-		default:
-			var cmd tea.Cmd
-			main.messagesViewport, cmd = main.messagesViewport.Update(msg)
-			return cmd
-		}
-	}
-
-	return nil
 }

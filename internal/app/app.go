@@ -3,9 +3,6 @@ package app
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
-	"path"
 
 	"mark/internal/llm"
 	"mark/internal/util"
@@ -212,41 +209,6 @@ func (m *App) submitMessage() tea.Cmd {
 	}
 
 	return complete(m)
-}
-
-func (m *App) viewMessagesInEditor() (tea.Cmd, error) {
-	// build the content
-	var content string
-
-	content += m.session.Reply()
-
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		return nil, nil // TODO: handle this error
-	}
-
-	tmpdir, err := os.MkdirTemp("", "mark-*")
-	if err != nil {
-		return nil, err
-	}
-
-	tmpFile := path.Join(tmpdir, "mark-messages.md")
-	err = os.WriteFile(tmpFile, []byte(content), 0o644)
-	if err != nil {
-		return nil, err
-	}
-
-	c := exec.Command(editor, tmpFile)
-
-	return tea.ExecProcess(c, func(err error) tea.Msg {
-		defer os.RemoveAll(tmpdir)
-
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return nil
-	}), nil
 }
 
 func (app *App) deleteContextItem(index int) {
