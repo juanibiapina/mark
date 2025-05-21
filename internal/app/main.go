@@ -80,9 +80,6 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 			inputHandled = true
 			cmd := app.submitMessage()
 			cmds = append(cmds, cmd)
-		case "ctrl+a":
-			inputHandled = true
-			app.showAddContextDialog()
 		case "ctrl+n":
 			inputHandled = true
 			app.newSession()
