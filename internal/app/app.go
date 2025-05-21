@@ -216,6 +216,24 @@ func (app *App) deleteContextItem(index int) {
 	app.main.contextItemsList.SetItemsFromSessionContextItems(app.session.Context().Items())
 }
 
+func complete(m *App) tea.Cmd {
+	return func() tea.Msg {
+		err := m.agent.CompleteStreaming(m.session)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return nil
+	}
+}
+
+func processEvents(events chan tea.Msg) tea.Cmd {
+	return func() tea.Msg {
+		v := <-events
+		return eventMsg{v}
+	}
+}
+
 func (m *App) handleWindowSize(width, height int) {
 	m.width = width
 	m.height = height
