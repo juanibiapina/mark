@@ -100,6 +100,9 @@ func (l *ContextItemsList) Update(app *App, msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
+		case "f":
+			inputHandled = true
+			app.showAddContextFileDialog()
 		case "n":
 			inputHandled = true
 			app.showAddContextDialog()

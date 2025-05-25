@@ -44,7 +44,7 @@ type App struct {
 	width   int
 	height  int
 	main    *Main
-	dialog  *AddContextDialog
+	dialog  *InputDialog
 }
 
 func MakeApp(cwd string) (App, error) {
@@ -134,17 +134,23 @@ func (m App) View() string {
 }
 
 func (m *App) showAddContextDialog() {
-	m.dialog = NewDialog()
+	m.dialog = NewInputDialog(func(v string) {
+		m.session.Context().AddItem(domain.TextItem(v))
+		m.main.contextItemsList.SetItemsFromSessionContextItems(m.session.Context().Items())
+	})
+	m.setDialogSize()
+}
+
+func (m *App) showAddContextFileDialog() {
+	m.dialog = NewInputDialog(func(v string) {
+		m.session.Context().AddItem(domain.FileItem(v))
+		m.main.contextItemsList.SetItemsFromSessionContextItems(m.session.Context().Items())
+	})
 	m.setDialogSize()
 }
 
 func (m *App) hideAddContextDialog() {
 	m.dialog = nil
-}
-
-func (m *App) addContext(context string) {
-	m.session.Context().AddItem(domain.TextItem(context))
-	m.main.contextItemsList.SetItemsFromSessionContextItems(m.session.Context().Items())
 }
 
 // processEventMessage checks if the message is an event message, so we can restart the

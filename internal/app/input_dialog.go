@@ -6,35 +6,37 @@ import (
 	"github.com/charmbracelet/lipgloss/v2"
 )
 
-type AddContextDialog struct {
-	width  int
-	height int
-	input  textinput.Model
+type InputDialog struct {
+	width    int
+	height   int
+	input    textinput.Model
+	callback func(v string)
 }
 
-func NewDialog() *AddContextDialog {
+func NewInputDialog(callback func(v string)) *InputDialog {
 	input := textinput.New()
 	input.Focus()
 
-	return &AddContextDialog{
+	return &InputDialog{
 		input: input,
+		callback: callback,
 	}
 }
 
-func (dialog *AddContextDialog) SetSize(width, height int) {
+func (dialog *InputDialog) SetSize(width, height int) {
 	dialog.width = width
 	dialog.height = height
 	dialog.input.SetWidth(width)
 }
 
-func (dialog *AddContextDialog) Update(app *App, msg tea.Msg) tea.Cmd {
+func (dialog *InputDialog) Update(app *App, msg tea.Msg) tea.Cmd {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
-			app.addContext(dialog.input.Value())
+			dialog.callback(dialog.input.Value())
 			app.hideAddContextDialog()
 		case "esc":
 			app.hideAddContextDialog()
@@ -48,6 +50,6 @@ func (dialog *AddContextDialog) Update(app *App, msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (dialog *AddContextDialog) View() string {
+func (dialog *InputDialog) View() string {
 	return lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder()).Render(dialog.input.View())
 }
