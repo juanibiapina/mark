@@ -1,0 +1,11 @@
+new_window "editor"
+run_cmd "nvim-server"
+
+new_window "git"
+run_cmd "lazygit"
+
+new_window "mark"
+run_cmd "go run ."
+
+new_window "tests"
+run_cmd "watchexec -c clear make"
