@@ -85,7 +85,7 @@ func TestApp(t *testing.T) {
 			snaps.MatchStandaloneSnapshot(t, v)
 		})
 
-		t.Run("add_context_item_text", func(t *testing.T) {
+		t.Run("add-context-item-text", func(t *testing.T) {
 			app := bareApp(t)
 
 			model, cmd := app.Update(AddContextItemTextMsg("Test context item"))
@@ -94,7 +94,7 @@ func TestApp(t *testing.T) {
 			snaps.MatchStandaloneSnapshot(t, v)
 		})
 
-		t.Run("add_context_item_file", func(t *testing.T) {
+		t.Run("add-context-item-file", func(t *testing.T) {
 			app := bareApp(t)
 
 			model, cmd := app.Update(AddContextItemFileMsg("test.txt"))
