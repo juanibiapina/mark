@@ -1,13 +1,8 @@
 package app
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net"
-	"os"
-	"path"
 
 	"mark/internal/domain"
 	"mark/internal/util"
@@ -22,9 +17,9 @@ type (
 	streamStarted         struct{}
 	streamChunkReceived   string
 	streamFinished        string
-	addContextItemTextMsg string
-	addContextItemFileMsg string
-	errMsg                struct{ err error }
+	AddContextItemTextMsg string
+	AddContextItemFileMsg string
+	ErrMsg                struct{ Err error }
 )
 
 var (
@@ -44,10 +39,9 @@ var (
 type App struct {
 	session domain.Session
 
-	agent    *Agent
-	events   chan tea.Msg
-	listener net.Listener
-	err      error
+	agent  *Agent
+	events chan tea.Msg
+	err    error
 
 	uiReady bool
 	width   int
@@ -57,19 +51,12 @@ type App struct {
 }
 
 func MakeApp(cwd string, events chan tea.Msg) (App, error) {
-	// create socket file for listening to messages
-	listener, err := createSocketFile(cwd)
-	if err != nil {
-		return App{}, fmt.Errorf("failed to create socket file: %w", err)
-	}
-
 	// init app
 	app := App{
-		agent:    NewAgent(events),
-		main:     NewMain(),
-		session:  domain.MakeSession(),
-		events:   events,
-		listener: listener,
+		agent:   NewAgent(events),
+		main:    NewMain(),
+		session: domain.MakeSession(),
+		events:  events,
 	}
 
 	return app, nil
@@ -80,8 +67,7 @@ func (m App) Err() error {
 }
 
 func (m App) Init() tea.Cmd {
-	// TODO: should handleSocketMessages be a goroutine in Program?
-	return tea.Batch(processEvents(m.events), handleSocketMessages(m.listener, m.events))
+	return processEvents(m.events)
 }
 
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -93,8 +79,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// handle messages
 	switch msg := msg.(type) {
-	case errMsg:
-		m.err = msg.err
+	case ErrMsg:
+		m.err = msg.Err
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
@@ -109,10 +95,10 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case streamFinished:
 		m.session.SetReply(string(msg))
 
-	case addContextItemTextMsg:
+	case AddContextItemTextMsg:
 		m.addContextItem(domain.TextItem(string(msg)))
 
-	case addContextItemFileMsg:
+	case AddContextItemFileMsg:
 		m.addContextItem(domain.FileItem(string(msg)))
 	}
 
@@ -151,49 +137,6 @@ func (m App) View() string {
 	}
 
 	return view
-}
-
-type ClientRequest struct {
-	Message string   `json:"message"`
-	Args    []string `json:"args,omitempty"`
-}
-
-// handleSocketMessages listens for incoming messages on the socket, converts them to tea.Msg and sends them to the app.
-func handleSocketMessages(listener net.Listener, events chan tea.Msg) tea.Cmd {
-	return func() tea.Msg {
-		for {
-			// accept a connection from the socket
-			conn, err := listener.Accept()
-			if err != nil {
-				return errMsg{err}
-			}
-			defer conn.Close()
-
-			// read messages from the connection
-			scanner := bufio.NewScanner(conn)
-			for scanner.Scan() {
-				// parse JSON
-				clientRequest := ClientRequest{}
-				err := json.Unmarshal(scanner.Bytes(), &clientRequest)
-				if err != nil {
-					return errMsg{err}
-				}
-
-				// create a tea message from the client request
-				var msg tea.Msg
-				switch clientRequest.Message {
-				case "add_context_item_text":
-					msg = addContextItemTextMsg(clientRequest.Args[0])
-				case "add_context_item_file":
-					msg = addContextItemFileMsg(clientRequest.Args[0])
-				default:
-					msg = errMsg{fmt.Errorf("unknown message: %s", clientRequest.Message)}
-				}
-
-				events <- msg
-			}
-		}
-	}
 }
 
 func (m *App) showAddContextDialog() {
@@ -289,7 +232,7 @@ func runAgent(m *App) tea.Cmd {
 	return func() tea.Msg {
 		err := m.agent.Run(m.session)
 		if err != nil {
-			return errMsg{err}
+			return ErrMsg{err}
 		}
 
 		return nil
@@ -319,27 +262,6 @@ func (m *App) setDialogSize() {
 	if m.dialog != nil {
 		m.dialog.SetSize(m.width/2, 3) // TODO: this height is ignored
 	}
-}
-
-func createSocketFile(cwd string) (net.Listener, error) {
-	// determine socket path
-	socketPath := path.Join(cwd, ".local", "share", "mark", "socket")
-
-	// remove existing socket file if it exists
-	os.Remove(socketPath)
-
-	// create the directory if it doesn't exist
-	if err := os.MkdirAll(path.Dir(socketPath), 0o755); err != nil {
-		return nil, fmt.Errorf("failed to create directory for socket file: %w", err)
-	}
-
-	// create socket file
-	listener, err := net.Listen("unix", socketPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list in socket: %w", err)
-	}
-
-	return listener, nil
 }
 
 func (m *App) addContextItem(item domain.ContextItem) {

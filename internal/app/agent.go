@@ -74,7 +74,7 @@ func (agent *Agent) Run(session domain.Session) error {
 
 		case provider.StreamEventError:
 			agent.logger.Error("Received StreamEventError", slog.String("error", e.Error.Error()))
-			agent.events <- errMsg{err: e.Error}
+			agent.events <- ErrMsg{Err: e.Error}
 
 		case provider.StreamEventEnd:
 			agent.logger.Info("Received StreamEventEnd")

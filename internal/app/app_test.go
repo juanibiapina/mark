@@ -63,7 +63,7 @@ func TestApp(t *testing.T) {
 
 		err := fmt.Errorf("test error")
 
-		model, cmd := app.Update(errMsg{err: err})
+		model, cmd := app.Update(ErrMsg{Err: err})
 
 		assert.Equal(t, tea.QuitMsg{}, cmd())
 		app = model.(App)
@@ -88,7 +88,7 @@ func TestApp(t *testing.T) {
 		t.Run("add_context_item_text", func(t *testing.T) {
 			app := bareApp(t)
 
-			model, cmd := app.Update(addContextItemTextMsg("Test context item"))
+			model, cmd := app.Update(AddContextItemTextMsg("Test context item"))
 			assert.Nil(t, cmd)
 			v := render(t, model)
 			snaps.MatchStandaloneSnapshot(t, v)
@@ -97,7 +97,7 @@ func TestApp(t *testing.T) {
 		t.Run("add_context_item_file", func(t *testing.T) {
 			app := bareApp(t)
 
-			model, cmd := app.Update(addContextItemFileMsg("test.txt"))
+			model, cmd := app.Update(AddContextItemFileMsg("test.txt"))
 			assert.Nil(t, cmd)
 			v := render(t, model)
 			snaps.MatchStandaloneSnapshot(t, v)
