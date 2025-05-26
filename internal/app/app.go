@@ -56,10 +56,7 @@ type App struct {
 	dialog  *InputDialog
 }
 
-func MakeApp(cwd string) (App, error) {
-	// init events channel
-	events := make(chan tea.Msg)
-
+func MakeApp(cwd string, events chan tea.Msg) (App, error) {
 	// create socket file for listening to messages
 	listener, err := createSocketFile(cwd)
 	if err != nil {

@@ -12,7 +12,7 @@ import (
 )
 
 func makeApp(t *testing.T, cwd string) App {
-	app, err := MakeApp(cwd)
+	app, err := MakeApp(cwd, make(chan tea.Msg))
 	require.Nil(t, err)
 	return app
 }

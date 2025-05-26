@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"mark/internal/app"
 	"mark/internal/logging"
+	"mark/internal/program"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +21,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logging.Setup()
 
-		program, err := app.NewProgram()
+		program, err := program.NewProgram()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)

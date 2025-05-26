@@ -1,7 +1,9 @@
-package app
+package program
 
 import (
 	"os"
+
+	"mark/internal/app"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
@@ -9,6 +11,7 @@ import (
 // Program wraps the bubbletea program.
 type Program struct {
 	TeaProgram *tea.Program
+	events     chan tea.Msg
 }
 
 // / NewProgram creates a new Program.
@@ -19,8 +22,11 @@ func NewProgram() (*Program, error) {
 		return nil, err
 	}
 
+	// create an events channel
+	events := make(chan tea.Msg)
+
 	// initialize the App model
-	m, err := MakeApp(cwd)
+	m, err := app.MakeApp(cwd, events)
 	if err != nil {
 		return nil, err
 	}
@@ -31,6 +37,7 @@ func NewProgram() (*Program, error) {
 	// create the program
 	program := &Program{
 		TeaProgram: teaprogram,
+		events:     events,
 	}
 
 	return program, nil
@@ -44,10 +51,8 @@ func (p *Program) Run() error {
 		return err
 	}
 
-	app := m.(App)
-
-	// close the events channel
-	close(app.events)
+	// assert the model is of type app.App
+	app := m.(app.App)
 
 	// handle errors in the final model after bubbletea program exits
 	err = app.Err()
