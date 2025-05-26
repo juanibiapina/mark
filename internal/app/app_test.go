@@ -13,7 +13,7 @@ import (
 
 func makeApp(t *testing.T, cwd string) App {
 	app, err := MakeApp(cwd)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	return app
 }
 
@@ -43,6 +43,11 @@ func key(code rune) tea.Msg {
 }
 
 func TestMain(m *testing.M) {
+	// set TMPDIR to /tmp to avoid issues with macos per user temp directories with long names.
+	// example: /var/folders/ks/t5mwll9d0ys7xs_ng16n_qkc0000gn/T/
+	// sockets have a limit of 104 characters.
+	os.Setenv(("TMPDIR"), "/tmp/")
+
 	v := m.Run()
 
 	snaps.Clean(m, snaps.CleanOpts{Sort: true})
@@ -77,6 +82,24 @@ func TestApp(t *testing.T) {
 			model, cmd = app.Update(streamStarted{})
 			assert.Nil(t, cmd)
 			v = render(t, model)
+			snaps.MatchStandaloneSnapshot(t, v)
+		})
+
+		t.Run("add_context_item_text", func(t *testing.T) {
+			app := bareApp(t)
+
+			model, cmd := app.Update(addContextItemTextMsg("Test context item"))
+			assert.Nil(t, cmd)
+			v := render(t, model)
+			snaps.MatchStandaloneSnapshot(t, v)
+		})
+
+		t.Run("add_context_item_file", func(t *testing.T) {
+			app := bareApp(t)
+
+			model, cmd := app.Update(addContextItemFileMsg("test.txt"))
+			assert.Nil(t, cmd)
+			v := render(t, model)
 			snaps.MatchStandaloneSnapshot(t, v)
 		})
 	})
