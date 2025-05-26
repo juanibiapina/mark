@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mark/internal/app"
+	"mark/internal/messages"
 	"net"
 	"os"
 	"path"
@@ -61,16 +62,7 @@ func (s *Server) Run() {
 				continue // skip to the next message
 			}
 
-			// create a tea message from the client request
-			var msg tea.Msg
-			switch clientRequest.Message {
-			case "add-context-item-text":
-				msg = app.AddContextItemTextMsg(clientRequest.Args[0])
-			case "add-context-item-file":
-				msg = app.AddContextItemFileMsg(clientRequest.Args[0])
-			default:
-				msg = app.ErrMsg{Err: fmt.Errorf("unknown message: %s", clientRequest.Message)}
-			}
+			msg := messages.ToTeaMsg(clientRequest.Message, clientRequest.Args)
 
 			s.events <- msg
 		}
