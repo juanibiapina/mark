@@ -19,6 +19,7 @@ type (
 	streamFinished        string
 	AddContextItemTextMsg string
 	AddContextItemFileMsg string
+	RunMsg                struct{}
 	ErrMsg                struct{ Err error }
 )
 
@@ -100,6 +101,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case AddContextItemFileMsg:
 		m.addContextItem(domain.FileItem(string(msg)))
+
+	case RunMsg:
+		cmds = append(cmds, runAgent(&m))
 	}
 
 	// delegate to component update

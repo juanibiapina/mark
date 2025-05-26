@@ -102,6 +102,15 @@ func TestApp(t *testing.T) {
 			v := render(t, model)
 			snaps.MatchStandaloneSnapshot(t, v)
 		})
+
+		t.Run("run", func(t *testing.T) {
+			app := bareApp(t)
+
+			model, cmd := app.Update(RunMsg{})
+			assert.NotNil(t, cmd) // TODO: how to test that cmd is a tea.Cmd that runs the agent?
+			v := render(t, model)
+			snaps.MatchStandaloneSnapshot(t, v)
+		})
 	})
 
 	t.Run("focus", func(t *testing.T) {

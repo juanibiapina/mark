@@ -2,6 +2,7 @@ package messages
 
 import (
 	"fmt"
+
 	"mark/internal/app"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -31,6 +32,14 @@ var Msgs map[string]Message = map[string]Message{
 			return app.AddContextItemFileMsg(args[0])
 		},
 	},
+	"run": {
+		Use:     "run",
+		Short:   "Run the agent",
+		NumArgs: 0,
+		ToTeaMsg: func(args []string) tea.Msg {
+			return app.RunMsg{}
+		},
+	},
 }
 
 func ToTeaMsg(msg string, args []string) tea.Msg {
@@ -39,5 +48,5 @@ func ToTeaMsg(msg string, args []string) tea.Msg {
 		return message.ToTeaMsg(args)
 	}
 
-	return app.ErrMsg{ Err: fmt.Errorf("unknown message: %s", msg) }
+	return app.ErrMsg{Err: fmt.Errorf("unknown message: %s", msg)}
 }
