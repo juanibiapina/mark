@@ -2,6 +2,7 @@ package domain
 
 import (
 	"log/slog"
+	"mark/internal/icon"
 	"os"
 
 	"github.com/charmbracelet/bubbles/v2/list"
@@ -15,6 +16,7 @@ func (i ListItem) FilterValue() string { return "" }
 
 type ContextItem interface {
 	list.Item
+	Icon() string
 	Title() string
 	Message() string
 }
@@ -24,6 +26,10 @@ type ContextItem interface {
 type ContextItemText struct {
 	ListItem
 	text string
+}
+
+func (item ContextItemText) Icon() string {
+	return icon.Text
 }
 
 func (item ContextItemText) Title() string {
@@ -45,6 +51,10 @@ func TextItem(text string) ContextItem {
 type ContextItemFile struct {
 	ListItem
 	path string
+}
+
+func (item ContextItemFile) Icon() string {
+	return icon.File
 }
 
 func (item ContextItemFile) Title() string {

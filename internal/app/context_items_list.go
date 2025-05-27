@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"mark/internal/domain"
-	"mark/internal/icon"
 
 	"github.com/charmbracelet/bubbles/v2/list"
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -37,7 +36,7 @@ func (d *contextItemDelegate) Render(w io.Writer, m list.Model, index int, listI
 	str := i.Title()
 	str = ansi.Truncate(str, maxWidth-2, "...") // - 2 for padding
 
-	str = icon.Txt + " " + str
+	str = i.Icon() + " " + str
 
 	fn := itemStyle.Width(maxWidth).Render
 	if d.l.IsFocused() {

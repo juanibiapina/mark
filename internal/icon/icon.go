@@ -1,3 +1,4 @@
 package icon
 
-var Txt = "\uf15c"
+var Text = ""
+var File = ""
