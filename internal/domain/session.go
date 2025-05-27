@@ -2,7 +2,6 @@ package domain
 
 type Session struct {
 	context *Context
-	prompt  string
 	reply   string
 }
 
@@ -10,14 +9,6 @@ func MakeSession() Session {
 	return Session{
 		context: NewContext(),
 	}
-}
-
-func (session *Session) Prompt() string {
-	return session.prompt
-}
-
-func (session *Session) SetPrompt(content string) {
-	session.prompt = content
 }
 
 func (session *Session) AppendChunk(chunk string) {

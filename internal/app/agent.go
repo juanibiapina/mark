@@ -38,12 +38,6 @@ func convertSessionToMessages(session domain.Session) []llm.Message {
 		Content: session.Context().Message(),
 	})
 
-	// add prompt
-	messages = append(messages, llm.Message{
-		Role:    llm.RoleUser,
-		Content: session.Prompt(),
-	})
-
 	return messages
 }
 

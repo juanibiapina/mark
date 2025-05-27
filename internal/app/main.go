@@ -3,41 +3,20 @@ package app
 import (
 	"mark/internal/util"
 
-	"github.com/charmbracelet/bubbles/v2/textarea"
 	"github.com/charmbracelet/bubbles/v2/viewport"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 )
 
-type Focused int
-
-const (
-	FocusedInput Focused = iota
-	FocusedContextItemsList
-	FocusedEndMarker // used to determine the number of focusable items for cycling
-)
-
 type Main struct {
-	input            textarea.Model
 	contextItemsList *ContextItemsList
 	messagesViewport viewport.Model
 
 	hasFocus bool
-	focused  Focused
 }
 
 func NewMain() *Main {
-	input := textarea.New()
-	input.Focus()       // starts focused because default focus is FocusedInput
-	input.CharLimit = 0 // no character limit
-	input.MaxHeight = 0 // no max height
-	input.Prompt = ""
-	input.Styles.Focused.CursorLine = lipgloss.NewStyle() // Remove cursor line styling
-	input.ShowLineNumbers = false
-	input.KeyMap.InsertNewline.SetEnabled(false)
-
 	main := &Main{
-		input:            input,
 		hasFocus:         true,
 		contextItemsList: NewContextItemsList(),
 	}
@@ -47,32 +26,22 @@ func NewMain() *Main {
 
 func (main *Main) Focus() {
 	main.hasFocus = true
-	if main.focused == FocusedInput {
-		main.input.Focus()
-	}
-	if main.focused == FocusedContextItemsList {
-		main.contextItemsList.Focus()
-	}
+	main.contextItemsList.Focus()
 }
 
 func (main *Main) Blur() {
 	main.hasFocus = false
-	main.input.Blur()
 	main.contextItemsList.Blur()
 }
 
 func (main *Main) SetSize(width, height int) {
 	borderSize := 2 // 2 times the border width
-	inputHeight := 5
 
 	availableHeight := height - borderSize
 	sidebarWidth := width / 3
 	messagesWidth := width - sidebarWidth
 
-	main.input.SetWidth(sidebarWidth - borderSize)
-	main.input.SetHeight(inputHeight - borderSize)
-
-	main.contextItemsList.SetSize(sidebarWidth-borderSize, availableHeight-inputHeight)
+	main.contextItemsList.SetSize(sidebarWidth-borderSize, availableHeight)
 
 	main.messagesViewport.SetWidth(messagesWidth - borderSize)
 	main.messagesViewport.SetHeight(availableHeight)
@@ -88,12 +57,10 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 		case "esc":
 			inputHandled = true
 			cmds = append(cmds, tea.Quit)
-		case "tab":
-			inputHandled = true
-			main.focusNext()
-		case "shift+tab":
-			inputHandled = true
-			main.focusPrev()
+		case "enter":
+			var cmd tea.Cmd
+			cmd = app.submitMessage()
+			cmds = append(cmds, cmd)
 		case "ctrl+n":
 			inputHandled = true
 			app.newSession()
@@ -104,41 +71,25 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 	}
 
 	if !inputHandled {
-		if main.focused == FocusedInput {
-			cmd := main.processInputView(app, msg)
-			cmds = append(cmds, cmd)
-		}
-
-		if main.focused == FocusedContextItemsList {
-			cmd := main.contextItemsList.Update(app, msg)
-			cmds = append(cmds, cmd)
-		}
+		cmd := main.contextItemsList.Update(app, msg)
+		cmds = append(cmds, cmd)
 	}
 
 	return tea.Batch(cmds...)
 }
 
 func (main *Main) View() string {
-	sidebar := lipgloss.JoinVertical(lipgloss.Top, main.inputView(), main.contextItemsListView())
+	sidebar := lipgloss.JoinVertical(lipgloss.Top, main.contextItemsListView())
 	mainpane := main.messagesView()
 	return lipgloss.JoinHorizontal(lipgloss.Left, sidebar, mainpane)
-}
-
-func (main *Main) inputView() string {
-	return util.RenderBorderWithTitle(
-		main.input.View(),
-		main.borderIfFocused(FocusedInput),
-		"Message Assistant",
-		main.panelTitleStyleIfFocused(FocusedInput),
-	)
 }
 
 func (main *Main) contextItemsListView() string {
 	return util.RenderBorderWithTitle(
 		main.contextItemsList.View(),
-		main.borderIfFocused(FocusedContextItemsList),
+		main.borderIfFocused(),
 		"Context",
-		main.panelTitleStyleIfFocused(FocusedContextItemsList),
+		main.panelTitleStyleIfFocused(),
 	)
 }
 
@@ -151,77 +102,17 @@ func (main *Main) messagesView() string {
 	)
 }
 
-func (main *Main) focusNext() {
-	main.focused += 1
-	if main.focused == FocusedEndMarker {
-		main.focused = 0
-	}
-
-	if main.focused == FocusedContextItemsList {
-		main.input.Blur()
-		main.contextItemsList.Focus()
-	} else {
-		main.input.Focus()
-		main.contextItemsList.Blur()
-	}
-}
-
-func (main *Main) focusPrev() {
-	main.focused -= 1
-	if main.focused < 0 {
-		main.focused = FocusedEndMarker - 1
-	}
-
-	if main.focused == FocusedContextItemsList {
-		main.input.Blur()
-		main.contextItemsList.Focus()
-	} else {
-		main.input.Focus()
-		main.contextItemsList.Blur()
-	}
-}
-
-func (main *Main) borderIfFocused(focused Focused) lipgloss.Style {
-	if !main.hasFocus {
-		return borderStyle
-	}
-
-	if main.focused == focused {
+func (main *Main) borderIfFocused() lipgloss.Style {
+	if main.hasFocus {
 		return focusedBorderStyle
 	}
 	return borderStyle
 }
 
-func (main *Main) panelTitleStyleIfFocused(focused Focused) lipgloss.Style {
-	if !main.hasFocus {
-		return textStyle
-	}
-
-	if main.focused == focused {
+func (main *Main) panelTitleStyleIfFocused() lipgloss.Style {
+	if main.hasFocus {
 		return focusedPanelTitleStyle
 	}
+
 	return textStyle
-}
-
-func (main *Main) processInputView(app *App, msg tea.Msg) tea.Cmd {
-	var inputHandled bool
-	var cmds []tea.Cmd
-
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "enter":
-			inputHandled = true
-			cmd := app.submitMessage()
-			cmds = append(cmds, cmd)
-		}
-	}
-
-	if !inputHandled {
-		var cmd tea.Cmd
-		main.input, cmd = main.input.Update(msg)
-		cmds = append(cmds, cmd)
-	}
-
-	return tea.Batch(cmds...)
 }

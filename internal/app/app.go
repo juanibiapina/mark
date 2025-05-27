@@ -193,9 +193,6 @@ func (m *App) newSession() {
 	m.session = domain.MakeSession()
 
 	m.main.contextItemsList.SetItemsFromSessionContextItems(m.session.Context().Items())
-	m.main.input.Reset()
-
-	m.main.focused = FocusedInput
 }
 
 func (m *App) renderMessagesView() {
@@ -210,11 +207,6 @@ func (m *App) renderMessagesView() {
 	}
 
 	var content string
-
-	// render the user message
-	msg := lipgloss.NewStyle().Width(m.main.messagesViewport.Width()).Align(lipgloss.Right).Render(fmt.Sprintf("%s\n", m.session.Prompt()))
-
-	content += msg
 
 	// render the assistant message
 	assistantMessage := m.session.Reply()
@@ -232,14 +224,6 @@ func (m *App) renderMessagesView() {
 }
 
 func (m *App) submitMessage() tea.Cmd {
-	v := m.main.input.Value()
-	if v == "" {
-		return nil
-	}
-
-	m.session.SetPrompt(v)
-	m.main.input.Reset()
-
 	return runAgent(m)
 }
 

@@ -136,18 +136,6 @@ func TestApp(t *testing.T) {
 		})
 	})
 
-	t.Run("focus", func(t *testing.T) {
-		app := bareApp(t)
-		focuses := []Focused{FocusedInput, FocusedContextItemsList, FocusedInput}
-
-		for _, expectedFocus := range focuses {
-			require.Equal(t, expectedFocus, app.main.focused)
-			v := app.View()
-			snaps.MatchSnapshot(t, v)
-			app = update(app, key(tea.KeyTab))
-		}
-	})
-
 	t.Run("input", func(t *testing.T) {
 		app := bareApp(t)
 
