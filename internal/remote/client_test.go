@@ -3,12 +3,24 @@ package remote
 import (
 	"log/slog"
 	"mark/internal/app"
+	"os"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	// set TMPDIR to /tmp to avoid issues with macos per user temp directories with long names.
+	// example: /var/folders/ks/t5mwll9d0ys7xs_ng16n_qkc0000gn/T/
+	// sockets have a limit of 104 characters.
+	os.Setenv(("TMPDIR"), "/tmp/")
+
+	v := m.Run()
+
+	os.Exit(v)
+}
 
 func TestClient(t *testing.T) {
 	t.Parallel()
