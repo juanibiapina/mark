@@ -58,6 +58,20 @@ func TestMain(m *testing.M) {
 func TestApp(t *testing.T) {
 	t.Parallel()
 
+	t.Run("auto scroll", func(t *testing.T) {
+		t.Parallel()
+
+		app := bareApp(t)
+		model, _ := app.Update(streamStarted{})
+		model, _ = model.Update(streamChunkReceived("1\n\n2\n\n3\n\n4\n\n5\n\n6"))
+		v := render(t, model)
+		snaps.MatchStandaloneSnapshot(t, v)
+
+		model, _ = model.Update(streamChunkReceived("\n\n7\n\n8\n\n"))
+		v = render(t, model)
+		snaps.MatchStandaloneSnapshot(t, v)
+	})
+
 	t.Run("messages", func(t *testing.T) {
 		t.Run("streamFinished", func(t *testing.T) {
 			app := bareApp(t)

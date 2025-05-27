@@ -228,6 +228,7 @@ func (m *App) renderMessagesView() {
 	}
 
 	m.main.messagesViewport.SetContent(content)
+	m.main.messagesViewport.GotoBottom()
 }
 
 func (m *App) submitMessage() tea.Cmd {
