@@ -111,6 +111,16 @@ func TestApp(t *testing.T) {
 			v := render(t, model)
 			snaps.MatchStandaloneSnapshot(t, v)
 		})
+
+		t.Run("new-session", func(t *testing.T) {
+			app := bareApp(t)
+			model, cmd := app.Update(AddContextItemFileMsg("test.txt"))
+
+			model, cmd = model.Update(NewSessionMsg{})
+			assert.Nil(t, cmd)
+			v := render(t, model)
+			snaps.MatchStandaloneSnapshot(t, v)
+		})
 	})
 
 	t.Run("focus", func(t *testing.T) {

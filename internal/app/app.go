@@ -20,6 +20,7 @@ type (
 	AddContextItemTextMsg string
 	AddContextItemFileMsg string
 	RunMsg                struct{}
+	NewSessionMsg         struct{}
 	ErrMsg                struct{ Err error }
 )
 
@@ -104,6 +105,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case RunMsg:
 		cmds = append(cmds, runAgent(&m))
+
+	case NewSessionMsg:
+		m.newSession()
 	}
 
 	// delegate to component update

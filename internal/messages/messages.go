@@ -16,6 +16,14 @@ type Message struct {
 }
 
 var Msgs map[string]Message = map[string]Message{
+	"new-session": {
+		Use:     "new-session",
+		Short:   "Start a new session",
+		NumArgs: 0,
+		ToTeaMsg: func(args []string) tea.Msg {
+			return app.NewSessionMsg{}
+		},
+	},
 	"add-context-item-text": {
 		Use:     "add-context-item-text <message>",
 		Short:   "Add a text item to the context",
