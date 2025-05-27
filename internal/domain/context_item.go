@@ -1,9 +1,11 @@
 package domain
 
 import (
-	"log/slog"
-	"mark/internal/icon"
+	"fmt"
 	"os"
+	"path/filepath"
+
+	"mark/internal/icon"
 
 	"github.com/charmbracelet/bubbles/v2/list"
 )
@@ -65,9 +67,6 @@ func (item ContextItemFile) Message() string {
 	var result string
 	result += "File: " + item.path + "\n"
 
-	cwd, err := os.Getwd()
-	slog.Info("CWD", "cwd", cwd)
-
 	contents, err := os.ReadFile(item.path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -84,8 +83,21 @@ func (item ContextItemFile) Message() string {
 	return result
 }
 
-func FileItem(path string) ContextItem {
+func FileItem(path string) (ContextItem, error) {
+	cwd, err := os.Getwd() // TODO: handle error
+	if err != nil {
+		return nil, err
+	}
+
+	if filepath.IsAbs(path) {
+		var err error
+		path, err = filepath.Rel(cwd, path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get relative path: %w", err)
+		}
+	}
+
 	return ContextItemFile{
 		path: path,
-	}
+	}, nil
 }

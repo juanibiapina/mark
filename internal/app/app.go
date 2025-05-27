@@ -101,7 +101,12 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.addContextItem(domain.TextItem(string(msg)))
 
 	case AddContextItemFileMsg:
-		m.addContextItem(domain.FileItem(string(msg)))
+		item, err := domain.FileItem(string(msg))
+		if err != nil {
+			m.err = err
+			return m, tea.Quit
+		}
+		m.addContextItem(item)
 
 	case RunMsg:
 		cmds = append(cmds, runAgent(&m))
@@ -148,15 +153,21 @@ func (m App) View() string {
 }
 
 func (m *App) showAddContextDialog() {
-	m.dialog = NewInputDialog(func(v string) {
+	m.dialog = NewInputDialog(func(v string) error {
 		m.addContextItem(domain.TextItem(v))
+		return nil
 	})
 	m.setDialogSize()
 }
 
 func (m *App) showAddContextFileDialog() {
-	m.dialog = NewInputDialog(func(v string) {
-		m.addContextItem(domain.FileItem(v))
+	m.dialog = NewInputDialog(func(v string) error {
+		item, err := domain.FileItem(v)
+		if err != nil {
+			return err
+		}
+		m.addContextItem(item)
+		return nil
 	})
 	m.setDialogSize()
 }

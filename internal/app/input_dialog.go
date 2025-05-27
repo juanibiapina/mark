@@ -1,6 +1,8 @@
 package app
 
 import (
+	"log/slog"
+
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
@@ -10,10 +12,10 @@ type InputDialog struct {
 	width    int
 	height   int
 	input    textinput.Model
-	callback func(v string)
+	callback func(v string) error
 }
 
-func NewInputDialog(callback func(v string)) *InputDialog {
+func NewInputDialog(callback func(v string) error) *InputDialog {
 	input := textinput.New()
 	input.Focus()
 
@@ -36,7 +38,11 @@ func (dialog *InputDialog) Update(app *App, msg tea.Msg) tea.Cmd {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
-			dialog.callback(dialog.input.Value())
+			err := dialog.callback(dialog.input.Value())
+			if err != nil {
+				slog.Error("Error") // TODO handle error
+				return nil
+			}
 			app.hideAddContextDialog()
 		case "esc":
 			app.hideAddContextDialog()

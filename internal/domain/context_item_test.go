@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestContextItemFile(t *testing.T) {
@@ -12,11 +13,12 @@ func TestContextItemFile(t *testing.T) {
 	t.Run("Title", func(t *testing.T) {
 		t.Parallel()
 
-		item := FileItem("filename")
+		item, err := FileItem("testdata/file.txt")
+		require.Nil(t, err)
 
 		actual := item.Title()
 
-		expected := "File: filename"
+		expected := "File: testdata/file.txt"
 		assert.Equal(t, expected, actual)
 	})
 
@@ -26,7 +28,8 @@ func TestContextItemFile(t *testing.T) {
 		t.Run("when file exists", func(t *testing.T) {
 			t.Parallel()
 
-			item := FileItem("testdata/file.txt")
+			item, err := FileItem("testdata/file.txt")
+			require.NoError(t, err)
 
 			actual := item.Message()
 
@@ -38,7 +41,8 @@ func TestContextItemFile(t *testing.T) {
 		t.Run("when file does not exist", func(t *testing.T) {
 			t.Parallel()
 
-			item := FileItem("testdata/nonexistent.txt")
+			item, err := FileItem("testdata/nonexistent.txt")
+			require.NoError(t, err)
 
 			actual := item.Message()
 
