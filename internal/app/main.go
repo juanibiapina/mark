@@ -22,12 +22,13 @@ type Main struct {
 	contextItemsList *ContextItemsList
 	messagesViewport viewport.Model
 
-	focused Focused
+	hasFocus bool
+	focused  Focused
 }
 
 func NewMain() *Main {
 	input := textarea.New()
-	input.Focus() // starts focused because default focus is FocusedInput
+	input.Focus()       // starts focused because default focus is FocusedInput
 	input.CharLimit = 0 // no character limit
 	input.MaxHeight = 0 // no max height
 	input.Prompt = ""
@@ -37,10 +38,27 @@ func NewMain() *Main {
 
 	main := &Main{
 		input:            input,
+		hasFocus:         true,
 		contextItemsList: NewContextItemsList(),
 	}
 
 	return main
+}
+
+func (main *Main) Focus() {
+	main.hasFocus = true
+	if main.focused == FocusedInput {
+		main.input.Focus()
+	}
+	if main.focused == FocusedContextItemsList {
+		main.contextItemsList.Focus()
+	}
+}
+
+func (main *Main) Blur() {
+	main.hasFocus = false
+	main.input.Blur()
+	main.contextItemsList.Blur()
 }
 
 func (main *Main) SetSize(width, height int) {
@@ -164,6 +182,10 @@ func (main *Main) focusPrev() {
 }
 
 func (main *Main) borderIfFocused(focused Focused) lipgloss.Style {
+	if !main.hasFocus {
+		return borderStyle
+	}
+
 	if main.focused == focused {
 		return focusedBorderStyle
 	}
@@ -171,6 +193,10 @@ func (main *Main) borderIfFocused(focused Focused) lipgloss.Style {
 }
 
 func (main *Main) panelTitleStyleIfFocused(focused Focused) lipgloss.Style {
+	if !main.hasFocus {
+		return textStyle
+	}
+
 	if main.focused == focused {
 		return focusedPanelTitleStyle
 	}

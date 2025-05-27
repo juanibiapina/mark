@@ -58,18 +58,6 @@ func TestMain(m *testing.M) {
 func TestApp(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Error", func(t *testing.T) {
-		app := bareApp(t)
-
-		err := fmt.Errorf("test error")
-
-		model, cmd := app.Update(ErrMsg{Err: err})
-
-		assert.Equal(t, tea.QuitMsg{}, cmd())
-		app = model.(App)
-		require.ErrorIs(t, app.Err(), err)
-	})
-
 	t.Run("messages", func(t *testing.T) {
 		t.Run("streamFinished", func(t *testing.T) {
 			app := bareApp(t)
@@ -118,6 +106,17 @@ func TestApp(t *testing.T) {
 
 			model, cmd = model.Update(NewSessionMsg{})
 			assert.Nil(t, cmd)
+			v := render(t, model)
+			snaps.MatchStandaloneSnapshot(t, v)
+		})
+
+		t.Run("ErrMsg", func(t *testing.T) {
+			app := bareApp(t)
+
+			err := fmt.Errorf("test error")
+			model, cmd := app.Update(ErrMsg{Err: err})
+			require.Nil(t, cmd)
+
 			v := render(t, model)
 			snaps.MatchStandaloneSnapshot(t, v)
 		})

@@ -43,13 +43,12 @@ type App struct {
 
 	agent  *Agent
 	events chan tea.Msg
-	err    error
 
 	uiReady bool
 	width   int
 	height  int
 	main    *Main
-	dialog  *InputDialog
+	dialog  Component
 }
 
 func MakeApp(cwd string, events chan tea.Msg) (App, error) {
@@ -62,10 +61,6 @@ func MakeApp(cwd string, events chan tea.Msg) (App, error) {
 	}
 
 	return app, nil
-}
-
-func (m App) Err() error {
-	return m.err
 }
 
 func (m App) Init() tea.Cmd {
@@ -82,8 +77,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// handle messages
 	switch msg := msg.(type) {
 	case ErrMsg:
-		m.err = msg.Err
-		return m, tea.Quit
+		m.handleError(msg.Err)
 
 	case tea.WindowSizeMsg:
 		m.handleWindowSize(msg.Width, msg.Height)
@@ -103,8 +97,8 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case AddContextItemFileMsg:
 		item, err := domain.FileItem(string(msg))
 		if err != nil {
-			m.err = err
-			return m, tea.Quit
+			m.handleError(err)
+			break
 		}
 		m.addContextItem(item)
 
@@ -152,28 +146,34 @@ func (m App) View() string {
 	return view
 }
 
+func (m *App) showDialog(dialog Component) {
+	m.dialog = dialog
+	m.setDialogSize()
+	m.dialog.Focus()
+	m.main.Blur()
+}
+
 func (m *App) showAddContextDialog() {
-	m.dialog = NewInputDialog(func(v string) error {
+	m.showDialog(NewInputDialog(func(v string) error {
 		m.addContextItem(domain.TextItem(v))
 		return nil
-	})
-	m.setDialogSize()
+	}))
 }
 
 func (m *App) showAddContextFileDialog() {
-	m.dialog = NewInputDialog(func(v string) error {
+	m.showDialog(NewInputDialog(func(v string) error {
 		item, err := domain.FileItem(v)
 		if err != nil {
 			return err
 		}
 		m.addContextItem(item)
 		return nil
-	})
-	m.setDialogSize()
+	}))
 }
 
-func (m *App) hideAddContextDialog() {
+func (m *App) hideDialog() {
 	m.dialog = nil
+	m.main.Focus()
 }
 
 // processEventMessage checks if the message is an event message, so we can restart the
@@ -205,7 +205,7 @@ func (m *App) renderMessagesView() {
 		glamour.WithWordWrap(m.main.messagesViewport.Width()-2-2), // 2 is the glamour internal gutter, extra 2 for the right side
 	)
 	if err != nil {
-		m.err = err
+		m.handleError(fmt.Errorf("failed to create glamour renderer: %w", err))
 		return
 	}
 
@@ -289,4 +289,8 @@ func (m *App) addContextItem(item domain.ContextItem) {
 
 	// update the context items list in the main view
 	m.main.contextItemsList.SetItemsFromSessionContextItems(m.session.Context().Items())
+}
+
+func (m *App) handleError(err error) {
+	m.showDialog(NewErrorDialog(err))
 }

@@ -25,6 +25,14 @@ func NewInputDialog(callback func(v string) error) *InputDialog {
 	}
 }
 
+func (dialog *InputDialog) Focus() {
+	dialog.input.Focus()
+}
+
+func (dialog *InputDialog) Blur() {
+	dialog.input.Blur()
+}
+
 func (dialog *InputDialog) SetSize(width, height int) {
 	dialog.width = width
 	dialog.height = height
@@ -43,9 +51,9 @@ func (dialog *InputDialog) Update(app *App, msg tea.Msg) tea.Cmd {
 				slog.Error("Error") // TODO handle error
 				return nil
 			}
-			app.hideAddContextDialog()
+			app.hideDialog()
 		case "esc":
-			app.hideAddContextDialog()
+			app.hideDialog()
 		default:
 			var cmd tea.Cmd
 			dialog.input, _ = dialog.input.Update(msg)

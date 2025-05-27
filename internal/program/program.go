@@ -58,22 +58,13 @@ func (p *Program) Run() error {
 	go p.server.Run()
 
 	// run the tea program
-	m, err := p.TeaProgram.Run()
+	_, err := p.TeaProgram.Run()
 	if err != nil {
 		return err
 	}
 
 	p.server.Close()
 	close(p.events)
-
-	// assert the model is of type app.App
-	app := m.(app.App)
-
-	// handle errors in the final model after bubbletea program exits
-	err = app.Err()
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
