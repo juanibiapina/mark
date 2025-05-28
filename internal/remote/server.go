@@ -62,7 +62,7 @@ func (s *Server) Run() {
 				continue // skip to the next message
 			}
 
-			msg := messages.ToTeaMsg(clientRequest.Message, clientRequest.Args)
+			msg := messages.ToTeaMsg(clientRequest.Command, clientRequest.Args)
 
 			s.events <- msg
 		}

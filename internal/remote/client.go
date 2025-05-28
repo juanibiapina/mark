@@ -15,7 +15,7 @@ type Client struct {
 }
 
 type ClientRequest struct {
-	Message string   `json:"message"`
+	Command string   `json:"command"`
 	Args    []string `json:"args,omitempty"`
 }
 
@@ -26,7 +26,7 @@ func NewClient(cwd string) (*Client, error) {
 	return &client, nil
 }
 
-func (client *Client) SendMessage(message string, args []string) error {
+func (client *Client) SendMessage(command string, args []string) error {
 	// Check if the socket exists
 	_, err := os.Stat(client.socketPath)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -42,7 +42,7 @@ func (client *Client) SendMessage(message string, args []string) error {
 
 	// Prepare the message to send
 	cr := ClientRequest{
-		Message: message,
+		Command: command,
 		Args:    args,
 	}
 	// Convert the message to JSON format

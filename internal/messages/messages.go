@@ -50,11 +50,11 @@ var Msgs map[string]Message = map[string]Message{
 	},
 }
 
-func ToTeaMsg(msg string, args []string) tea.Msg {
-	message, ok := Msgs[msg]
+func ToTeaMsg(command string, args []string) tea.Msg {
+	message, ok := Msgs[command]
 	if ok {
 		return message.ToTeaMsg(args)
 	}
 
-	return app.ErrMsg{Err: fmt.Errorf("unknown message: %s", msg)}
+	return app.ErrMsg{Err: fmt.Errorf("unknown command: %s", command)}
 }
