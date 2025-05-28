@@ -19,6 +19,9 @@ func (c *Context) AddItem(item ContextItem) {
 }
 
 func (c *Context) DeleteItem(index int) {
+	if index < 0 || index >= len(c.items) {
+		return
+	}
 	c.items = slices.Delete(c.items, index, index+1)
 }
 
