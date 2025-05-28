@@ -70,6 +70,8 @@ func (m App) Init() tea.Cmd {
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
+	var scrollMessages bool
+
 	// extract messages from event messages
 	msg, cmd := m.processEventMessage(msg)
 	cmds = append(cmds, cmd)
@@ -87,6 +89,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case streamChunkReceived:
 		m.session.AppendChunk(string(msg))
+		scrollMessages = true
 
 	case streamFinished:
 		m.session.SetReply(string(msg))
@@ -120,6 +123,9 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	m.renderMessagesView()
+	if scrollMessages {
+		m.main.messagesViewport.GotoBottom()
+	}
 
 	return m, tea.Batch(cmds...)
 }
@@ -220,7 +226,6 @@ func (m *App) renderMessagesView() {
 	}
 
 	m.main.messagesViewport.SetContent(content)
-	m.main.messagesViewport.GotoBottom()
 }
 
 func (m *App) submitMessage() tea.Cmd {

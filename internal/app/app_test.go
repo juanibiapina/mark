@@ -42,6 +42,10 @@ func key(code rune) tea.Msg {
 	return tea.KeyPressMsg{Code: code, Text: string(code)}
 }
 
+func keymod(mod tea.KeyMod, code rune) tea.Msg {
+	return tea.KeyPressMsg{Code: code, Text: string(code), Mod: mod}
+}
+
 func TestMain(m *testing.M) {
 	// set TMPDIR to /tmp to avoid issues with macos per user temp directories with long names.
 	// example: /var/folders/ks/t5mwll9d0ys7xs_ng16n_qkc0000gn/T/
@@ -68,6 +72,28 @@ func TestApp(t *testing.T) {
 		snaps.MatchStandaloneSnapshot(t, v)
 
 		model, _ = model.Update(streamChunkReceived("\n\n7\n\n8\n\n"))
+		v = render(t, model)
+		snaps.MatchStandaloneSnapshot(t, v)
+	})
+
+	t.Run("manual scroll", func(t *testing.T) {
+		t.Parallel()
+
+		app := bareApp(t)
+		model, _ := app.Update(streamStarted{})
+		model, _ = model.Update(streamChunkReceived("1\n\n2\n\n3\n\n4\n\n5\n\n6\n\n7\n\n8"))
+		v := render(t, model)
+		snaps.MatchStandaloneSnapshot(t, v)
+
+		model, _ = model.Update(keymod(tea.ModShift, 'k'))
+		v = render(t, model)
+		snaps.MatchStandaloneSnapshot(t, v)
+
+		model, _ = model.Update(keymod(tea.ModShift, 'k'))
+		v = render(t, model)
+		snaps.MatchStandaloneSnapshot(t, v)
+
+		model, _ = model.Update(keymod(tea.ModShift, 'j'))
 		v = render(t, model)
 		snaps.MatchStandaloneSnapshot(t, v)
 	})

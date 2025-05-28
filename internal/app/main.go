@@ -62,6 +62,12 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 			var cmd tea.Cmd
 			cmd = app.submitMessage()
 			cmds = append(cmds, cmd)
+		case "shift+j":
+			inputHandled = true
+			main.messagesViewport.LineDown(1)
+		case "shift+k":
+			inputHandled = true
+			main.messagesViewport.LineUp(1)
 		case "ctrl+n":
 			inputHandled = true
 			app.newSession()
