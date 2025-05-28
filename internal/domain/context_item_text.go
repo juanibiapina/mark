@@ -1,9 +1,12 @@
 package domain
 
 import (
+	"strings"
+
 	"mark/internal/icon"
 
 	"github.com/charmbracelet/bubbles/v2/list"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type ContextItemText struct {
@@ -16,7 +19,8 @@ func (item ContextItemText) Icon() string {
 }
 
 func (item ContextItemText) Title() string {
-	return item.text
+	text := ansi.Strip(item.text)
+	return strings.ReplaceAll(text, "\n", " ")
 }
 
 func (item ContextItemText) Message() string {
