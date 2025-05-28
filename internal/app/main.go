@@ -17,9 +17,10 @@ type Main struct {
 
 func NewMain() *Main {
 	main := &Main{
-		hasFocus:         true,
 		contextItemsList: NewContextItemsList(),
 	}
+
+	main.Focus()
 
 	return main
 }
