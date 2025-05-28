@@ -56,12 +56,12 @@ func TestClient(t *testing.T) {
 			client, err := NewClient(cwd)
 			require.NoError(t, err)
 
-			err = client.SendRequest(Request{Command: "add-context-item-text", Args: []string{"prompt"}})
+			err = client.SendRequest(Request{Command: "add-context-item-text", Args: []string{"prompt"}, Stdin: "stdin content"})
 			require.NoError(t, err)
 
 			msg := <-events
 			slog.Info("Received message", "msg", msg)
-			assert.Equal(t, app.AddContextItemTextMsg("prompt"), msg)
+			assert.Equal(t, app.AddContextItemTextMsg("prompt\nstdin content"), msg)
 		})
 	})
 }

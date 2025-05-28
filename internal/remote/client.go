@@ -17,6 +17,7 @@ type Client struct {
 type Request struct {
 	Command string   `json:"command"`
 	Args    []string `json:"args,omitempty"`
+	Stdin   string   `json:"stdin,omitempty"`
 }
 
 func NewClient(cwd string) (*Client, error) {
