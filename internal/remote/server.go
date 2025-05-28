@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"mark/internal/app"
-	"mark/internal/messages"
 	"net"
 	"os"
 	"path"
+
+	"mark/internal/app"
+	"mark/internal/messages"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
@@ -35,7 +36,7 @@ func NewServer(cwd string, events chan tea.Msg) (*Server, error) {
 
 	server := &Server{
 		listener: listener,
-		events:  events,
+		events:   events,
 	}
 
 	return server, nil
@@ -55,14 +56,14 @@ func (s *Server) Run() {
 		scanner := bufio.NewScanner(conn)
 		for scanner.Scan() {
 			// parse JSON
-			clientRequest := ClientRequest{}
-			err := json.Unmarshal(scanner.Bytes(), &clientRequest)
+			req := Request{}
+			err := json.Unmarshal(scanner.Bytes(), &req)
 			if err != nil {
 				s.events <- app.ErrMsg{Err: fmt.Errorf("failed to parse client request: %w", err)}
 				continue // skip to the next message
 			}
 
-			msg := messages.ToTeaMsg(clientRequest.Command, clientRequest.Args)
+			msg := messages.ToTeaMsg(req.Command, req.Args)
 
 			s.events <- msg
 		}

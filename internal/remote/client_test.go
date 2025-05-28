@@ -2,9 +2,10 @@ package remote
 
 import (
 	"log/slog"
-	"mark/internal/app"
 	"os"
 	"testing"
+
+	"mark/internal/app"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +38,7 @@ func TestClient(t *testing.T) {
 			client, err := NewClient("testdata/nonexistent")
 			require.NoError(t, err)
 
-			err = client.SendMessage("test-message", []string{"arg1", "arg2"})
+			err = client.SendRequest(Request{Command: "test-message", Args: []string{"arg1", "arg2"}})
 			require.Error(t, err)
 			assert.Equal(t, "Couldn't find socket path: testdata/nonexistent/.local/share/mark/socket", err.Error())
 		})
@@ -55,7 +56,7 @@ func TestClient(t *testing.T) {
 			client, err := NewClient(cwd)
 			require.NoError(t, err)
 
-			err = client.SendMessage("add-context-item-text", []string{"prompt"})
+			err = client.SendRequest(Request{Command: "add-context-item-text", Args: []string{"prompt"}})
 			require.NoError(t, err)
 
 			msg := <-events
