@@ -14,10 +14,9 @@ type Client struct {
 	socketPath string
 }
 
-type Request struct {
+type ClientRequest struct {
 	Command string   `json:"command"`
 	Args    []string `json:"args,omitempty"`
-	Stdin   string   `json:"stdin,omitempty"`
 }
 
 func NewClient(cwd string) (*Client, error) {
@@ -27,7 +26,7 @@ func NewClient(cwd string) (*Client, error) {
 	return &client, nil
 }
 
-func (client *Client) SendRequest(req Request) error {
+func (client *Client) SendMessage(command string, args []string) error {
 	// Check if the socket exists
 	_, err := os.Stat(client.socketPath)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -41,8 +40,13 @@ func (client *Client) SendRequest(req Request) error {
 	}
 	defer conn.Close()
 
+	// Prepare the message to send
+	cr := ClientRequest{
+		Command: command,
+		Args:    args,
+	}
 	// Convert the message to JSON format
-	data, err := json.Marshal(&req)
+	data, err := json.Marshal(&cr)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}

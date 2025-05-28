@@ -2,10 +2,9 @@ package remote
 
 import (
 	"log/slog"
+	"mark/internal/app"
 	"os"
 	"testing"
-
-	"mark/internal/app"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/stretchr/testify/assert"
@@ -38,12 +37,7 @@ func TestClient(t *testing.T) {
 			client, err := NewClient("testdata/nonexistent")
 			require.NoError(t, err)
 
-			req := Request{
-				Command: "test-message",
-				Args:    []string{"arg1", "arg2"},
-				Stdin:   "",
-			}
-			err = client.SendRequest(req)
+			err = client.SendMessage("test-message", []string{"arg1", "arg2"})
 			require.Error(t, err)
 			assert.Equal(t, "Couldn't find socket path: testdata/nonexistent/.local/share/mark/socket", err.Error())
 		})
@@ -61,17 +55,12 @@ func TestClient(t *testing.T) {
 			client, err := NewClient(cwd)
 			require.NoError(t, err)
 
-			req := Request{
-				Command: "add-context-item-text",
-				Args:    []string{"prompt"},
-				Stdin:   "stdin content",
-			}
-			err = client.SendRequest(req)
+			err = client.SendMessage("add-context-item-text", []string{"prompt"})
 			require.NoError(t, err)
 
 			msg := <-events
 			slog.Info("Received message", "msg", msg)
-			assert.Equal(t, app.AddContextItemTextMsg("prompt\nstdin content"), msg)
+			assert.Equal(t, app.AddContextItemTextMsg("prompt"), msg)
 		})
 	})
 }

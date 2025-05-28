@@ -4,12 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"mark/internal/app"
+	"mark/internal/messages"
 	"net"
 	"os"
 	"path"
-
-	"mark/internal/app"
-	"mark/internal/messages"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
@@ -36,7 +35,7 @@ func NewServer(cwd string, events chan tea.Msg) (*Server, error) {
 
 	server := &Server{
 		listener: listener,
-		events:   events,
+		events:  events,
 	}
 
 	return server, nil
@@ -56,14 +55,14 @@ func (s *Server) Run() {
 		scanner := bufio.NewScanner(conn)
 		for scanner.Scan() {
 			// parse JSON
-			req := Request{}
-			err := json.Unmarshal(scanner.Bytes(), &req)
+			clientRequest := ClientRequest{}
+			err := json.Unmarshal(scanner.Bytes(), &clientRequest)
 			if err != nil {
-				s.events <- app.ErrMsg{Err: fmt.Errorf("failed to parse remote request: %w", err)}
+				s.events <- app.ErrMsg{Err: fmt.Errorf("failed to parse client request: %w", err)}
 				continue // skip to the next message
 			}
 
-			msg := toTeaMsg(req)
+			msg := messages.ToTeaMsg(clientRequest.Command, clientRequest.Args)
 
 			s.events <- msg
 		}
@@ -75,13 +74,4 @@ func (s *Server) Close() error {
 		return s.listener.Close()
 	}
 	return nil
-}
-
-func toTeaMsg(req Request) tea.Msg {
-	message, ok := messages.Msgs[req.Command]
-	if ok {
-		return message.ToTeaMsg(req.Args, req.Stdin)
-	}
-
-	return app.ErrMsg{Err: fmt.Errorf("unknown command: %s", req.Command)}
 }
