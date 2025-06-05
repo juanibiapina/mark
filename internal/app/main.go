@@ -55,7 +55,7 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		case "esc":
+		case "ctrl+c":
 			inputHandled = true
 			cmds = append(cmds, tea.Quit)
 		case "enter":
@@ -71,7 +71,7 @@ func (main *Main) Update(app *App, msg tea.Msg) tea.Cmd {
 		case "ctrl+n":
 			inputHandled = true
 			app.newSession()
-		case "ctrl+c":
+		case "esc":
 			inputHandled = true
 			app.agent.Cancel()
 		}
